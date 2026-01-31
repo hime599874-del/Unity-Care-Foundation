@@ -10,7 +10,7 @@ import {
   TrendingUp, TrendingDown, Bell, Search, 
   Calendar, LogOut, Plus, History, 
   MessageCircle, Send, Wallet, Camera, FileText, Hash, Printer, Download, ImageIcon,
-  UserCheck, UserCircle
+  UserCheck, UserCircle, AlertTriangle, Loader2
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -32,7 +32,8 @@ const AdminDashboard: React.FC = () => {
   const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [userModalTab, setUserModalTab] = useState<'info' | 'history' | 'add' | 'message'>('info');
+  const [userModalTab, setUserModalTab] = useState<'info' | 'history' | 'add' | 'message' | 'settings'>('info');
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
   
   const [manualAmount, setManualAmount] = useState('');
   const [manualMethod, setManualMethod] = useState<'Bkash' | 'Nagad' | 'Rocket' | 'Bank'>('Bkash');
@@ -71,6 +72,24 @@ const AdminDashboard: React.FC = () => {
   const handleLogout = () => {
     setIsAdmin(false);
     navigate('/');
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser || isDeletingUser) return;
+    
+    const confirmDelete = confirm(`${selectedUser.name}-কে ডিলিট করলে তার সকল ব্যক্তিগত তথ্য এবং সংগঠনের ফান্ড থেকে তার করা অনুদান চিরতরে মুছে যাবে। আপনি কি নিশ্চিত?`);
+    if (!confirmDelete) return;
+
+    setIsDeletingUser(true);
+    try {
+      await db.deleteUser(selectedUser.id);
+      setSelectedUser(null);
+      alert('সদস্যকে সফলভাবে মুছে ফেলা হয়েছে।');
+    } catch (err) {
+      alert('মুছে ফেলতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।');
+    } finally {
+      setIsDeletingUser(false);
+    }
   };
 
   const handlePrint = () => {
@@ -677,7 +696,7 @@ const AdminDashboard: React.FC = () => {
       {/* User Detail Modal */}
       {selectedUser && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 border-2 border-slate-300">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 border-2 border-slate-300">
             <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
               <div className="flex items-center gap-3">
                  <img src={selectedUser.profilePic} className="w-10 h-10 rounded-xl object-cover border-2 border-white shadow-md" />
@@ -690,7 +709,8 @@ const AdminDashboard: React.FC = () => {
                  { id: 'info', label: 'প্রোফাইল', icon: <Users className="w-3 h-3" /> },
                  { id: 'history', label: 'দান', icon: <History className="w-3 h-3" /> },
                  { id: 'add', label: 'দান যোগ', icon: <Plus className="w-3 h-3" /> },
-                 { id: 'message', label: 'মেসেজ', icon: <MessageCircle className="w-3 h-3" /> }
+                 { id: 'message', label: 'মেসেজ', icon: <MessageCircle className="w-3 h-3" /> },
+                 { id: 'settings', label: 'সেটিংস', icon: <Trash2 className="w-3 h-3" /> }
                ].map(tab => (
                  <button key={tab.id} onClick={() => setUserModalTab(tab.id as any)} className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 border ${userModalTab === tab.id ? 'bg-teal-600 text-white border-teal-700 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}>
                    {tab.icon} {tab.label}
@@ -698,6 +718,24 @@ const AdminDashboard: React.FC = () => {
                ))}
             </div>
             <div className="flex-grow p-4 overflow-y-auto bg-white">
+               {userModalTab === 'settings' && (
+                 <div className="space-y-6 animate-in fade-in py-4 text-center">
+                    <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-100">
+                       <AlertTriangle className="w-8 h-8" />
+                    </div>
+                    <div>
+                       <h3 className="text-sm font-black text-slate-900 mb-2">ডেঞ্জার জোন</h3>
+                       <p className="text-[10px] font-bold text-slate-500 leading-relaxed">এই মেম্বারকে ডিলিট করলে তার সকল ব্যক্তিগত তথ্য এবং সংগঠনের ফান্ড থেকে তার করা অনুদান চিরতরে মুছে যাবে।</p>
+                    </div>
+                    <button 
+                      onClick={handleDeleteUser}
+                      disabled={isDeletingUser}
+                      className="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-lg shadow-rose-100 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {isDeletingUser ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trash2 className="w-4 h-4" /> মেম্বার ডিলিট করুন</>}
+                    </button>
+                 </div>
+               )}
                {userModalTab === 'message' && (
                  <div className="space-y-3 animate-in fade-in">
                     <textarea rows={3} className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-teal-600 text-xs font-bold text-black" placeholder="মেসেজ লিখুন..." value={adminMessage} onChange={e => setAdminMessage(e.target.value)} />

@@ -15,7 +15,8 @@ import {
   runTransaction,
   increment,
   writeBatch,
-  getDoc
+  getDoc,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense } from '../types';
 
@@ -34,50 +35,24 @@ const firestore = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 });
 
-/**
- * Robust sanitize function to prevent "Circular Structure to JSON" errors.
- * It deeply clones the object while removing functions, DOM elements, and circular refs.
- */
-const sanitize = (data: any, seen = new WeakSet()) => {
-  if (data === null || typeof data !== 'object') return data;
-  
-  // Handle circular references
-  if (seen.has(data)) return undefined;
-  seen.add(data);
-
-  // If it's a date, convert to timestamp
+const sanitize = (data: any): any => {
+  if (data === null || data === undefined) return null;
+  if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') return data;
   if (data instanceof Date) return data.getTime();
-
-  // Handle Arrays
-  if (Array.isArray(data)) {
-    return data.map(item => sanitize(item, seen)).filter(i => i !== undefined);
+  if (Array.isArray(data)) return data.map(item => sanitize(item));
+  if (typeof data === 'object') {
+    if (data instanceof Element || data instanceof Event || data instanceof Node) return null;
+    const clean: any = {};
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        const value = data[key];
+        if (key.startsWith('_') || typeof value === 'function' || key === 'firestore') continue;
+        clean[key] = sanitize(value);
+      }
+    }
+    return clean;
   }
-
-  // Handle Objects
-  const clean: any = {};
-  Object.keys(data).forEach(key => {
-    const value = data[key];
-
-    // Basic filters for non-serializable data
-    if (value === undefined || typeof value === 'function' || value instanceof Element || value instanceof Event) {
-      return;
-    }
-
-    // Protection for internal Firestore symbols or circular keys
-    if (key.startsWith('_') || key === 'firestore' || key === 'db') {
-      return;
-    }
-
-    // Recursive sanitization for nested objects (excluding base64 strings which are long)
-    if (typeof value === 'object' && value !== null && !key.toLowerCase().includes('pic') && !key.toLowerCase().includes('image')) {
-      const sanitizedVal = sanitize(value, seen);
-      if (sanitizedVal !== undefined) clean[key] = sanitizedVal;
-    } else {
-      clean[key] = value;
-    }
-  });
-  
-  return clean;
+  return null;
 };
 
 class FirebaseDB {
@@ -91,6 +66,7 @@ class FirebaseDB {
     pendingRequests: 0
   };
   private listeners: (() => void)[] = [];
+  private submissionLock = new Set<string>();
 
   constructor() {
     this.initRealtimeSync();
@@ -99,46 +75,32 @@ class FirebaseDB {
   private initRealtimeSync() {
     try {
       onSnapshot(collection(firestore, "users"), (snapshot) => {
-        this.users = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as User[];
+        this.users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
         this.updateLocalStats();
         this.notify();
-      }, (err) => console.error("Users Sync Error:", err));
+      });
 
-      const txQuery = query(collection(firestore, "transactions"), orderBy("timestamp", "desc"));
+      const txQuery = query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(100));
       onSnapshot(txQuery, (snapshot) => {
-        this.transactions = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Transaction[];
+        this.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
         this.updateLocalStats();
         this.notify();
-      }, (err) => console.error("TX Sync Error:", err));
+      });
 
-      const expQuery = query(collection(firestore, "expenses"), orderBy("timestamp", "desc"));
-      onSnapshot(expQuery, (snapshot) => {
-        this.expenses = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Expense[];
+      onSnapshot(collection(firestore, "expenses"), (snapshot) => {
+        this.expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Expense[];
         this.notify();
-      }, (err) => console.error("Expense Sync Error:", err));
+      });
 
       onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data();
-          this.stats = {
-            ...this.stats,
-            totalCollection: data.totalCollection || 0,
-            totalExpense: data.totalExpense || 0
-          };
+          this.stats = { ...this.stats, totalCollection: data.totalCollection || 0, totalExpense: data.totalExpense || 0 };
           this.notify();
         }
       });
     } catch (e) {
-      console.error("Critical Sync Error:", e);
+      console.error("Sync Error:", e);
     }
   }
 
@@ -153,52 +115,55 @@ class FirebaseDB {
 
   subscribe(callback: () => void) {
     this.listeners.push(callback);
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== callback);
-    };
+    return () => { this.listeners = this.listeners.filter(l => l !== callback); };
   }
 
-  private notify() {
-    this.listeners.forEach(l => l());
-  }
+  private notify() { this.listeners.forEach(l => l()); }
 
   getUsers(): User[] { return this.users; }
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
 
   async registerUser(userData: any) {
-    const q = query(collection(firestore, "users"), where("phone", "==", userData.phone));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      throw new Error("এই মোবাইল নম্বর দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে।");
+    const lockKey = `reg-${userData.phone}`;
+    if (this.submissionLock.has(lockKey)) throw new Error("প্রসেসিং হচ্ছে, দয়া করে অপেক্ষা করুন...");
+    this.submissionLock.add(lockKey);
+
+    try {
+      const q = query(collection(firestore, "users"), where("phone", "==", userData.phone), limit(1));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        throw new Error("এই মোবাইল নম্বর দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে।");
+      }
+
+      const newUser = sanitize({
+        ...userData,
+        status: UserStatus.PENDING,
+        totalDonation: 0,
+        yearlyDonation: 0,
+        transactionCount: 0,
+        registeredAt: Date.now()
+      });
+      const docRef = await addDoc(collection(firestore, "users"), newUser);
+      return docRef.id;
+    } finally {
+      setTimeout(() => this.submissionLock.delete(lockKey), 2000);
     }
-    const newUser = sanitize({
-      ...userData,
-      status: UserStatus.PENDING,
-      totalDonation: 0,
-      yearlyDonation: 0,
-      transactionCount: 0,
-      registeredAt: Date.now()
-    });
-    const docRef = await addDoc(collection(firestore, "users"), newUser);
-    return docRef.id;
   }
-
-  async updateUser(id: string, updates: any) {
-    await updateDoc(doc(firestore, "users", id), sanitize(updates));
-  }
-
-  async deleteUser(id: string) {
-    await deleteDoc(doc(firestore, "users", id));
-  }
-
-  getTransactions(): Transaction[] { return this.transactions; }
 
   async submitTransaction(tx: any) {
-    await addDoc(collection(firestore, "transactions"), sanitize({
-      ...tx,
-      status: TransactionStatus.PENDING,
-      timestamp: Date.now()
-    }));
+    const lockKey = `tx-${tx.transactionId}`;
+    if (this.submissionLock.has(lockKey)) return;
+    this.submissionLock.add(lockKey);
+
+    try {
+      await addDoc(collection(firestore, "transactions"), sanitize({
+        ...tx,
+        status: TransactionStatus.PENDING,
+        timestamp: Date.now()
+      }));
+    } finally {
+      setTimeout(() => this.submissionLock.delete(lockKey), 5000);
+    }
   }
 
   async addManualTransaction(txData: any) {
@@ -207,43 +172,31 @@ class FirebaseDB {
       const statsRef = doc(firestore, "metadata", "stats");
       const txColl = collection(firestore, "transactions");
       const newTxRef = doc(txColl);
-      transaction.set(newTxRef, sanitize({
-        ...txData,
-        status: TransactionStatus.APPROVED,
-        timestamp: Date.now()
-      }));
+      transaction.set(newTxRef, sanitize({ ...txData, status: TransactionStatus.APPROVED, timestamp: Date.now() }));
       transaction.update(userRef, {
         totalDonation: increment(txData.amount),
         yearlyDonation: increment(txData.amount),
         transactionCount: increment(1)
       });
-      transaction.set(statsRef, {
-        totalCollection: increment(txData.amount)
-      }, { merge: true });
+      transaction.set(statsRef, { totalCollection: increment(txData.amount) }, { merge: true });
     });
   }
 
   async approveTransaction(txId: string) {
     const tx = this.transactions.find(t => t.id === txId);
     if (!tx || tx.status === TransactionStatus.APPROVED) return;
-    try {
-      await runTransaction(firestore, async (transaction) => {
-        const txRef = doc(firestore, "transactions", txId);
-        const userRef = doc(firestore, "users", tx.userId);
-        const statsRef = doc(firestore, "metadata", "stats");
-        transaction.update(txRef, { status: TransactionStatus.APPROVED });
-        transaction.update(userRef, {
-          totalDonation: increment(tx.amount),
-          yearlyDonation: increment(tx.amount),
-          transactionCount: increment(1)
-        });
-        transaction.set(statsRef, {
-          totalCollection: increment(tx.amount)
-        }, { merge: true });
+    await runTransaction(firestore, async (transaction) => {
+      const txRef = doc(firestore, "transactions", txId);
+      const userRef = doc(firestore, "users", tx.userId);
+      const statsRef = doc(firestore, "metadata", "stats");
+      transaction.update(txRef, { status: TransactionStatus.APPROVED });
+      transaction.update(userRef, {
+        totalDonation: increment(tx.amount),
+        yearlyDonation: increment(tx.amount),
+        transactionCount: increment(1)
       });
-    } catch (e) {
-      console.error("Approval failed:", e);
-    }
+      transaction.set(statsRef, { totalCollection: increment(tx.amount) }, { merge: true });
+    });
   }
 
   async rejectTransaction(txId: string) {
@@ -251,82 +204,81 @@ class FirebaseDB {
   }
 
   async addDetailedExpense(amount: number, reason: string, proofImage?: string) {
-    const timestamp = Date.now();
-    const date = new Date().toISOString().split('T')[0];
-    
     await runTransaction(firestore, async (transaction) => {
       const statsRef = doc(firestore, "metadata", "stats");
       const expRef = doc(collection(firestore, "expenses"));
-      const expenseData: any = { amount, reason, date, timestamp };
-      if (proofImage) expenseData.proofImage = proofImage;
-      transaction.set(expRef, sanitize(expenseData));
+      transaction.set(expRef, sanitize({ amount, reason, date: new Date().toISOString().split('T')[0], timestamp: Date.now(), proofImage }));
       transaction.set(statsRef, { totalExpense: increment(amount) }, { merge: true });
     });
-
-    const approvedUsers = this.users.filter(u => u.status === UserStatus.APPROVED);
-    if (approvedUsers.length > 0) {
-      const batch = writeBatch(firestore);
-      const notificationMsg = `সংগঠন থেকে ৳${amount} খরচ করা হয়েছে। কারণ: ${reason}`;
-      approvedUsers.forEach(user => {
-        const notifRef = doc(collection(firestore, "notifications"));
-        batch.set(notifRef, sanitize({
-          userId: user.id,
-          message: notificationMsg,
-          timestamp: Date.now(),
-          isRead: false
-        }));
-      });
-      await batch.commit();
-    }
   }
 
   async deleteExpense(id: string, amount: number) {
-    try {
-      await runTransaction(firestore, async (transaction) => {
-        const statsRef = doc(firestore, "metadata", "stats");
-        const expRef = doc(firestore, "expenses", id);
-        transaction.delete(expRef);
-        transaction.set(statsRef, { 
-          totalExpense: increment(-amount) 
-        }, { merge: true });
-      });
-    } catch (e) {
-      console.error("Delete Expense Transaction Failed:", e);
-      throw e;
-    }
-  }
-
-  getExpenses(): Expense[] { return this.expenses; }
-
-  async sendNotification(userId: string, message: string) {
-    await addDoc(collection(firestore, "notifications"), sanitize({
-      userId,
-      message,
-      timestamp: Date.now(),
-      isRead: false
-    }));
-  }
-
-  subscribeToNotifications(userId: string, callback: (notifs: Notification[]) => void) {
-    const q = query(
-      collection(firestore, "notifications"),
-      where("userId", "==", userId)
-    );
-    return onSnapshot(q, (snapshot) => {
-      const notifs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Notification[];
-      notifs.sort((a, b) => b.timestamp - a.timestamp);
-      callback(notifs);
+    await runTransaction(firestore, async (transaction) => {
+      const statsRef = doc(firestore, "metadata", "stats");
+      const expRef = doc(firestore, "expenses", id);
+      transaction.delete(expRef);
+      transaction.set(statsRef, { totalExpense: increment(-amount) }, { merge: true });
     });
   }
 
-  async markNotificationAsRead(notifId: string) {
-    await updateDoc(doc(firestore, "notifications", notifId), { isRead: true });
+  getTransactions(): Transaction[] { return this.transactions; }
+  getExpenses(): Expense[] { return this.expenses; }
+  getStats(): AppStats { return this.stats; }
+  
+  async deleteUser(id: string) {
+    const user = this.users.find(u => u.id === id);
+    if (!user) return;
+
+    try {
+      // 1. Pre-fetch all related document references
+      const txQuery = query(collection(firestore, "transactions"), where("userId", "==", id));
+      const txSnap = await getDocs(txQuery);
+      
+      const notifQuery = query(collection(firestore, "notifications"), where("userId", "==", id));
+      const notifSnap = await getDocs(notifQuery);
+
+      // 2. Perform all deletions in a single batch for efficiency and atomicity
+      const batch = writeBatch(firestore);
+      
+      const userRef = doc(firestore, "users", id);
+      const statsRef = doc(firestore, "metadata", "stats");
+
+      // Delete user
+      batch.delete(userRef);
+
+      // Adjust total collection stats
+      if (user.totalDonation > 0) {
+        batch.set(statsRef, { 
+          totalCollection: increment(-user.totalDonation)
+        }, { merge: true });
+      }
+
+      // Delete transactions
+      txSnap.forEach(tDoc => batch.delete(tDoc.ref));
+
+      // Delete notifications
+      notifSnap.forEach(nDoc => batch.delete(nDoc.ref));
+
+      // 3. Commit the batch
+      await batch.commit();
+    } catch (err) {
+      console.error("Delete User Error:", err);
+      throw err;
+    }
   }
 
-  getStats(): AppStats { return this.stats; }
+  async updateUser(id: string, updates: any) { await updateDoc(doc(firestore, "users", id), sanitize(updates)); }
+  async sendNotification(userId: string, message: string) {
+    await addDoc(collection(firestore, "notifications"), sanitize({ userId, message, timestamp: Date.now(), isRead: false }));
+  }
+  subscribeToNotifications(userId: string, callback: (notifs: Notification[]) => void) {
+    const q = query(collection(firestore, "notifications"), where("userId", "==", userId));
+    return onSnapshot(q, (snapshot) => {
+      const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Notification[];
+      callback(notifs.sort((a, b) => b.timestamp - a.timestamp));
+    });
+  }
+  async markNotificationAsRead(notifId: string) { await updateDoc(doc(firestore, "notifications", notifId), { isRead: true }); }
 }
 
 export const db = new FirebaseDB();

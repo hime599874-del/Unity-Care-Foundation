@@ -1,0 +1,22 @@
+{
+  "name": "Manobik App",
+  "short_name": "Manobik",
+  "description": "Humanitarian Organization Management App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3F6F9",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=192&h=192&auto=format&fit=crop",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=512&h=512&auto=format&fit=crop",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

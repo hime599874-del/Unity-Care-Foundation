@@ -21,6 +21,7 @@ export interface User {
   birthYear: number;
   bloodGroup: string;
   location: 'Bangladesh' | 'Abroad';
+  country?: string; // New field for international users
   address: {
     district: string;
     upazila: string;
