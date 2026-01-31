@@ -1,0 +1,7 @@
+{
+  "name": "Manobik App - Humanitarian Management",
+  "description": "A comprehensive humanitarian organization management app with real-time donation tracking, admin approval workflows, and transparency leaderboards.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
