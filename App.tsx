@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { User, UserStatus } from './types';
@@ -40,42 +41,55 @@ const App: React.FC = () => {
   useEffect(() => {
     const restoreSession = async () => {
       const savedId = localStorage.getItem('current_user_id');
-      
-      // Give DB a moment to initialize the first snapshot
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise(resolve => setTimeout(resolve, 500));
       if (savedId) {
         const user = db.getUser(savedId);
         if (user && user.status === UserStatus.APPROVED) {
           setCurrentUser(user);
+          db.updateLastActive(user.id);
         } else {
           localStorage.removeItem('current_user_id');
+          setCurrentUser(null);
         }
+      } else {
+        setCurrentUser(null);
       }
       setIsLoading(false);
     };
-
     restoreSession();
   }, []);
 
-  // Sync state with DB changes
+  // Sync state and track activity
   useEffect(() => {
+    if (!currentUser) return;
+    
+    const interval = setInterval(() => {
+      db.updateLastActive(currentUser.id);
+    }, 60000); // Every 1 minute
+
     const unsubscribe = db.subscribe(() => {
       const savedId = localStorage.getItem('current_user_id');
-      if (savedId) {
-        const freshUser = db.getUser(savedId);
-        if (freshUser) {
-          setCurrentUser(freshUser);
-        } else if (currentUser) {
-          setCurrentUser(null);
-          localStorage.removeItem('current_user_id');
+      if (!savedId) {
+        if (currentUser !== null) setCurrentUser(null);
+        return;
+      }
+      const freshUser = db.getUser(savedId);
+      if (freshUser) {
+        if (freshUser.status !== currentUser?.status || freshUser.totalDonation !== currentUser?.totalDonation) {
+           setCurrentUser(freshUser);
         }
+      } else {
+        localStorage.removeItem('current_user_id');
+        setCurrentUser(null);
       }
     });
-    return unsubscribe;
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, [currentUser]);
 
-  // Sync admin state
   useEffect(() => {
     sessionStorage.setItem('is_admin_active', isAdmin.toString());
   }, [isAdmin]);
@@ -106,35 +120,19 @@ const App: React.FC = () => {
         <div className="min-h-screen flex flex-col">
           <main className="flex-grow">
             <Routes>
-              <Route path="/" element={currentUser ? <Navigate to="/dashboard" /> : <WelcomePage />} />
-              <Route path="/auth" element={currentUser ? <Navigate to="/dashboard" /> : <AuthPage />} />
-              
-              <Route path="/dashboard" element={
-                currentUser?.status === UserStatus.APPROVED ? <UserDashboard /> : <Navigate to="/" />
-              } />
-              <Route path="/transaction" element={
-                currentUser?.status === UserStatus.APPROVED ? <TransactionPage /> : <Navigate to="/" />
-              } />
-              <Route path="/history" element={
-                currentUser?.status === UserStatus.APPROVED ? <HistoryPage /> : <Navigate to="/" />
-              } />
-              <Route path="/leaderboard" element={
-                currentUser?.status === UserStatus.APPROVED ? <LeaderboardPage /> : <Navigate to="/" />
-              } />
-              <Route path="/profile" element={
-                currentUser?.status === UserStatus.APPROVED ? <ProfilePage /> : <Navigate to="/" />
-              } />
-              <Route path="/expenses" element={
-                currentUser?.status === UserStatus.APPROVED ? <ExpensePage /> : <Navigate to="/" />
-              } />
-
-              <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" /> : <AdminAuth />} />
-              <Route path="/admin-dashboard" element={
-                isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" />
-              } />
+              <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <WelcomePage />} />
+              <Route path="/auth" element={currentUser ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
+              <Route path="/dashboard" element={currentUser ? <UserDashboard /> : <Navigate to="/" replace />} />
+              <Route path="/transaction" element={currentUser ? <TransactionPage /> : <Navigate to="/" replace />} />
+              <Route path="/history" element={currentUser ? <HistoryPage /> : <Navigate to="/" replace />} />
+              <Route path="/leaderboard" element={currentUser ? <LeaderboardPage /> : <Navigate to="/" replace />} />
+              <Route path="/profile" element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />} />
+              <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
+              <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
+              <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
-
           <footer className="py-2 text-center bg-gray-50 border-t print:hidden">
             <Link to="/admin-auth" className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors uppercase tracking-widest font-bold">
               Unity Care - Management

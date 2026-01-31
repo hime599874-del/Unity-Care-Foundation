@@ -32,12 +32,22 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleLogout = () => {
-    if (confirm('আপনি কি নিশ্চিত যে আপনি লগআউট করতে চান?')) {
-      // Clear persistent session
-      localStorage.removeItem('current_user_id');
-      setCurrentUser(null);
-      navigate('/');
-    }
+    // Clear everything related to the user session
+    localStorage.removeItem('current_user_id');
+    sessionStorage.clear(); // Clear admin or other temp sessions
+    
+    // Reset React state
+    setCurrentUser(null);
+    
+    // Force redirect to home page
+    navigate('/', { replace: true });
+    
+    // Fallback: If for some reason navigation fails, hard reload
+    setTimeout(() => {
+      if (localStorage.getItem('current_user_id') === null) {
+        window.location.hash = '#/';
+      }
+    }, 100);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,7 +71,7 @@ const ProfilePage: React.FC = () => {
 
   const memberId = currentUser?.phone?.slice(-4) || '0000';
   const toBengaliNumber = (num: number | string) => {
-    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '⁸', '৯'];
+    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
     return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
   };
 
@@ -76,8 +86,13 @@ const ProfilePage: React.FC = () => {
           </button>
           <h1 className="text-xl font-black italic">প্রোফাইল সেটিংস</h1>
         </div>
-        <button onClick={handleLogout} className="p-3 bg-rose-500 text-white rounded-2xl shadow-lg active:scale-90 transition-all border border-rose-400">
+        <button 
+          onClick={handleLogout} 
+          className="p-3 bg-rose-500 text-white rounded-2xl shadow-lg active:scale-90 hover:bg-rose-600 transition-all border border-rose-400 flex items-center gap-2"
+          title="লগ আউট"
+        >
           <LogOut className="w-5 h-5" />
+          <span className="text-xs font-black uppercase tracking-widest hidden xs:inline">বিদায়</span>
         </button>
       </div>
 

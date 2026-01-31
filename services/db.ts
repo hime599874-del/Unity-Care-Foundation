@@ -123,6 +123,14 @@ class FirebaseDB {
   getUsers(): User[] { return this.users; }
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
 
+  async updateLastActive(userId: string) {
+    try {
+      await updateDoc(doc(firestore, "users", userId), { lastActive: Date.now() });
+    } catch (e) {
+      console.error("Error updating activity");
+    }
+  }
+
   async registerUser(userData: any) {
     const lockKey = `reg-${userData.phone}`;
     if (this.submissionLock.has(lockKey)) throw new Error("প্রসেসিং হচ্ছে, দয়া করে অপেক্ষা করুন...");
@@ -141,7 +149,8 @@ class FirebaseDB {
         totalDonation: 0,
         yearlyDonation: 0,
         transactionCount: 0,
-        registeredAt: Date.now()
+        registeredAt: Date.now(),
+        lastActive: Date.now()
       });
       const docRef = await addDoc(collection(firestore, "users"), newUser);
       return docRef.id;
@@ -230,36 +239,19 @@ class FirebaseDB {
     if (!user) return;
 
     try {
-      // 1. Pre-fetch all related document references
       const txQuery = query(collection(firestore, "transactions"), where("userId", "==", id));
       const txSnap = await getDocs(txQuery);
-      
       const notifQuery = query(collection(firestore, "notifications"), where("userId", "==", id));
       const notifSnap = await getDocs(notifQuery);
-
-      // 2. Perform all deletions in a single batch for efficiency and atomicity
       const batch = writeBatch(firestore);
-      
       const userRef = doc(firestore, "users", id);
       const statsRef = doc(firestore, "metadata", "stats");
-
-      // Delete user
       batch.delete(userRef);
-
-      // Adjust total collection stats
       if (user.totalDonation > 0) {
-        batch.set(statsRef, { 
-          totalCollection: increment(-user.totalDonation)
-        }, { merge: true });
+        batch.set(statsRef, { totalCollection: increment(-user.totalDonation) }, { merge: true });
       }
-
-      // Delete transactions
       txSnap.forEach(tDoc => batch.delete(tDoc.ref));
-
-      // Delete notifications
       notifSnap.forEach(nDoc => batch.delete(nDoc.ref));
-
-      // 3. Commit the batch
       await batch.commit();
     } catch (err) {
       console.error("Delete User Error:", err);

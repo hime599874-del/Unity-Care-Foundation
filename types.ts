@@ -21,7 +21,7 @@ export interface User {
   birthYear: number;
   bloodGroup: string;
   location: 'Bangladesh' | 'Abroad';
-  country?: string; // New field for international users
+  country?: string;
   address: {
     district: string;
     upazila: string;
@@ -48,6 +48,7 @@ export interface User {
   yearlyDonation: number;
   transactionCount: number;
   registeredAt: number;
+  lastActive?: number; // New field for live activity tracking
 }
 
 export interface Transaction {
