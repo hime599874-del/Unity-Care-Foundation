@@ -21,9 +21,9 @@ const BD_LOCATION_DATA: Record<string, string[]> = {
   "ফরিদপুর": ["সদর", "আলফাডাঙ্গা", "ভাঙ্গা", "বোয়ালমারী", "চরভদ্রাসন", "মধুখালী", "নগরকান্দা", "সদপুর"],
   "শরীয়তপুর": ["সদর", "ডামুড্যা", "জাজিরা", "নড়িয়া", "ভেদরগঞ্জ", "গোসাইরহাট"],
   "টাঙ্গাইল": ["সদর", "বাসাইল", "ভূঞাপুর", "দেলদুয়ার", "ঘাটাইল", "গোপালপুর", "কালিহাতী", "মধুপুর", "মির্জাপুর", "নাগরপুর", "সখীপুর"],
-  "কিশোরগঞ্জ": ["সদর", "অষ্টগ্রাম", "বাজিতপুর", "ভৈরব", "হোসেনপুর", "イトナ", "করিমগঞ্জ", "কটিয়াদী", "কুলিয়ারচর", "মিঠামইন", "নিকলী", "তাড়াইল"],
-  "চট্টগ্রাম": ["সদর", "সীতাকুণ্ড", "মীরসরাই", "পটিয়া", "সন্দীপ", "বাঁশখালী", "আনোয়ারা", "চন্দনাইশ", "বোয়ালখালী", "লোহাগাড়া", "রাঙ্গুনিয়া", "রাউজান", "ফটিকছড়ি", "হাটহাজারী"],
-  "কক্সবাজার": ["সদর", "চকরিয়া", "উখিয়া", "টেকনাফ", "রামু", "কুতুবদিয়া", "মহেশখালী", "পেকুয়া"],
+  "কিশোরগঞ্জ": ["সদর", "অষ্টগ্রাম", "বাজিতপুর", "ভৈরব", "হোসেনপুর", "করিমগঞ্জ", "কটিয়াদী", "কুলিয়ারচর", "মিঠামইন", "নিকলী", "তাড়াইল"],
+  "চট্টগ্রাম": ["সদর", "সীতাকুণ্ড", "মীরসরাই", "পটিিয়া", "সন্দীপ", "বাঁশখালী", "আনোয়ারা", "চন্দনাইশ", "বোয়ালখালী", "লোহাগাড়া", "রাঙ্গুনিয়া", "রাউজান", "ফটিকছড়ি", "হাটহাজারী"],
+  "কক্সবাজার": ["সদর", "চকরিয়া", "উখিয়া", "টেকনাফ", "রামু", "কুতুবদিিয়া", "মহেশখালী", "পেকুয়া"],
   "কুমিল্লা": ["সদর", "চৌদ্দগ্রাম", "লাকসাম", "দেবিদ্বার", "দাউদকান্দি", "বুড়িচং", "বরুড়া", "ব্রাহ্মণপাড়া", "চাঁদপুর", "হোমনা", "লাঙ্গলকোট", "মেঘনা", "মুরাদনগর", "নাঙ্গলকোট", "তিটাস"],
   "ব্রাহ্মণবাড়িয়া": ["সদর", "আশুগঞ্জ", "বাঞ্ছারামপুর", "কসবা", "নবীনগর", "নাসিরনগর", "সরাইল", "বিজয়নগর"],
   "চাঁদপুর": ["সদর", "হাইমচর", "কচুয়া", "মতলব উত্তর", "মতলব দক্ষিণ", "শাহরাস্তি", "হাজীগঞ্জ"],
@@ -39,12 +39,12 @@ const BD_LOCATION_DATA: Record<string, string[]> = {
   "মৌলভীবাজার": ["সদর", "শ্রীমঙ্গল", "কুলাউড়া", "রাজনগর", "কমলগঞ্জ", "জুড়ী", "বড়লেখা"],
   "রাজশাহী": ["সদর", "বাঘা", "পুঠিয়া", "দুর্গাপুর", "মোহনপুর", "তানোর", "পবা", "বাগমারা", "গোদাগাড়ী"],
   "বগুড়া": ["সদর", "শেরপুর", "শিবগঞ্জ", "ধুনট", "নন্দীগ্রাম", "সারিয়াকান্দি", "আদমদীঘি", "গাবতলী", "কাহালু", "শাহজাহানপুর", "সোনাতলা"],
-  "পাবনা": ["সদর", "ঈশ্বরদী", "চাটমোহর", "সাঁথিয়া", "সুজানগর", "বেড়া", "আটঘরিয়া", "ফরিদপুর", "ভাঙ্গুড়া"],
+  "পাবনা": ["সদর", " ঈশ্বরদী", "চাটমোহর", "সাঁথিয়া", "সুজানগর", "বেড়া", "আটঘরিয়া", "ফরিদপুর", "ভাঙ্গুড়া"],
   "সিরাজগঞ্জ": ["সদর", "বেলকুচি", "কামারখন্দ", "কাজীপুর", "রায়গঞ্জ", "শাহজাদপুর", "তাড়াশ", "উল্লাপাড়া", "চৌহালী"],
   "নাটোর": ["সদর", "বাগাতিপাড়া", "বড়াইগ্রাম", "লালপুর", "সিংড়া", "গুরুদাসপুর"],
   "নওগাঁ": ["সদর", "আত্রাই", "ধামইরহাট", "মান্দা", "মহাদেবপুর", "পত্নীতলা", "রানীনগর", "সাপাহার", "বদলগাছী", "নিয়ামতপুর", "পোরশা"],
   "চাঁপাইনবাবগঞ্জ": ["সদর", "গোমস্তাপুর", "নাচোল", "ভোলাহাট", "শিবগঞ্জ"],
-  "জয়পুরহাট": ["সদর", "আক্কেলপুর", "কালাই", "ক্ষেতলাল", "পাঁচবিবি"],
+  "জয়পুরহাট": ["সদর", "আক্কেলপুর", "কালাই", "ক্ষেতলাল", "পাঁচবিবি"],
   "খুলনা": ["সদর", "ডুমুরিয়া", "পাইকগাছা", "কয়রা", "দাকোপ", "ফুলতলা", "দিঘলিয়া", "রূপসা", "তেরখাদা"],
   "যশোর": ["সদর", "বাঘারপাড়া", "চৌগাছা", "ঝিকরগাছা", "কেশবপুর", "মণিরামপুর", "শার্শা", "অভয়নগর"],
   "সাতক্ষীরা": ["সদর", "আশাশুনি", "দেবহাটা", "কলারোয়া", "কালিগঞ্জ", "শ্যামনগর", "তালা"],
@@ -56,14 +56,14 @@ const BD_LOCATION_DATA: Record<string, string[]> = {
   "মাগুরা": ["সদর", "শ্রীপুর", "শালিখা", "মহম্মদপুর"],
   "নড়াইল": ["সদর", "লোহাগড়া", "কালিয়া"],
   "রংপুর": ["সদর", "মিঠাপুকুর", "পীরগঞ্জ", "কাউনিয়া", "গঙ্গাচড়া", "বদরগঞ্জ", "পীরগাছা", "তারাগঞ্জ"],
-  "দিনাজপুর": ["সদর", "বিরামপুর", "বীরগঞ্জ", "বোচাগঞ্জ", "ফুলবাড়ী", "ঘোড়াঘাট", "হাকিমপুর", "কাহারোল", "خانসামা", "নবাবগঞ্জ", "পার্বতীপুর", "চিরিরবন্দর"],
+  "দিনাজপুর": ["সদর", "বিরামপুর", "বীরগঞ্জ", "বোচাগঞ্জ", "ফুলবাড়ী", "ঘোড়াঘাট", "হাকিমপুর", "কাহারোল", "খানসামা", "নবাবগঞ্জ", "পার্বতীপুর", "চিরিরবন্দর"],
   "গাইবান্ধা": ["সদর", "ফুলছড়ি", "গোবিন্দগঞ্জ", "পলাশবাড়ী", "সাদুল্লাপুর", "সাঘাটা", "সুন্দরগঞ্জ"],
   "কুড়িগ্রাম": ["সদর", "ভুরুঙ্গামারী", "চিলমারী", "ফুলবাড়ী", "নাগেশ্বরী", "রাজারহাট", "উলিপুর", "রৌমারী", "রাজিবপুর"],
   "নীলফামারী": ["সদর", "ডোমার", "জলঢাকা", "কিশোরগঞ্জ", "সৈয়দপুর", "ডিমলা"],
   "লালমনিরহাট": ["সদর", "আদিতমারী", "কালীগঞ্জ", "হাতীবান্ধা", "পাটগ্রাম"],
   "পঞ্চগড়": ["সদর", "বোদা", "দেবীগঞ্জ", "তেঁতুলিয়া", "আটোয়ারী"],
   "ঠাকুরগাঁও": ["সদর", "বালিয়াডাঙ্গী", "পীরগঞ্জ", "রানীশংকৈল", "হরিপুর"],
-  "বরিশাল": ["সদর", "বাকেরগঞ্জ", "মেহেন্দীগঞ্জ", "বাবুগগঞ্জ", "গৌরনদী", "বানারীপাড়া", "আগৈলঝাড়া", "হিজলা", "উজিরপুর", "মুলাদী"],
+  "বরিশাল": ["সদর", "বাকেরগঞ্জ", "মেহেন্দীগঞ্জ", "বাবুগঞ্জ", "গৌরনদী", "বানারীপাড়া", "আগৈলঝাড়া", "হিজলা", "উজিরপুর", "মুলাদী"],
   "ভোলা": ["সদর", "বোরহানউদ্দিন", "চরফ্যাশন", "দৌলতখান", "লালমোহন", "মনপুরা", "তজুমদ্দিন"],
   "পটুয়াখালী": ["সদর", "বাউফল", "দশমিনা", "গলাচিপা", "কলাপাড়া", "মির্জাগঞ্জ", "দুমকি", "রাঙ্গাবালী"],
   "পিরোজপুর": ["সদর", "ভাণ্ডারিয়া", "মঠবাড়িয়া", "নাজিরপুর", "কাউখালী", "নেছারাবাদ", "ইন্দুরকানী"],
@@ -95,6 +95,41 @@ const COUNTRY_DIAL_CODES = [
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
+/**
+ * Enhanced compression to ensure files are well under 1MB
+ */
+const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > maxWidth) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width *= maxHeight / height;
+          height = maxHeight;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      // Increased compression quality for better visibility but lower size
+      resolve(canvas.toDataURL('image/jpeg', 0.6));
+    };
+    img.onerror = () => resolve(base64Str);
+  });
+};
+
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [step, setStep] = useState(1);
@@ -121,7 +156,7 @@ const AuthPage: React.FC = () => {
     profession: '',
     location: 'Bangladesh',
     policyConsent: false,
-    address: { district: '', upazila: '', village: '' } as any
+    address: { district: '', upazila: '', union: '', ward: '', village: '' } as any
   });
 
   const { setCurrentUser } = useAuth();
@@ -131,6 +166,14 @@ const AuthPage: React.FC = () => {
     const cleaned = val.replace(/\D/g, '');
     if (selectedDialCode.code === '+880' && cleaned.length > 11) return;
     setPhoneInput(cleaned);
+  };
+
+  const getNormalizedPhone = () => {
+    let raw = phoneInput;
+    if (selectedDialCode.code === '+880' && raw.startsWith('0')) {
+      raw = raw.substring(1);
+    }
+    return selectedDialCode.code + raw;
   };
 
   const handleBirthYearChange = (val: string) => {
@@ -145,25 +188,42 @@ const AuthPage: React.FC = () => {
     setIsSubmitting(true);
     setError('');
     
-    const fullPhone = selectedDialCode.code + phoneInput;
-    const users = db.getUsers();
-    const user = users.find(u => u.phone === fullPhone || u.phone === phoneInput);
-    
-    if (!user) {
-      setError('এই নম্বরটি দিয়ে কোন অ্যাকাউন্ট পাওয়া যায়নি।');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (user.status !== UserStatus.APPROVED) {
-      setError('আপনার অ্যাকাউন্ট এখনো এডমিন কর্তৃক অনুমোদিত হয়নি।');
-      setIsSubmitting(false);
-      return;
-    }
+    try {
+      const users = db.getUsers();
+      // Intelligent matching: compare only the last 10 digits to handle any formatting (+880 vs 0 vs none)
+      const normalizeForMatch = (phone: string) => phone.replace(/\D/g, '').slice(-10);
+      const searchDigits = normalizeForMatch(phoneInput);
+      
+      const user = users.find(u => {
+        const userDigits = normalizeForMatch(u.phone);
+        return userDigits === searchDigits;
+      });
+      
+      if (!user) {
+        setError('এই নম্বরটি দিয়ে কোন অ্যাকাউন্ট পাওয়া যায়নি। সঠিক নম্বর দিন অথবা নতুন নিবন্ধন করুন।');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (user.status === UserStatus.PENDING) {
+        setError('আপনার আবেদনটি এখনো এডমিন অনুমোদনের অপেক্ষায় আছে। অনুমোদিত হলে লগইন করতে পারবেন।');
+        setIsSubmitting(false);
+        return;
+      }
 
-    localStorage.setItem('current_user_id', user.id);
-    setCurrentUser(user);
-    navigate('/dashboard');
+      if (user.status === UserStatus.REJECTED) {
+        setError('দুঃখিত, আপনার আবেদনটি বাতিল করা হয়েছে। বিস্তারিত জানতে এডমিনের সাথে যোগাযোগ করুন।');
+        setIsSubmitting(false);
+        return;
+      }
+
+      localStorage.setItem('current_user_id', user.id);
+      setCurrentUser(user);
+      navigate('/dashboard');
+    } catch (err) {
+      setError('লগইন করতে সমস্যা হয়েছে। দয়া করে ইন্টারনেট কানেকশন চেক করে আবার চেষ্টা করুন।');
+      setIsSubmitting(false);
+    }
   };
 
   const nextStep = () => {
@@ -189,14 +249,40 @@ const AuthPage: React.FC = () => {
     if (isSubmitting) return;
     setError('');
     if (!formData.policyConsent) return setError('নীতিমালায় সম্মতি দেওয়া বাধ্যতামূলক।');
+    
     setIsSubmitting(true);
-    const fullPhone = selectedDialCode.code + phoneInput;
+    const fullPhone = getNormalizedPhone();
+    
     try {
-      await db.registerUser({ ...formData, phone: fullPhone } as any);
+      // Ensure we only pass necessary plain data
+      const registrationData = {
+        name: formData.name,
+        phone: fullPhone,
+        bloodGroup: formData.bloodGroup,
+        birthYear: formData.birthYear,
+        profession: formData.profession,
+        location: formData.location,
+        profilePic: formData.profilePic,
+        address: {
+          district: formData.address?.district || '',
+          upazila: formData.address?.upazila || '',
+          village: formData.address?.village || ''
+        },
+        policyConsent: true
+      };
+      
+      await db.registerUser(registrationData);
       setSuccess('আবেদন সফল হয়েছে! এডমিন অনুমোদনের অপেক্ষা করুন।');
-      setTimeout(() => { setIsLogin(true); setStep(1); setSuccess(''); setIsSubmitting(false); }, 3000);
+      
+      setTimeout(() => { 
+        setIsLogin(true); 
+        setStep(1); 
+        setSuccess(''); 
+        setIsSubmitting(false); 
+      }, 3000);
     } catch (err: any) {
-      setError(err.message);
+      console.error("Registration Error:", err);
+      setError(err.message || 'রেজিস্ট্রেশন করতে সমস্যা হয়েছে।');
       setIsSubmitting(false);
     }
   };
@@ -205,7 +291,14 @@ const AuthPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setFormData({ ...formData, [field]: reader.result as string });
+      reader.onloadend = async () => {
+        try {
+          const compressed = await compressImage(reader.result as string);
+          setFormData(prev => ({ ...prev, [field]: compressed }));
+        } catch (e) {
+          setError('ছবি প্রসেস করতে সমস্যা হয়েছে।');
+        }
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -216,317 +309,282 @@ const AuthPage: React.FC = () => {
     return d ? BD_LOCATION_DATA[d].filter(u => u.includes(locationSearch)).sort() : [];
   }, [locationSearch, formData.address?.district]);
 
-  const inputClass = "w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-teal-500 font-bold text-sm text-black transition-all";
-  const selectBtnClass = "w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-xs text-left flex justify-between items-center hover:border-teal-500 transition-all active:scale-95 shadow-sm";
+  const inputClass = "w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold text-sm text-black transition-all shadow-sm";
+  const selectBtnClass = "w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-left flex justify-between items-center hover:border-teal-500 transition-all active:scale-95 shadow-sm";
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 py-4 font-['Hind_Siliguri']">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 py-6 font-['Hind_Siliguri']">
       <div className="w-full max-w-lg">
-        <div className="text-center mb-4">
-           <div className="w-14 h-14 bg-teal-600 rounded-2xl shadow-xl flex items-center justify-center mx-auto mb-2 border-4 border-white">
-              <Package className="w-7 h-7 text-white" />
+        <div className="text-center mb-8">
+           <div className="w-16 h-16 bg-teal-600 rounded-[1.5rem] shadow-xl flex items-center justify-center mx-auto mb-4 border-4 border-white rotate-3">
+              <Package className="w-8 h-8 text-white" />
            </div>
-           <h1 className="text-xl font-black text-slate-900 premium-text italic leading-none">Unity Care Foundation</h1>
-           <p className="text-slate-400 font-bold text-[9px] mt-1.5 uppercase tracking-widest leading-none">{isLogin ? 'সদস্য লগইন' : `নিবন্ধন - ধাপ ${step}/৩`}</p>
+           <h1 className="text-2xl font-black text-slate-900 premium-text italic leading-none">Unity Care Foundation</h1>
+           <p className="text-slate-400 font-bold text-[10px] mt-2 uppercase tracking-[0.3em] leading-none">{isLogin ? 'সদস্য লগইন' : `নিবন্ধন - ধাপ ${step}/৩`}</p>
         </div>
 
-        <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl border border-white relative overflow-hidden">
-          {error && <div className="mb-4 p-3 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-bold border border-rose-100 flex items-center gap-3 animate-in shake duration-500"><X className="w-4 h-4" /> {error}</div>}
-          {success && <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 rounded-2xl text-[10px] font-bold border border-emerald-100 flex items-center gap-3"><CheckCircle2 className="w-4 h-4" /> {success}</div>}
+        <div className="bg-white p-8 rounded-[3rem] shadow-2xl border-4 border-white relative overflow-hidden">
+          {error && <div className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-xs font-bold border border-rose-100 flex items-center gap-4 animate-in shake duration-500"><X className="w-5 h-5" /> {error}</div>}
+          {success && <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-bold border border-emerald-100 flex items-center gap-4"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
           {isLogin ? (
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-2">মোবাইল নম্বর</p>
-                <div className="flex gap-2">
-                   <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-2 px-3 bg-slate-50 border border-slate-200 rounded-2xl font-black text-xs">
-                      <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-5 h-auto rounded-sm border border-slate-200" alt="Flag" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-4">মোবাইল নম্বর</p>
+                <div className="flex gap-3">
+                   <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-xs shadow-sm hover:border-teal-300">
+                      <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200" alt="Flag" />
                       <span>{selectedDialCode.code}</span>
-                      <ChevronDown className="w-3 h-3 text-slate-400" />
+                      <ChevronDown className="w-4 h-4 text-slate-400" />
                    </button>
                    <input type="tel" className={inputClass} placeholder="নম্বর লিখুন..." value={phoneInput} onChange={e => handlePhoneChange(e.target.value)} />
                 </div>
               </div>
-              <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-teal-600 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-teal-700 active:scale-95 transition-all">
-                {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'লগইন করুন'}
+              <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-teal-700 active:scale-95 transition-all border-b-4 border-teal-800">
+                {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'লগইন করুন'}
               </button>
-              <button type="button" onClick={() => { setIsLogin(false); setStep(1); }} className="w-full text-slate-500 font-bold text-[10px] uppercase tracking-wider mt-4">নতুন সদস্য নিবন্ধন</button>
+              <button type="button" onClick={() => { setIsLogin(false); setStep(1); }} className="w-full text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-6">নতুন সদস্য নিবন্ধন</button>
             </form>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {step === 1 && (
-                <div className="space-y-3.5 animate-in slide-in-from-right duration-300">
+                <div className="space-y-4 animate-in slide-in-from-right duration-300">
                    <div className="flex flex-col items-center">
                       <div className="relative">
-                        <div className="w-20 h-20 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                          {formData.profilePic ? <img src={formData.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <User className="w-7 h-7 text-slate-200" />}
+                        <div className="w-24 h-24 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shadow-inner ring-4 ring-slate-50">
+                          {formData.profilePic ? <img src={formData.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <User className="w-10 h-10 text-slate-200" />}
                         </div>
-                        <label className="absolute -bottom-1 -right-1 bg-teal-600 p-2 rounded-xl text-white shadow-lg cursor-pointer border-2 border-white active:scale-90 transition-all">
-                          <Camera className="w-4 h-4" />
+                        <label className="absolute -bottom-1 -right-1 bg-teal-600 p-2.5 rounded-xl text-white shadow-xl cursor-pointer border-2 border-white active:scale-90 transition-all">
+                          <Camera className="w-5 h-5" />
                           <input type="file" className="hidden" accept="image/*" onChange={e => handleImageUpload(e, 'profilePic')} />
                         </label>
                       </div>
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-2">প্রোফাইল ছবি</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-4">আপনার ছবি দিন</p>
                    </div>
                    
                    <input type="text" className={inputClass} placeholder="আপনার পূর্ণ নাম" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                    
-                   <div className="flex gap-2">
-                      <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-2 px-3 bg-slate-50 border border-slate-200 rounded-2xl font-black text-xs active:scale-95 transition-all">
-                          <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-4 h-auto rounded-sm border border-slate-200" alt="Flag" />
+                   <div className="flex gap-3">
+                      <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-xs active:scale-95 transition-all shadow-sm">
+                          <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200" alt="Flag" />
                           <span>{selectedDialCode.code}</span>
                       </button>
                       <input type="tel" className={inputClass} placeholder="মোবাইল নম্বর" value={phoneInput} onChange={e => handlePhoneChange(e.target.value)} />
                    </div>
                    
-                   <div className="grid grid-cols-2 gap-2">
+                   <div className="grid grid-cols-2 gap-3">
                       <button type="button" onClick={() => { setShowProfessionModal(true); setProfessionSearch(''); }} className={selectBtnClass}>
-                         <span className={`text-[10px] truncate ${formData.profession ? 'text-black' : 'text-slate-400'}`}>{formData.profession || 'পেশা নির্বাচন'}</span>
-                         <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                         <span className={`text-[11px] truncate ${formData.profession ? 'text-black' : 'text-slate-400'}`}>{formData.profession || 'পেশা নির্বাচন'}</span>
+                         <Briefcase className="w-4 h-4 text-slate-400" />
                       </button>
                       <div className="relative">
-                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
-                        <input type="number" className={`${inputClass} pl-10 text-[10px]`} placeholder="জন্ম সাল (৪ সংখ্যা)" value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                        <input type="number" className={`${inputClass} pl-10 text-[11px]`} placeholder="জন্ম সাল (৪ সংখ্যা)" value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
                       </div>
                    </div>
 
-                   <button type="button" onClick={() => setShowBloodModal(true)} className={`${selectBtnClass} py-4 border-teal-100 bg-teal-50/30`}>
-                     <div className="flex items-center gap-2">
-                        <Droplets className="w-4.5 h-4.5 text-rose-500 fill-rose-500/20" />
-                        <span className={`text-[10px] font-black ${formData.bloodGroup ? 'text-black' : 'text-slate-500'}`}>{formData.bloodGroup || 'রক্তের গ্রুপ নির্বাচন করুন'}</span>
+                   <button type="button" onClick={() => setShowBloodModal(true)} className={`${selectBtnClass} py-5 border-rose-100 bg-rose-50/20`}>
+                     <div className="flex items-center gap-3">
+                        <Droplets className="w-7 h-7 text-rose-500 fill-rose-500/10" />
+                        <span className={`text-base font-black ${formData.bloodGroup ? 'text-black' : 'text-slate-500'}`}>{formData.bloodGroup || 'রক্তের গ্রুপ'}</span>
                      </div>
-                     <ChevronDown className="w-4 h-4 text-slate-400" />
+                     <ChevronDown className="w-6 h-6 text-slate-400" />
                    </button>
 
-                   <button onClick={nextStep} className="w-full py-4 bg-teal-600 text-white rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all">পরবর্তী ধাপ <ArrowRight className="w-4 h-4 inline ml-1" /></button>
+                   <button onClick={nextStep} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-lg uppercase shadow-xl border-b-4 border-teal-800 active:scale-95 transition-all">পরবর্তী ধাপ <ArrowRight className="w-6 h-6 inline ml-2" /></button>
                 </div>
               )}
               
               {step === 2 && (
-                <div className="space-y-3.5 animate-in slide-in-from-right duration-300">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => setFormData({...formData, location: 'Bangladesh'})} className={`py-3 rounded-2xl font-black text-[10px] border-2 transition-all ${formData.location === 'Bangladesh' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>বাংলাদেশ</button>
-                    <button onClick={() => setFormData({...formData, location: 'Abroad'})} className={`py-3 rounded-2xl font-black text-[10px] border-2 transition-all ${formData.location === 'Abroad' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>প্রবাস</button>
+                <div className="space-y-5 animate-in slide-in-from-right duration-300">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setFormData({...formData, location: 'Bangladesh'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Bangladesh' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>বাংলাদেশ</button>
+                    <button onClick={() => setFormData({...formData, location: 'Abroad'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Abroad' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>প্রবাস</button>
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     <button onClick={() => { setShowDistrictModal(true); setLocationSearch(''); }} className={selectBtnClass}>
-                       <span className={`text-[10px] ${formData.address?.district ? 'text-black' : 'text-slate-400'}`}>{formData.address?.district || 'জেলা নির্বাচন করুন'}</span>
-                       <MapPin className="w-4 h-4 text-teal-500" />
+                       <span className={`text-base ${formData.address?.district ? 'text-black' : 'text-slate-400'}`}>{formData.address?.district || 'জেলা নির্বাচন করুন'}</span>
+                       <MapPin className="w-5 h-5 text-teal-500" />
                     </button>
                     <button onClick={() => { if (!formData.address?.district) return setError('আগে জেলা নির্বাচন করুন।'); setShowUpazilaModal(true); setLocationSearch(''); }} className={selectBtnClass}>
-                       <span className={`text-[10px] ${formData.address?.upazila ? 'text-black' : 'text-slate-400'}`}>{formData.address?.upazila || 'উপজেলা নির্বাচন করুন'}</span>
-                       <MapPin className="w-4 h-4 text-teal-500" />
+                       <span className={`text-base ${formData.address?.upazila ? 'text-black' : 'text-slate-400'}`}>{formData.address?.upazila || 'উপজেলা নির্বাচন করুন'}</span>
+                       <MapPin className="w-5 h-5 text-teal-500" />
                     </button>
                     <input type="text" className={inputClass} placeholder="গ্রাম / মহল্লা" value={formData.address?.village} onChange={e => setFormData({...formData, address: {...formData.address!, village: e.target.value}})} />
                   </div>
-                  <div className="flex gap-3 mt-4">
-                    <button onClick={() => setStep(1)} className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all"><ArrowLeft className="w-5 h-5" /></button>
-                    <button onClick={nextStep} className="flex-grow py-4 bg-teal-600 text-white rounded-2xl font-black shadow-lg uppercase text-sm active:scale-95 transition-all">পরবর্তী ধাপ</button>
+                  <div className="flex gap-4 mt-8">
+                    <button onClick={() => setStep(1)} className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-7 h-7" /></button>
+                    <button onClick={nextStep} className="flex-grow py-5 bg-teal-600 text-white rounded-2xl font-black shadow-2xl uppercase text-lg border-b-4 border-teal-800 active:scale-95 transition-all">পরবর্তী ধাপ</button>
                   </div>
                 </div>
               )}
               
               {step === 3 && (
-                <div className="space-y-4 animate-in slide-in-from-right duration-300">
+                <div className="space-y-6 animate-in slide-in-from-right duration-300">
                   <div className="relative">
-                    {/* Decorative Background Layer */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-[2.2rem] blur opacity-10"></div>
+                    <div className="absolute -inset-2 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-[2.5rem] blur opacity-20"></div>
                     
-                    <div className="relative p-5 bg-teal-50/80 backdrop-blur-sm rounded-[2rem] border border-teal-100 shadow-xl overflow-hidden">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-teal-600 text-white rounded-xl shadow-lg ring-2 ring-white"><ScrollText className="w-4 h-4" /></div>
-                        <h3 className="text-teal-950 font-black text-xs uppercase tracking-wider leading-none">সংগঠনের মানবিক নীতিমালা ও শর্তাবলী</h3>
-                      </div>
-                      
-                      <div className="max-h-64 overflow-y-auto pr-3 mb-5 space-y-3.5 text-[13px] font-bold text-slate-700 leading-relaxed custom-scrollbar">
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">১</span>
-                           <p>সংগঠনের সকল কার্যক্রমে পূর্ণ স্বচ্ছতা ও আর্থিক সততা বজায় রাখা সদস্যদের প্রধান নৈতিক দায়িত্ব।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">২</span>
-                           <p>সদস্যদের ব্যক্তিগত তথ্য নিরাপদ রাখা হবে এবং সংগঠনের প্রশাসনিক কাজ ব্যতীত অন্য কোথাও প্রকাশ করা হবে না।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">৩</span>
-                           <p>জমাকৃত প্রতিটি অর্থ শুধুমাত্র আর্তমানবতার সেবা, দুর্যোগ মোকাবিলা ও সমাজকল্যাণমূলক খাতে ব্যয় করা হবে।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">৪</span>
-                           <p>সংগঠনের নাম বা পরিচয় ব্যবহার করে ব্যক্তিগত ফায়দা বা কোনো রাজনৈতিক উস্কানিমূলক কাজ করা সম্পূর্ণ নিষিদ্ধ।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">৫</span>
-                           <p>বিশেষ দুর্যোগকালীন সময়ে সাধ্য অনুযায়ী স্বেচ্ছাসেবী হিসেবে সশরীরে কাজ করার মানসিকতা থাকতে হবে।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">৬</span>
-                           <p>সংগঠনের মাসিক ফি বা অনুদান নিয়মিত প্রদান করে সদস্যপদ সক্রিয় রাখতে হবে এবং সংগঠনের তহবিল বৃদ্ধিতে সহযোগিতা করতে হবে।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">৭</span>
-                           <p>সংগঠনের শৃঙ্খলা পরিপন্থী বা মানবিক আদর্শের বাইরের কোনো কাজ প্রমাণিত হলে সদস্যপদ বাতিল করার অধিকার এডমিন প্যানেল রাখে।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">৮</span>
-                           <p>যেকোনো মানবিক সমস্যায় অন্য সদস্যদের সাথে সমন্বয় করে দ্রুত ব্যবস্থা গ্রহণের মানসিকতা থাকতে হবে।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">৯</span>
-                           <p>সংগঠনের তহবিলের অপচয় রোধ করতে হবে এবং প্রতিটি ব্যয়ের ভাউচার বা প্রমাণ সংরক্ষণ করতে হবে।</p>
-                        </div>
-                        <div className="flex gap-3 items-start group">
-                           <span className="shrink-0 w-6 h-6 bg-teal-600 text-white text-[11px] flex items-center justify-center rounded-full font-black">১০</span>
-                           <p>সংগঠনের সকল সিদ্ধান্ত গণতান্ত্রিক পদ্ধতিতে সদস্যদের মতামতের ভিত্তিতে এডমিন প্যানেল চূড়ান্ত করবে।</p>
+                    <div className="relative p-6 bg-teal-50/95 backdrop-blur-md rounded-[2rem] border-2 border-teal-200 shadow-xl overflow-hidden">
+                      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-teal-100/50">
+                        <div className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg ring-4 ring-white"><ScrollText className="w-7 h-7" /></div>
+                        <div>
+                          <h3 className="text-teal-950 font-black text-lg uppercase tracking-tight leading-none">নীতিমালা ও শর্তাবলী</h3>
+                          <p className="text-[9px] text-teal-600 font-bold uppercase mt-2 tracking-widest">Unity Care Foundation</p>
                         </div>
                       </div>
                       
-                      <label className="flex items-center gap-4 cursor-pointer p-4 bg-white rounded-2xl border-2 border-teal-100 shadow-md group active:scale-95 transition-all">
+                      <div className="max-h-[22rem] overflow-y-auto pr-4 mb-6 space-y-4 text-[12px] font-black text-slate-800 leading-[1.6] custom-scrollbar">
+                        {[
+                          "সংগঠনের সকল কার্যক্রমে পূর্ণ স্বচ্ছতা ও সততা বজায় রাখা আপনার প্রধান নৈতিক দায়িত্ব।",
+                          "আপনার ব্যক্তিগত তথ্য সংগঠনের কাজের বাইরে অন্য কোথাও প্রকাশ বা ব্যবহার করা হবে না।",
+                          "জমাকৃত প্রতিটি অর্থ শুধুমাত্র আর্তমানবতার সেবা, দুর্যোগ মোকাবিলা ও সমাজকল্যাণে ব্যয় হবে।",
+                          "সংগঠনের পরিচয় ব্যবহার করে কোনো ব্যক্তিগত ফায়দা বা রাজনৈতিক কাজ করা সম্পূর্ণ নিষিদ্ধ।",
+                          "বিশেষ দুর্যোগে স্বেচ্ছাসেবী হিসেবে সশরীরে কাজ করার মানসিক প্রস্তুতি থাকতে হবে।",
+                          "সদস্যপদ সক্রিয় রাখতে মাসিক ফি বা অনুদান নিয়মিত প্রদান করে তহবিলে সহযোগিতা করতে হবে।",
+                          "সংগঠনের আদর্শ পরিপন্থী কোনো কাজের প্রমাণ পাওয়া গেলে সদস্যপদ বাতিল হতে পারে।"
+                        ].map((policy, i) => (
+                          <div key={i} className="flex gap-4 items-start bg-white/60 p-4 rounded-2xl border border-teal-100/50 shadow-sm">
+                             <span className="shrink-0 w-8 h-8 bg-teal-600 text-white text-base flex items-center justify-center rounded-full font-black mt-1 shadow-md border-2 border-white">{i+1}</span>
+                             <p>{policy}</p>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <label className="flex items-center gap-5 cursor-pointer p-6 bg-white rounded-3xl border-2 border-teal-300 shadow-xl active:scale-95 transition-all ring-4 ring-teal-500/5 group">
                         <input 
                           type="checkbox" 
-                          className="w-6 h-6 rounded-md accent-teal-600 cursor-pointer shrink-0" 
+                          className="w-10 h-10 rounded-xl accent-teal-600 cursor-pointer shrink-0" 
                           checked={formData.policyConsent} 
                           onChange={e => setFormData({...formData, policyConsent: e.target.checked})} 
                         />
-                        <span className="text-[11px] font-black text-teal-950 leading-tight uppercase tracking-tight">আমি সংগঠনের উপরের সকল নীতিমালা ও শর্তাবলী অত্যন্ত গুরুত্বের সাথে মেনে চলার অঙ্গীকার করছি।</span>
+                        <span className="text-base font-black text-teal-950 leading-tight uppercase group-hover:text-teal-600 transition-colors">আমি সংগঠনের সকল নীতিমালা ও শর্তাবলী অত্যন্ত গুরুত্বের সাথে মেনে চলার অঙ্গীকার করছি।</span>
                       </label>
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
-                    <button onClick={() => setStep(2)} className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm"><ArrowLeft className="w-5 h-5" /></button>
-                    <button onClick={handleRegister} disabled={isSubmitting} className="flex-grow py-4 bg-teal-600 text-white rounded-2xl font-black shadow-xl text-sm uppercase active:scale-95 transition-all ring-offset-2 ring-teal-500 hover:ring-2">
-                      {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'নিবন্ধন সম্পন্ন করুন'}
+                  <div className="flex gap-4">
+                    <button onClick={() => setStep(2)} className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-8 h-8" /></button>
+                    <button onClick={handleRegister} disabled={isSubmitting} className="flex-grow py-5 bg-teal-600 text-white rounded-2xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 border-teal-900 ring-offset-4 ring-teal-500 hover:ring-2">
+                      {isSubmitting ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : 'নিবন্ধন সম্পন্ন করুন'}
                     </button>
                   </div>
                 </div>
               )}
-              <button type="button" onClick={() => { setIsLogin(true); setStep(1); }} className="w-full text-slate-500 font-bold text-[9px] uppercase tracking-widest mt-3 hover:text-teal-600 transition-colors">ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন</button>
+              <button type="button" onClick={() => { setIsLogin(true); setStep(1); }} className="w-full text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-6">ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন</button>
             </div>
           )}
         </div>
       </div>
       
-      {/* Blood Group Modal */}
-      {showBloodModal && (
-        <div className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-xs rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-              <div className="p-5 bg-rose-600 text-white flex justify-between items-center">
-                 <div className="flex items-center gap-3"><Droplets className="w-5 h-5 text-rose-200" /><h3 className="font-black text-lg">রক্তের গ্রুপ</h3></div>
-                 <button onClick={() => setShowBloodModal(false)} className="p-1.5 bg-white/20 rounded-lg active:scale-90"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-5 grid grid-cols-2 gap-3">
-                 {BLOOD_GROUPS.map(group => (
-                   <button key={group} onClick={() => { setFormData({...formData, bloodGroup: group}); setShowBloodModal(false); }} className={`py-4 rounded-xl font-black text-lg border-2 transition-all active:scale-95 ${formData.bloodGroup === group ? 'bg-rose-50 border-rose-500 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'}`}>
-                      {group}
-                   </button>
-                 ))}
-              </div>
-           </div>
-        </div>
-      )}
-
-      {/* Country Modal */}
       {showCountryModal && (
-        <div className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[70vh] animate-in zoom-in-95 duration-300">
-              <div className="p-5 bg-teal-600 text-white flex justify-between items-center">
-                 <div className="flex items-center gap-3"><Globe className="w-5 h-5 text-teal-200" /><h3 className="font-black text-lg">দেশ নির্বাচন করুন</h3></div>
-                 <button onClick={() => setShowCountryModal(false)} className="p-1.5 bg-white/20 rounded-lg active:scale-90 transition-all"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="flex-grow overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-                 {COUNTRY_DIAL_CODES.map(country => (
-                   <button 
-                    key={country.code + country.name}
-                    onClick={() => { setSelectedDialCode(country); setPhoneInput(''); setShowCountryModal(false); }}
-                    className="w-full p-3.5 rounded-xl flex items-center justify-between hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group active:scale-95"
-                   >
-                      <div className="flex items-center gap-3">
-                         <img src={country.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${country.flag}.png`} className="w-8 h-auto rounded border border-slate-100 shadow-sm" alt={country.name} />
-                         <span className="font-black text-slate-800 text-sm">{country.name}</span>
-                      </div>
-                      <span className="font-black text-slate-400 group-hover:text-teal-600 transition-colors">{country.code}</span>
-                   </button>
-                 ))}
-              </div>
-           </div>
+        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
+             <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
+                <h3 className="font-black uppercase tracking-widest text-sm">দেশ নির্বাচন করুন</h3>
+                <button onClick={() => setShowCountryModal(false)}><X className="w-6 h-6" /></button>
+             </div>
+             <div className="max-h-96 overflow-y-auto p-4 space-y-2">
+                {COUNTRY_DIAL_CODES.map(c => (
+                  <button key={c.code} onClick={() => { setSelectedDialCode(c); setShowCountryModal(false); }} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl transition-all font-black text-xs text-slate-700">
+                    <img src={c.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${c.flag}.png`} className="w-7 h-auto rounded-sm border border-slate-200" alt={c.name} />
+                    <span>{c.name}</span>
+                    <span className="ml-auto text-teal-600">{c.code}</span>
+                  </button>
+                ))}
+             </div>
+          </div>
         </div>
       )}
 
-      {/* District Modal */}
+      {showBloodModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
+             <div className="p-6 bg-rose-600 text-white flex justify-between items-center">
+                <h3 className="font-black uppercase tracking-widest text-sm">রক্তের গ্রুপ</h3>
+                <button onClick={() => setShowBloodModal(false)}><X className="w-6 h-6" /></button>
+             </div>
+             <div className="p-6 grid grid-cols-4 gap-3">
+                {BLOOD_GROUPS.map(bg => (
+                  <button key={bg} onClick={() => { setFormData({...formData, bloodGroup: bg}); setShowBloodModal(false); }} className={`p-4 rounded-xl font-black text-sm border-2 transition-all ${formData.bloodGroup === bg ? 'bg-rose-50 border-rose-500 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                    {bg}
+                  </button>
+                ))}
+             </div>
+          </div>
+        </div>
+      )}
+
       {showDistrictModal && (
-        <div className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[70vh] animate-in zoom-in-95 duration-300">
-              <div className="p-5 bg-teal-600 text-white flex justify-between items-center">
-                 <h3 className="font-black text-lg">জেলা নির্বাচন</h3>
-                 <button onClick={() => setShowDistrictModal(false)} className="p-1.5 bg-white/20 rounded-lg active:scale-90 transition-all"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 flex items-center shadow-inner">
-                   <Search className="w-4 h-4 text-slate-400"/>
-                   <input type="text" className="w-full p-3 text-xs font-bold bg-transparent outline-none placeholder:text-slate-300" placeholder="জেলা খুঁজুন..." value={locationSearch} onChange={e => setLocationSearch(e.target.value)}/>
+        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
+             <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
+                <h3 className="font-black uppercase tracking-widest text-sm">জেলা নির্বাচন</h3>
+                <button onClick={() => setShowDistrictModal(false)}><X className="w-6 h-6" /></button>
+             </div>
+             <div className="p-4 bg-slate-50 border-b">
+                <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                   <Search className="w-4 h-4 text-slate-400" />
+                   <input type="text" placeholder="জেলা খুঁজুন..." className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
                 </div>
-              </div>
-              <div className="flex-grow overflow-y-auto p-3 space-y-1 custom-scrollbar">
-                 {filteredDistricts.map(d => (
-                   <button key={d} onClick={() => { setFormData({...formData, address: {...formData.address!, district: d, upazila: ''}}); setShowDistrictModal(false); }} className={`w-full p-4 rounded-xl text-left font-black text-sm transition-all active:scale-95 ${formData.address?.district === d ? 'bg-teal-50 text-teal-700 border border-teal-100' : 'hover:bg-slate-50'}`}>{d}</button>
-                 ))}
-              </div>
-           </div>
+             </div>
+             <div className="overflow-y-auto p-4 space-y-1">
+                {filteredDistricts.map(d => (
+                  <button key={d} onClick={() => { setFormData({...formData, address: {...formData.address!, district: d, upazila: ''}}); setShowDistrictModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 rounded-xl font-black text-xs text-slate-700">
+                    {d}
+                  </button>
+                ))}
+             </div>
+          </div>
         </div>
       )}
 
-      {/* Upazila Modal */}
       {showUpazilaModal && (
-        <div className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[70vh] animate-in zoom-in-95 duration-300">
-              <div className="p-5 bg-teal-600 text-white flex justify-between items-center">
-                 <h3 className="font-black text-lg">উপজেলা ({formData.address?.district})</h3>
-                 <button onClick={() => setShowUpazilaModal(false)} className="p-1.5 bg-white/20 rounded-lg active:scale-90 transition-all"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 flex items-center shadow-inner">
-                   <Search className="w-4 h-4 text-slate-400"/>
-                   <input type="text" className="w-full p-3 text-xs font-bold bg-transparent outline-none placeholder:text-slate-300" placeholder="উপজেলা খুঁজুন..." value={locationSearch} onChange={e => setLocationSearch(e.target.value)}/>
+        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
+             <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
+                <h3 className="font-black uppercase tracking-widest text-sm">উপজেলা নির্বাচন</h3>
+                <button onClick={() => setShowUpazilaModal(false)}><X className="w-6 h-6" /></button>
+             </div>
+             <div className="p-4 bg-slate-50 border-b">
+                <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                   <Search className="w-4 h-4 text-slate-400" />
+                   <input type="text" placeholder="উপজেলা খুঁজুন..." className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
                 </div>
-              </div>
-              <div className="flex-grow overflow-y-auto p-3 space-y-1 custom-scrollbar">
-                 {filteredUpazilas.map(u => (
-                   <button key={u} onClick={() => { setFormData({...formData, address: {...formData.address!, upazila: u}}); setShowUpazilaModal(false); }} className={`w-full p-4 rounded-xl text-left font-black text-sm transition-all active:scale-95 ${formData.address?.upazila === u ? 'bg-teal-50 text-teal-700 border border-teal-100' : 'hover:bg-slate-50'}`}>{u}</button>
-                 ))}
-              </div>
-           </div>
+             </div>
+             <div className="overflow-y-auto p-4 space-y-1">
+                {filteredUpazilas.map(u => (
+                  <button key={u} onClick={() => { setFormData({...formData, address: {...formData.address!, upazila: u}}); setShowUpazilaModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 rounded-xl font-black text-xs text-slate-700">
+                    {u}
+                  </button>
+                ))}
+             </div>
+          </div>
         </div>
       )}
 
-      {/* Profession Modal */}
       {showProfessionModal && (
-        <div className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[70vh] animate-in zoom-in-95 duration-300">
-              <div className="p-5 bg-teal-600 text-white flex justify-between items-center">
-                 <h3 className="font-black text-lg">পেশা নির্বাচন</h3>
-                 <button onClick={() => setShowProfessionModal(false)} className="p-1.5 bg-white/20 rounded-lg active:scale-90 transition-all"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 flex items-center shadow-inner">
-                   <Search className="w-4 h-4 text-slate-400"/>
-                   <input type="text" className="w-full p-3 text-xs font-bold bg-transparent outline-none placeholder:text-slate-300" placeholder="পেশা খুঁজুন..." value={professionSearch} onChange={e => setProfessionSearch(e.target.value)}/>
+        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
+             <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
+                <h3 className="font-black uppercase tracking-widest text-sm">পেশা নির্বাচন</h3>
+                <button onClick={() => setShowProfessionModal(false)}><X className="w-6 h-6" /></button>
+             </div>
+             <div className="p-4 bg-slate-50 border-b">
+                <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                   <Search className="w-4 h-4 text-slate-400" />
+                   <input type="text" placeholder="পেশা খুঁজুন..." className="w-full text-xs font-black outline-none" value={professionSearch} onChange={e => setProfessionSearch(e.target.value)} />
                 </div>
-              </div>
-              <div className="flex-grow overflow-y-auto p-3 space-y-1 custom-scrollbar">
-                 {PROFESSIONS.filter(p => p.includes(professionSearch)).map(p => (
-                   <button key={p} onClick={() => { setFormData({...formData, profession: p}); setShowProfessionModal(false); }} className={`w-full p-4 rounded-xl text-left font-black text-sm transition-all active:scale-95 ${formData.profession === p ? 'bg-teal-50 text-teal-700 border border-teal-100' : 'hover:bg-slate-50'}`}>{p}</button>
-                 ))}
-              </div>
-           </div>
+             </div>
+             <div className="overflow-y-auto p-4 space-y-1">
+                {PROFESSIONS.filter(p => p.includes(professionSearch)).map(p => (
+                  <button key={p} onClick={() => { setFormData({...formData, profession: p}); setShowProfessionModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 rounded-xl font-black text-xs text-slate-700">
+                    {p}
+                  </button>
+                ))}
+             </div>
+          </div>
         </div>
       )}
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; } 
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #0d9488; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      `}</style>
     </div>
   );
 };

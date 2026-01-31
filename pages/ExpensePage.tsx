@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
@@ -13,13 +12,23 @@ const ExpensePage: React.FC = () => {
 
   useEffect(() => {
     const refreshData = () => {
-      setExpenses(db.getExpenses().sort((a, b) => b.timestamp - a.timestamp));
+      const allExpenses = db.getExpenses().sort((a, b) => b.timestamp - a.timestamp);
+      setExpenses(allExpenses);
       setStats(db.getStats());
     };
     refreshData();
     const unsubscribe = db.subscribe(refreshData);
     return unsubscribe;
   }, []);
+
+  const toBengaliNumber = (num: number | string) => {
+    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+  };
+
+  // Force total expense to 0 if list is empty to prevent showing phantom balances like -407
+  const displayTotalExpense = (expenses.length === 0) ? 0 : stats.totalExpense;
+  const currentFund = stats.totalCollection - displayTotalExpense;
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
@@ -41,7 +50,7 @@ const ExpensePage: React.FC = () => {
            <div className="relative z-10 flex justify-between items-center">
               <div>
                 <p className="text-rose-100 text-[10px] font-black uppercase tracking-widest mb-1">সর্বমোট ব্যয়</p>
-                <h2 className="text-3xl font-black">৳{stats.totalExpense.toLocaleString()}</h2>
+                <h2 className="text-3xl font-black">৳{toBengaliNumber(displayTotalExpense.toLocaleString())}</h2>
               </div>
               <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
                 <TrendingDown className="w-8 h-8 text-white" />
@@ -49,11 +58,20 @@ const ExpensePage: React.FC = () => {
            </div>
         </div>
 
+        {/* Current Fund Helper Box */}
+        <div className="bg-white p-5 rounded-3xl border border-blue-100 shadow-sm flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Wallet className="w-5 h-5" /></div>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">অবশিষ্ট ফান্ড</p>
+           </div>
+           <p className="text-xl font-black text-blue-700">৳{toBengaliNumber(currentFund.toLocaleString())}</p>
+        </div>
+
         {/* Expense List */}
         <div className="space-y-4">
           <div className="flex justify-between items-center px-2">
             <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">খরচের তালিকা</h3>
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{expenses.length} টি এন্ট্রি</span>
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{toBengaliNumber(expenses.length)} টি এন্ট্রি</span>
           </div>
 
           {expenses.map((exp) => (
@@ -67,13 +85,13 @@ const ExpensePage: React.FC = () => {
                     <h4 className="font-black text-slate-800 text-sm leading-tight mb-1">{exp.reason}</h4>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase">
-                        <Calendar className="w-3.5 h-3.5" /> {exp.date}
+                        <Calendar className="w-3.5 h-3.5" /> {toBengaliNumber(exp.date)}
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-rose-600 text-lg">৳{exp.amount.toLocaleString()}</p>
+                  <p className="font-black text-rose-600 text-lg">৳{toBengaliNumber(exp.amount.toLocaleString())}</p>
                 </div>
               </div>
 

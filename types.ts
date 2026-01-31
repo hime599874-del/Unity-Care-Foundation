@@ -11,6 +11,14 @@ export enum TransactionStatus {
   REJECTED = 'REJECTED'
 }
 
+export enum AssistanceStatus {
+  PENDING = 'PENDING',
+  REVIEWING = 'REVIEWING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  DISBURSED = 'DISBURSED'
+}
+
 export type FundType = 'General' | 'Special' | 'Emergency' | 'Other';
 
 export interface User {
@@ -48,7 +56,7 @@ export interface User {
   yearlyDonation: number;
   transactionCount: number;
   registeredAt: number;
-  lastActive?: number; // New field for live activity tracking
+  lastActive?: number;
 }
 
 export interface Transaction {
@@ -62,6 +70,19 @@ export interface Transaction {
   date: string;
   status: TransactionStatus;
   timestamp: number;
+}
+
+export interface AssistanceRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhone: string;
+  category: 'Medical' | 'Education' | 'Food' | 'Emergency' | 'Other';
+  amount?: number;
+  reason: string;
+  status: AssistanceStatus;
+  timestamp: number;
+  adminNote?: string;
 }
 
 export interface Expense {

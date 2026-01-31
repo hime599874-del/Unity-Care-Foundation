@@ -7,6 +7,34 @@ import {
   CheckCircle2, Hash, LogOut, Loader2
 } from 'lucide-react';
 
+const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      if (width > height) {
+        if (width > maxWidth) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width *= maxHeight / height;
+          height = maxHeight;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+  });
+};
+
 const ProfilePage: React.FC = () => {
   const { currentUser, setCurrentUser } = useAuth();
   const [name, setName] = useState(currentUser?.name || '');
@@ -32,17 +60,10 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Clear everything related to the user session
     localStorage.removeItem('current_user_id');
-    sessionStorage.clear(); // Clear admin or other temp sessions
-    
-    // Reset React state
+    sessionStorage.clear();
     setCurrentUser(null);
-    
-    // Force redirect to home page
     navigate('/', { replace: true });
-    
-    // Fallback: If for some reason navigation fails, hard reload
     setTimeout(() => {
       if (localStorage.getItem('current_user_id') === null) {
         window.location.hash = '#/';
@@ -56,9 +77,9 @@ const ProfilePage: React.FC = () => {
       setIsUploading(true);
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64 = reader.result as string;
         try {
-          await db.updateUser(currentUser.id, { profilePic: base64 });
+          const compressed = await compressImage(reader.result as string);
+          await db.updateUser(currentUser.id, { profilePic: compressed });
         } catch (err) {
           alert('ছবি আপলোড করতে সমস্যা হয়েছে।');
         } finally {
