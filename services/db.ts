@@ -35,20 +35,38 @@ const firestore = initializeFirestore(app, {
   useFetchStreams: false
 });
 
+/**
+ * Strips all internal metadata and non-plain objects to prevent circular reference errors.
+ * Ensures that only JSON-serializable plain objects enter the app state.
+ */
 const toPlainObject = (data: any): any => {
   if (data === null || data === undefined) return data;
-  if (data.toDate && typeof data.toDate === 'function') return data.toDate().getTime();
+  
+  // Handle basic primitives
+  if (typeof data !== 'object') return data;
+
+  // Handle Firebase Timestamps or standard Dates
+  if (typeof data.toDate === 'function') return data.toDate().getTime();
+  if (data instanceof Date) return data.getTime();
+  
+  // Handle Arrays
   if (Array.isArray(data)) return data.map(toPlainObject);
-  if (typeof data === 'object') {
+  
+  // Handle Plain Objects strictly (POJOs)
+  if (Object.prototype.toString.call(data) === '[object Object]') {
     const plain: any = {};
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        plain[key] = toPlainObject(data[key]);
+        // Recurse to clean deep objects
+        const cleaned = toPlainObject(data[key]);
+        if (cleaned !== undefined) plain[key] = cleaned;
       }
     }
     return plain;
   }
-  return data;
+  
+  // Discard any other complex/circular/Firebase internal objects
+  return null;
 };
 
 const sanitizeForUpload = (data: any, seen = new WeakSet()): any => {
@@ -121,8 +139,12 @@ class FirebaseDB {
       });
       onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
         if (snapshot.exists()) {
-          const data = snapshot.data();
-          this.stats = { ...this.stats, totalCollection: data.totalCollection || 0, totalExpense: data.totalExpense || 0 };
+          const cleanedStats = toPlainObject(snapshot.data());
+          this.stats = { 
+            ...this.stats, 
+            totalCollection: cleanedStats.totalCollection || 0, 
+            totalExpense: cleanedStats.totalExpense || 0 
+          };
           this.notify();
         }
       });
@@ -167,9 +189,21 @@ class FirebaseDB {
     return { totalCol, totalExp };
   }
 
+  /**
+   * Register user using phone number as unique ID to prevent double registration from double clicks.
+   */
   async registerUser(userData: any) {
-    const cleanData = sanitizeForUpload({ ...userData, status: UserStatus.PENDING, totalDonation: 0, transactionCount: 0, registeredAt: Date.now(), lastActive: Date.now() });
-    await addDoc(collection(firestore, "users"), cleanData);
+    const phoneId = userData.phone.replace(/\D/g, '');
+    const cleanData = sanitizeForUpload({ 
+      ...userData, 
+      status: UserStatus.PENDING, 
+      totalDonation: 0, 
+      transactionCount: 0, 
+      registeredAt: Date.now(), 
+      lastActive: Date.now() 
+    });
+    // Use setDoc with a unique ID to handle accidental double clicks
+    await setDoc(doc(firestore, "users", `u_${phoneId}`), cleanData);
   }
 
   async submitTransaction(txData: any) {

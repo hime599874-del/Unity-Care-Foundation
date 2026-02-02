@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
@@ -156,7 +157,15 @@ const ProfilePage: React.FC = () => {
               <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">পূর্ণ নাম</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
-                <input className={inputClass} value={name} onChange={e => setName(e.target.value)} placeholder="আপনার নাম" />
+                <input 
+                  id="profile-display-name"
+                  name="user-full-name"
+                  autocomplete="name"
+                  className={inputClass} 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  placeholder="আপনার নাম" 
+                />
               </div>
             </div>
 
@@ -164,7 +173,16 @@ const ProfilePage: React.FC = () => {
               <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">ইমেইল</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
-                <input className={inputClass} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@mail.com" />
+                <input 
+                  id="profile-user-email"
+                  name="user-email-address"
+                  autocomplete="email"
+                  className={inputClass} 
+                  type="email" 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  placeholder="example@mail.com" 
+                />
               </div>
             </div>
 

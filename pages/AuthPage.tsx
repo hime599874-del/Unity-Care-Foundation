@@ -29,7 +29,7 @@ const BD_LOCATION_DATA: Record<string, string[]> = {
   "কুমিল্লা": ["সদর", "চৌদ্দগ্রাম", "লাকসাম", "দেবিদ্বার", "দাউদকান্দি", "বুড়িচং", "বরুড়া", "ব্রাহ্মণপাড়া", "চাঁদপুর", "হোমনা", "লাঙ্গলকোট", "মেঘনা", "মুরাদনগর", "নাঙ্গলকোট", "তিটাস"],
   "ব্রাহ্মণবাড়িয়া": ["সদর", "আশুগঞ্জ", "বাঞ্ছারামপুর", "কসবা", "নবীনগর", "নাসিরনগর", "সরাইল", "বিজয়নগর"],
   "চাঁদপুর": ["সদর", "হাইমচর", "কচুয়া", "মতলব উত্তর", "মতলব দক্ষিণ", "শাহরাস্তি", "হাজীগঞ্জ"],
-  "নোয়াখালী": ["সদর", "বেগমগঞ্জ", "হাতিয়া", "সেনবাগ", "চাটখিল", "সোনাইমুড়ী", "সুবর্ণচর", "কবিরহাট"],
+  "নোয়াখালী": ["সদর", "বেগমগঞ্জ", "হাতিয়া", "সেনবাগ", "চাটখিল", "সোনাইমুড়ী", "সোনাইমুড়ী", "সুবর্ণচর", "কবিরহাট"],
   "লক্ষ্মীপুর": ["সদর", "রায়পুর", "রামগঞ্জ", "রামগতি", "কমলনগর"],
   "ফেনী": ["সদর", "দাগনভূঞা", "ছাগলনাইয়া", "পরশুরাম", "ফুলগাজী", "সোনাগাজী"],
   "খাগড়াছড়ি": ["সদর", "দীঘিনালা", "লক্ষ্মীছড়ি", "মহালছড়ি", "মানিকছড়ি", "মাটিরাঙ্গা", "পানছড়ি", "রামগড়"],
@@ -53,7 +53,7 @@ const BD_LOCATION_DATA: Record<string, string[]> = {
   "বাগেরহাট": ["সদর", "ফকিরহাট", "মোল্লাহাট", "চিতলমারী", "কচুয়া", "শরণখোলা", "মোড়েলগঞ্জ", "রামপাল", "মোংলা"],
   "কুষ্টিয়া": ["সদর", "কুমারখালী", "খোকসা", "মিরপুর", "দৌলতপুর", "ভেড়ামারা"],
   "মেহেরপুর": ["সদর", "গাংনী", "মুজিবনগর"],
-  "চুয়াডাঙ্গা": ["সদর", "আলমডাঙ্গা", "দামুড়হুদা", "জীবননগর"],
+  "চুয়াডাঙ্গা": ["সদর", "আলমডাঙ্গা", "দামুডুদা", "জীবননগর"],
   "ঝিনাইদহ": ["সদর", "হরিণাকুণ্ডু", "কালীগঞ্জ", "কোটচাঁদপুর", "মহেশপুর", "শৈলকুপা"],
   "মাগুরা": ["সদর", "শ্রীপুর", "শালিখা", "মহম্মদপুর"],
   "নড়াইল": ["সদর", "লোহাগড়া", "কালিয়া"],
@@ -241,12 +241,14 @@ const AuthPage: React.FC = () => {
   };
 
   const handleRegister = async () => {
+    // CRITICAL: Prevent duplicate submission immediately
     if (isSubmitting) return;
+    setIsSubmitting(true);
     setError('');
     
     const fullPhone = getNormalizedPhone();
     
-    // CRITICAL: Check for duplicate registration
+    // Check for duplicate locally first to save database hits
     const existingUser = db.getUsers().find(u => {
         const normalize = (p: string) => p.replace(/\D/g, '').slice(-10);
         return normalize(u.phone) === normalize(fullPhone);
@@ -254,12 +256,15 @@ const AuthPage: React.FC = () => {
     
     if (existingUser) {
         setError('এই নম্বরটি দিয়ে ইতিমধ্যে আবেদন করা হয়েছে। অনুগ্রহ করে অনুমোদনের অপেক্ষা করুন বা লগইন করুন।');
+        setIsSubmitting(false);
         return;
     }
 
-    if (!formData.policyConsent) return setError('নীতিমালায় সম্মতি দেওয়া বাধ্যতামূলক।');
-    
-    setIsSubmitting(true);
+    if (!formData.policyConsent) {
+        setError('নীতিমালায় সম্মতি দেওয়া বাধ্যতামূলক।');
+        setIsSubmitting(false);
+        return;
+    }
     
     try {
       const registrationData = {
@@ -281,6 +286,7 @@ const AuthPage: React.FC = () => {
       await db.registerUser(registrationData);
       setSuccess('আবেদন সফল হয়েছে! এডমিন অনুমোদনের অপেক্ষা করুন।');
       
+      // Navigate away after a short delay
       setTimeout(() => { 
         setIsLogin(true); 
         setStep(1); 
@@ -343,7 +349,15 @@ const AuthPage: React.FC = () => {
                       <span>{selectedDialCode.code}</span>
                       <ChevronDown className="w-4 h-4 text-slate-400" />
                    </button>
-                   <input type="tel" className={inputClass} placeholder="নম্বর লিখুন..." value={phoneInput} onChange={e => handlePhoneChange(e.target.value)} />
+                   <input 
+                    type="tel" 
+                    name="phone-login"
+                    autocomplete="tel"
+                    className={inputClass} 
+                    placeholder="নম্বর লিখুন..." 
+                    value={phoneInput} 
+                    onChange={e => handlePhoneChange(e.target.value)} 
+                   />
                 </div>
               </div>
               <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-teal-700 active:scale-95 transition-all border-b-4 border-teal-800">
@@ -368,14 +382,30 @@ const AuthPage: React.FC = () => {
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-4">আপনার ছবি দিন</p>
                    </div>
                    
-                   <input type="text" className={inputClass} placeholder="আপনার পূর্ণ নাম" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                   <input 
+                    type="text" 
+                    name="full-name"
+                    autocomplete="name"
+                    className={inputClass} 
+                    placeholder="আপনার পূর্ণ নাম" 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                   />
                    
                    <div className="flex gap-3">
                       <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-xs active:scale-95 transition-all shadow-sm">
                           <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200" alt="Flag" />
                           <span>{selectedDialCode.code}</span>
                       </button>
-                      <input type="tel" className={inputClass} placeholder="মোবাইল নম্বর" value={phoneInput} onChange={e => handlePhoneChange(e.target.value)} />
+                      <input 
+                        type="tel" 
+                        name="user-phone"
+                        autocomplete="tel"
+                        className={inputClass} 
+                        placeholder="মোবাইল নম্বর" 
+                        value={phoneInput} 
+                        onChange={e => handlePhoneChange(e.target.value)} 
+                      />
                    </div>
                    
                    <div className="grid grid-cols-2 gap-3">
@@ -385,7 +415,7 @@ const AuthPage: React.FC = () => {
                       </button>
                       <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
-                        <input type="number" className={`${inputClass} pl-10 text-[11px]`} placeholder="জন্ম সাল (৪ সংখ্যা)" value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
+                        <input type="number" name="birth-year" autocomplete="bday-year" className={`${inputClass} pl-10 text-[11px]`} placeholder="জন্ম সাল (৪ সংখ্যা)" value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
                       </div>
                    </div>
 
@@ -474,7 +504,7 @@ const AuthPage: React.FC = () => {
                   
                   <div className="flex gap-4 pt-2">
                     <button onClick={() => setStep(2)} className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-8 h-8" /></button>
-                    <button onClick={handleRegister} disabled={isSubmitting} className="flex-grow py-5 bg-slate-900 text-white rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 border-black tracking-widest">
+                    <button onClick={handleRegister} disabled={isSubmitting || !formData.policyConsent} className="flex-grow py-5 bg-slate-900 text-white rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 border-black tracking-widest disabled:opacity-50">
                       {isSubmitting ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : 'নিবন্ধন সম্পন্ন করুন'}
                     </button>
                   </div>
