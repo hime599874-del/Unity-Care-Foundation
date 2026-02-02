@@ -210,6 +210,7 @@ class FirebaseDB {
   }
 
   async rejectTransaction(txId: string) { await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED }); }
+  
   async addDetailedExpense(amount: number, reason: string, proofImage?: string) {
     await runTransaction(firestore, async (transaction) => {
       const statsRef = doc(firestore, "metadata", "stats");
@@ -220,6 +221,15 @@ class FirebaseDB {
       const expRef = doc(collection(firestore, "expenses"));
       transaction.set(expRef, sanitizeForUpload({ amount, reason, date: new Date().toISOString().split('T')[0], timestamp: Date.now(), proofImage }));
       transaction.set(statsRef, { totalExpense: increment(amount) }, { merge: true });
+    });
+  }
+
+  async deleteExpense(id: string, amount: number) {
+    await runTransaction(firestore, async (transaction) => {
+      const expRef = doc(firestore, "expenses", id);
+      const statsRef = doc(firestore, "metadata", "stats");
+      transaction.delete(expRef);
+      transaction.set(statsRef, { totalExpense: increment(-amount) }, { merge: true });
     });
   }
 

@@ -137,6 +137,13 @@ const AdminDashboard: React.FC = () => {
     } catch (e: any) { alert(e.message); } finally { setIsSubmittingExpense(false); }
   };
 
+  const handleDeleteExpense = (id: string, amount: number) => trackProcess(id, async () => {
+    if (confirm("এই ব্যয়ের হিসাবটি স্থায়ীভাবে মুছে ফেলবেন? এটি ডাটাবেস থেকে মুছে যাবে এবং তহবিলের হিসাব আপডেট হবে।")) {
+      await db.deleteExpense(id, amount);
+      alert('ব্যয়ের হিসাবটি মুছে ফেলা হয়েছে।');
+    }
+  });
+
   const handleSendMessage = async () => {
     if (!viewingUser || !notifMessage.trim() || isSendingNotif) return;
     setIsSendingNotif(true);
@@ -270,48 +277,45 @@ const AdminDashboard: React.FC = () => {
                    )}
                 </div>
               ))}
-              {assistanceReqs.length === 0 && <div className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-[10px]">কোন আবেদন পাওয়া যায়নি</div>}
            </div>
         )}
 
-        {/* TRANSACTIONS TAB - Fixed with Profile Pictures */}
+        {/* TRANSACTIONS TAB */}
         {activeTab === 'txs' && (
            <div className="space-y-4 animate-in fade-in">
               <div className="flex justify-between items-center bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
                  <h3 className="text-xs font-black uppercase tracking-widest">সকল লেনদেন লেজার</h3>
                  <button onClick={handleDownloadReport} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"><Download className="w-3.5 h-3.5" /> রিপোর্ট সেভ</button>
               </div>
-              <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-xl overflow-hidden max-w-[100%] mx-auto" ref={reportRef}>
-                 <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
-                    <div><h2 className="text-lg font-black italic uppercase leading-none">UNITY CARE FOUNDATION</h2><p className="text-[8px] font-black uppercase opacity-80 mt-1">সফল লেনদেন রিপোর্ট</p></div>
-                    <div className="text-right"><p className="text-xl font-black leading-none">৳{toBengaliNumber(stats.totalCollection.toLocaleString())}</p></div>
+              <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden" ref={reportRef}>
+                 <div className="p-8 bg-teal-600 text-white flex justify-between items-center">
+                    <div><h2 className="text-xl font-black italic uppercase">UNITY CARE FOUNDATION</h2><p className="text-[10px] font-black uppercase opacity-80 mt-1">সফল লেনদেন রিপোর্ট</p></div>
+                    <div className="text-right"><p className="text-2xl font-black">৳{toBengaliNumber(stats.totalCollection.toLocaleString())}</p></div>
                  </div>
                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-black text-[10px] leading-tight border-collapse">
+                    <table className="w-full text-left text-black">
                         <thead className="bg-slate-50 border-b">
-                          <tr className="text-[8px] font-black uppercase tracking-widest text-slate-400">
-                              <th className="px-4 py-3 border-r">তারিখ</th>
-                              <th className="px-4 py-3 border-r">সদস্যের ছবি ও নাম</th>
-                              <th className="px-4 py-3">পরিমাণ</th>
+                          <tr className="text-[9px] font-black uppercase tracking-widest">
+                              <th className="px-6 py-4">তারিখ</th>
+                              <th className="px-6 py-4">সদস্যের ছবি ও নাম</th>
+                              <th className="px-6 py-4">পরিমাণ</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {transactions.filter(t => t.status === TransactionStatus.APPROVED).map(t => {
-                            const user = users.find(u => u.id === t.userId);
-                            return (
-                              <tr key={t.id} className="hover:bg-slate-50/50">
-                                  <td className="px-4 py-2 text-[9px] font-bold text-slate-500 whitespace-nowrap border-r">{toBengaliNumber(t.date)}</td>
-                                  <td className="px-4 py-2 font-black border-r">
-                                     <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-lg bg-teal-50 border border-teal-100 overflow-hidden flex-shrink-0">
-                                          {user?.profilePic ? <img src={user.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-3 h-3 m-auto text-teal-600" />}
-                                        </div>
-                                        <span className="truncate max-w-[120px]">{t.userName}</span>
-                                     </div>
-                                  </td>
-                                  <td className="px-4 py-2 font-black text-teal-600 text-sm italic">৳{toBengaliNumber(t.amount.toLocaleString())}</td>
-                              </tr>
-                            );
+                             const user = users.find(u => u.id === t.userId);
+                             return (
+                               <tr key={t.id}>
+                                   <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{toBengaliNumber(t.date)}</td>
+                                   <td className="px-6 py-4 font-black text-[11px] flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                                         {user?.profilePic ? <img src={user.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-3 h-3 m-auto text-slate-300" />}
+                                      </div>
+                                      {t.userName}
+                                   </td>
+                                   <td className="px-6 py-4 font-black text-teal-600 text-base italic">৳{toBengaliNumber(t.amount.toLocaleString())}</td>
+                               </tr>
+                             );
                           })}
                         </tbody>
                     </table>
@@ -338,7 +342,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <button onClick={handleAddExpense} disabled={!expenseAmount || !expenseReason || isSubmittingExpense} className="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-sm shadow-xl active:scale-95 disabled:opacity-50">{isSubmittingExpense ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'হিসাব যোগ করুন'}</button>
              </div>
-             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden"><table className="w-full text-left"><thead className="bg-slate-50 border-b"><tr className="text-[8px] font-black uppercase text-slate-400 tracking-widest"><th className="px-5 py-3">তারিখ</th><th className="px-5 py-3">বিবরণ</th><th className="px-5 py-3">টাকা</th><th className="px-5 py-3">ভাউচার</th></tr></thead><tbody className="divide-y">{expenses.map(e => (<tr key={e.id}><td className="px-5 py-4 text-[10px] font-bold text-slate-500">{toBengaliNumber(e.date)}</td><td className="px-5 py-4 font-black text-slate-800 text-[11px]">{e.reason}</td><td className="px-5 py-4 font-black text-rose-600 text-sm">৳{toBengaliNumber(e.amount.toLocaleString())}</td><td className="px-5 py-4">{e.proofImage ? <button onClick={() => window.open(e.proofImage)} className="text-teal-600 underline font-black text-[9px]">দেখুন</button> : <span className="text-slate-300 text-[9px]">নেই</span>}</td></tr>))}</tbody></table></div>
+             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden"><table className="w-full text-left"><thead className="bg-slate-50 border-b"><tr className="text-[8px] font-black uppercase text-slate-400 tracking-widest"><th className="px-5 py-3">তারিখ</th><th className="px-5 py-3">বিবরণ</th><th className="px-5 py-3">টাকা</th><th className="px-5 py-3">অ্যাকশন</th></tr></thead><tbody className="divide-y">{expenses.map(e => (<tr key={e.id}><td className="px-5 py-4 text-[10px] font-bold text-slate-500">{toBengaliNumber(e.date)}</td><td className="px-5 py-4 font-black text-slate-800 text-[11px]">{e.reason}</td><td className="px-5 py-4 font-black text-rose-600 text-sm">৳{toBengaliNumber(e.amount.toLocaleString())}</td><td className="px-5 py-4 flex gap-2">{e.proofImage && <button onClick={() => window.open(e.proofImage)} className="text-teal-600 underline font-black text-[9px]">ভাউচার</button>}<button onClick={() => handleDeleteExpense(e.id, e.amount)} disabled={processingIds.has(e.id)} className="p-1.5 text-rose-400 hover:text-rose-600 transition-colors ml-auto">{processingIds.has(e.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button></td></tr>))}</tbody></table></div>
           </div>
         )}
 
