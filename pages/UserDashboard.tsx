@@ -7,7 +7,8 @@ import { Notification, TransactionStatus, Expense, Transaction } from '../types'
 import { 
   Wallet, CreditCard, Award, User as UserIcon, 
   List, ArrowUpRight, TrendingUp, Bell, ChevronRight,
-  ShieldCheck, X, Clock, Plus, TrendingDown, Receipt, Users, HandHelping
+  ShieldCheck, X, Clock, Plus, TrendingDown, Receipt, Users, HandHelping,
+  Lightbulb, Info, Smartphone, CheckCircle2, Send, Loader2, MessageSquare, Facebook, Mail, PhoneCall
 } from 'lucide-react';
 
 const UserDashboard: React.FC = () => {
@@ -16,7 +17,16 @@ const UserDashboard: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [contactConfig, setContactConfig] = useState(db.getContactConfig());
   const [showNotifs, setShowNotifs] = useState(false);
+  
+  // Modals
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [suggestionText, setSuggestionText] = useState('');
+  const [isSendingSuggestion, setIsSendingSuggestion] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +34,7 @@ const UserDashboard: React.FC = () => {
       setAppStats(db.getStats());
       setRecentExpenses(db.getExpenses().slice(0, 2));
       setAllTransactions(db.getTransactions());
+      setContactConfig(db.getContactConfig());
     };
     refreshData();
     const unsubscribe = db.subscribe(refreshData);
@@ -44,11 +55,16 @@ const UserDashboard: React.FC = () => {
     return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
   };
 
-  const actualExpenses = db.getExpenses();
-  const approvedTxs = allTransactions.filter(t => t.status === TransactionStatus.APPROVED);
-  const effectiveExpense = actualExpenses.length === 0 ? 0 : appStats.totalExpense;
-  const effectiveCollection = approvedTxs.length === 0 ? 0 : appStats.totalCollection;
-  const totalFund = effectiveCollection - effectiveExpense;
+  // Define formatTime function to fix the 'Cannot find name formatTime' error
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const totalFund = appStats.totalCollection - (db.getExpenses().length === 0 ? 0 : appStats.totalExpense);
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleOpenNotifications = () => {
@@ -56,10 +72,15 @@ const UserDashboard: React.FC = () => {
     notifications.filter(n => !n.isRead).forEach(n => db.markNotificationAsRead(n.id));
   };
 
-  const formatTime = (ts: number) => {
-    const date = new Date(ts);
-    return date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' }) + ' ' + 
-           date.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+  const handleSendSuggestion = async () => {
+    if (!suggestionText.trim() || !currentUser || isSendingSuggestion) return;
+    setIsSendingSuggestion(true);
+    try {
+      await db.submitSuggestion(currentUser.id, currentUser.name, suggestionText.trim());
+      setSuggestionText('');
+      setShowSuggestionModal(false);
+      alert('আপনার পরামর্শ এডমিন প্যানেলে পাঠানো হয়েছে। ধন্যবাদ!');
+    } catch (e) { alert('সমস্যা হয়েছে।'); } finally { setIsSendingSuggestion(false); }
   };
 
   return (
@@ -67,11 +88,7 @@ const UserDashboard: React.FC = () => {
       <div className="px-6 pt-8 pb-4 flex justify-between items-center bg-white border-b border-slate-100 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-teal-50 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
-            {currentUser?.profilePic ? (
-              <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
-            ) : (
-              <UserIcon className="w-5 h-5 text-teal-600" />
-            )}
+            {currentUser?.profilePic ? <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <UserIcon className="w-5 h-5 text-teal-600" />}
           </div>
           <div className="leading-tight">
             <h2 className="text-sm font-black text-slate-800 tracking-tight">হ্যালো, {currentUser?.name?.split(' ')[0]}!</h2>
@@ -89,14 +106,13 @@ const UserDashboard: React.FC = () => {
 
       <div className="p-6 space-y-6">
         <div className="bg-gradient-to-br from-teal-600 to-teal-800 p-8 rounded-[2.5rem] shadow-2xl shadow-teal-900/10 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 blur-2xl"></div>
           <div className="relative z-10">
             <p className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-2">সংগঠনের বর্তমান তহবিল</p>
             <div className="flex items-baseline gap-2">
                <span className="text-2xl font-black text-teal-200">৳</span>
                <h1 className="text-4xl font-black tracking-tight">{toBengaliNumber(totalFund.toLocaleString())}</h1>
             </div>
-            
             <div className="grid grid-cols-2 gap-4 mt-8">
                <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md border border-white/5">
                   <p className="text-[8px] font-black text-teal-100 uppercase tracking-widest mb-1">আপনার মোট দান</p>
@@ -111,35 +127,41 @@ const UserDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-3">
-            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black">#</div>
+          <div className="bg-blue-600 p-6 rounded-[2.5rem] shadow-xl shadow-blue-200 flex flex-col gap-3 text-white border-b-8 border-blue-800 transition-all active:scale-95 group">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-white shadow-inner group-hover:scale-110 transition-transform">
+               <Users className="w-6 h-6" />
+            </div>
             <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">মোট সদস্য</p>
-              <h3 className="text-lg font-black text-slate-800">{toBengaliNumber(appStats.totalUsers)} জন</h3>
+              <p className="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em] opacity-80 mb-1">মোট সদস্য</p>
+              <h3 className="text-2xl font-black">{toBengaliNumber(appStats.totalUsers)} জন</h3>
             </div>
           </div>
-          <button onClick={() => navigate('/expenses')} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm text-left active:scale-95 transition-all relative overflow-hidden">
-            <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
-               <TrendingDown className="w-5 h-5" />
-            </div>
+          <button onClick={() => navigate('/expenses')} className="bg-rose-600 p-6 rounded-[2.5rem] shadow-xl shadow-rose-200 text-left active:scale-95 transition-all relative overflow-hidden text-white border-b-8 border-rose-800 group">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform"><TrendingDown className="w-6 h-6" /></div>
             <div className="mt-3">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">মোট খরচ</p>
-              <h3 className="text-lg font-black text-slate-800">৳{toBengaliNumber(effectiveExpense.toLocaleString())}</h3>
+              <p className="text-[10px] font-black text-rose-100 uppercase tracking-[0.2em] opacity-80 mb-1">মোট খরচ</p>
+              <h3 className="text-2xl font-black">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString())}</h3>
             </div>
-            <ChevronRight className="absolute right-4 bottom-5 w-4 h-4 text-slate-200" />
+            <ChevronRight className="absolute right-5 bottom-6 w-5 h-5 text-white/40" />
           </button>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-2 px-1">
           {[
-            { icon: <CreditCard className="w-5 h-5" />, label: 'দান পাঠান', color: 'bg-white text-indigo-600', path: '/transaction' },
-            { icon: <HandHelping className="w-5 h-5" />, label: 'আবেদন', color: 'bg-white text-teal-600', path: '/assistance' },
-            { icon: <Award className="w-5 h-5" />, label: 'সেরা দাতা', color: 'bg-white text-amber-500', path: '/leaderboard' },
-            { icon: <List className="w-5 h-5" />, label: 'ইতিহাস', color: 'bg-white text-violet-500', path: '/history' },
+            { icon: <CreditCard className="w-5 h-5" />, label: 'দান', color: 'bg-indigo-600', path: '/transaction' },
+            { icon: <HandHelping className="w-5 h-5" />, label: 'আবেদন', color: 'bg-teal-600', path: '/assistance' },
+            { icon: <Award className="w-5 h-5" />, label: 'সেরা দাতা', color: 'bg-amber-500', path: '/leaderboard' },
+            { icon: <List className="w-5 h-5" />, label: 'ইতিহাস', color: 'bg-violet-600', path: '/history' },
+            { icon: <Lightbulb className="w-5 h-5" />, label: 'পরামর্শ', color: 'bg-emerald-600', action: () => setShowSuggestionModal(true) },
+            { icon: <Info className="w-5 h-5" />, label: 'গাইড', color: 'bg-blue-600', action: () => setShowPaymentModal(true) },
+            { icon: <MessageSquare className="w-5 h-5" />, label: 'যোগাযোগ', color: 'bg-rose-600', action: () => setShowContactModal(true) },
+            { icon: <Receipt className="w-5 h-5" />, label: 'ভাউচার', color: 'bg-slate-700', path: '/expenses' },
           ].map((item, idx) => (
-            <button key={idx} onClick={() => navigate(item.path)} className="flex flex-col items-center gap-2 active:scale-90 transition-all">
-              <div className={`w-14 h-14 ${item.color} rounded-[1.8rem] flex items-center justify-center shadow-sm border border-slate-100`}>{item.icon}</div>
-              <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">{item.label}</span>
+            <button key={idx} onClick={item.path ? () => navigate(item.path!) : item.action} className="flex flex-col items-center gap-1.5 active:scale-90 transition-all group">
+              <div className={`w-11 h-11 ${item.color} rounded-2xl flex items-center justify-center shadow-lg text-white transform group-hover:scale-105 transition-transform`}>
+                {item.icon}
+              </div>
+              <span className="text-[8px] font-black text-slate-800 uppercase tracking-tighter leading-none">{item.label}</span>
             </button>
           ))}
         </div>
@@ -153,9 +175,7 @@ const UserDashboard: React.FC = () => {
               {allTransactions.filter(t => t.userId === currentUser?.id).slice(0, 3).map((tx) => (
                 <div key={tx.id} className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-teal-600">
-                       <ArrowUpRight className="w-5 h-5" />
-                    </div>
+                    <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-teal-600"><ArrowUpRight className="w-5 h-5" /></div>
                     <div>
                       <p className="font-black text-slate-800 text-sm">{tx.method}</p>
                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{toBengaliNumber(tx.date)}</p>
@@ -169,11 +189,6 @@ const UserDashboard: React.FC = () => {
                   </div>
                 </div>
               ))}
-              {allTransactions.filter(t => t.userId === currentUser?.id).length === 0 && (
-                <div className="py-10 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
-                  <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">কোন লেনদেন নেই</p>
-                </div>
-              )}
            </div>
         </div>
       </div>
@@ -184,6 +199,80 @@ const UserDashboard: React.FC = () => {
         <button onClick={() => navigate('/leaderboard')} className="p-3 text-slate-300 active:scale-90 transition-all"><Award className="w-6 h-6" /></button>
         <button onClick={() => navigate('/profile')} className="p-3 text-slate-300 active:scale-90 transition-all"><UserIcon className="w-6 h-6" /></button>
       </div>
+
+      {/* Suggestion Modal */}
+      {showSuggestionModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6">
+           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 overflow-hidden">
+              <div className="p-6 bg-emerald-600 text-white flex justify-between items-center">
+                 <div className="flex items-center gap-3"><Lightbulb className="w-6 h-6" /><h3 className="font-black uppercase text-sm tracking-widest">পরামর্শ পাঠান</h3></div>
+                 <button onClick={() => setShowSuggestionModal(false)} className="p-2 bg-white/20 rounded-xl"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                 <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-xs min-h-[120px]" placeholder="আপনার পরামর্শ লিখুন..." value={suggestionText} onChange={e => setSuggestionText(e.target.value)} />
+                 <button onClick={handleSendSuggestion} disabled={!suggestionText.trim() || isSendingSuggestion} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg active:scale-95 disabled:opacity-50">{isSendingSuggestion ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'পরামর্শ পাঠান'}</button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6">
+           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 overflow-hidden">
+              <div className="p-6 bg-rose-600 text-white flex justify-between items-center">
+                 <div className="flex items-center gap-3"><MessageSquare className="w-6 h-6" /><h3 className="font-black uppercase text-sm tracking-widest">যোগাযোগ করুন</h3></div>
+                 <button onClick={() => setShowContactModal(false)} className="p-2 bg-white/20 rounded-xl"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                 <div className="space-y-3">
+                    <a href={contactConfig.whatsapp} target="_blank" rel="noopener noreferrer" className="w-full p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-4 active:scale-95 transition-all group">
+                       <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100 group-hover:scale-110"><Smartphone className="w-5 h-5" /></div>
+                       <div><p className="text-[11px] font-black text-emerald-900">WhatsApp Group</p><p className="text-[9px] font-bold text-emerald-600">আমাদের গ্রুপে জয়েন করুন</p></div>
+                    </a>
+                    <a href={contactConfig.facebook} target="_blank" rel="noopener noreferrer" className="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 active:scale-95 transition-all group">
+                       <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-100 group-hover:scale-110"><Facebook className="w-5 h-5" /></div>
+                       <div><p className="text-[11px] font-black text-blue-900">Facebook Page</p><p className="text-[9px] font-bold text-blue-600">আমাদের পেজ ভিজিট করুন</p></div>
+                    </a>
+                    <a href={`mailto:${contactConfig.email}`} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-4 active:scale-95 transition-all group">
+                       <div className="w-10 h-10 bg-slate-800 text-white rounded-xl flex items-center justify-center shadow-lg shadow-slate-100 group-hover:scale-110"><Mail className="w-5 h-5" /></div>
+                       <div><p className="text-[11px] font-black text-slate-900">Official Email</p><p className="text-[9px] font-bold text-slate-500">{contactConfig.email}</p></div>
+                    </a>
+                 </div>
+                 <div className="pt-4 border-t border-slate-100">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center mb-3">জরুরি যোগাযোগ</p>
+                    <a href={`tel:${contactConfig.phone}`} className="w-full py-4 bg-teal-600 text-white rounded-2xl font-black text-base shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
+                       <PhoneCall className="w-5 h-5" /> {toBengaliNumber(contactConfig.phone)}
+                    </a>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Payment Guide Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6">
+           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 overflow-hidden">
+              <div className="p-6 bg-blue-600 text-white flex justify-between items-center">
+                 <div className="flex items-center gap-3"><Smartphone className="w-6 h-6" /><h3 className="font-black uppercase text-sm tracking-widest">পেমেন্ট গাইড</h3></div>
+                 <button onClick={() => setShowPaymentModal(false)} className="p-2 bg-white/20 rounded-xl"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-8 space-y-6">
+                 <div className="bg-blue-50 p-6 rounded-[2rem] border-2 border-blue-100 text-center space-y-2">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">অফিসিয়াল নম্বর</p>
+                    <h3 className="text-2xl font-black text-slate-900">{contactConfig.phone}</h3>
+                    <div className="flex justify-center gap-2 pt-2">
+                       {['বিকাশ', 'নগদ', 'রকেট', 'উপায়'].map(tag => (
+                         <span key={tag} className="px-2 py-1 bg-white border border-blue-200 rounded-lg text-[8px] font-black text-blue-700">{tag}</span>
+                       ))}
+                    </div>
+                 </div>
+                 <button onClick={() => setShowPaymentModal(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs active:scale-95 shadow-xl">ঠিক আছে</button>
+              </div>
+           </div>
+        </div>
+      )}
 
       {showNotifs && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex justify-end">

@@ -9,6 +9,7 @@ import { ArrowLeft, Printer, Download, ChevronLeft, ChevronRight, Hash } from 'l
 const HistoryPage: React.FC = () => {
   const { currentUser } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  // Fix: Declare navigate with 'const' to define it in the component scope
   const navigate = useNavigate();
   // Start from 2026 as per user request
   const [selectedYear, setSelectedYear] = useState(Math.max(2026, new Date().getFullYear()));
@@ -34,6 +35,11 @@ const HistoryPage: React.FC = () => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const d = new Date(dateStr);
     return days[d.getDay()];
+  };
+
+  const toBengaliNumber = (num: number | string) => {
+    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
   };
 
   return (
@@ -108,7 +114,7 @@ const HistoryPage: React.FC = () => {
                   <th className="py-4 px-3 border-r border-white/10 text-center">Date</th>
                   <th className="py-4 px-3 border-r border-white/10 text-center">Day</th>
                   <th className="py-4 px-3 border-r border-white/10 text-center">Emergency</th>
-                  <th className="py-4 px-3 border-r border-white/10 text-center">Other</th>
+                  <th className="py-4 px-3 border-r border-white/10 text-center">General/Admin</th>
                   <th className="py-4 px-3 border-r border-white/10 text-center bg-teal-600 shadow-inner">Total</th>
                   <th className="py-4 px-4 text-left">TX ID</th>
                 </tr>
@@ -129,10 +135,10 @@ const HistoryPage: React.FC = () => {
                       </td>
                       <td className="py-4 px-3 border-r border-white/50 text-center font-black text-black uppercase">{getDayName(tx.date)}</td>
                       <td className="py-4 px-3 border-r border-white/50 text-center font-black text-black">
-                        {tx.fundType === 'Emergency' ? <span>৳{tx.amount}</span> : <span>0</span>}
+                        {tx.fundType === 'Emergency' ? <span>৳{tx.amount}</span> : <span>০</span>}
                       </td>
                       <td className="py-4 px-3 border-r border-white/50 text-center font-black text-black">
-                        {tx.fundType === 'Other' ? <span>৳{tx.amount}</span> : <span>0</span>}
+                        {(tx.fundType === 'General' || !tx.fundType) ? <span>৳{tx.amount}</span> : <span>০</span>}
                       </td>
                       <td className="py-4 px-3 border-r border-white/50 text-center font-black text-black bg-teal-200/40">
                         ৳{tx.amount}
@@ -181,7 +187,7 @@ const HistoryPage: React.FC = () => {
           <span className="text-[7px] font-black uppercase tracking-widest">Home</span>
         </button>
         <button onClick={() => navigate('/history')} className="p-3 text-teal-400 flex flex-col items-center gap-1 scale-110">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
           <span className="text-[7px] font-black uppercase tracking-widest text-teal-400">History</span>
         </button>
       </div>

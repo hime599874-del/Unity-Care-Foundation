@@ -14,7 +14,7 @@ import ProfilePage from './pages/ProfilePage';
 import ExpensePage from './pages/ExpensePage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAuth from './pages/AdminAuth';
-import { ShieldCheck, Loader2, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -37,18 +37,43 @@ const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(() => sessionStorage.getItem('is_admin_active') === 'true');
 
   useEffect(() => {
-    const restoreSession = async () => {
-      const savedId = localStorage.getItem('current_user_id');
+    // Listen for database changes to keep the current user state updated in real-time
+    const savedId = localStorage.getItem('current_user_id');
+    
+    const unsubscribe = db.subscribe(() => {
       if (savedId) {
         const user = db.getUser(savedId);
         if (user && user.status === UserStatus.APPROVED) {
-          setCurrentUser(user);
-          db.updateLastActive(user.id);
+          setCurrentUser(prevUser => {
+            if (!prevUser) return user;
+            // Safer comparison to avoid circular JSON error
+            // Update if essential stats changed or generic refresh triggered
+            const hasChanged = 
+              user.totalDonation !== prevUser.totalDonation || 
+              user.transactionCount !== prevUser.transactionCount ||
+              user.status !== prevUser.status ||
+              user.name !== prevUser.name ||
+              user.profilePic !== prevUser.profilePic;
+
+            return hasChanged ? user : prevUser;
+          });
         }
       }
+      if (isLoading) setIsLoading(false);
+    });
+
+    // Initial check for session
+    if (savedId) {
+      const user = db.getUser(savedId);
+      if (user && user.status === UserStatus.APPROVED) {
+        setCurrentUser(user);
+        db.updateLastActive(user.id);
+      }
+    } else {
       setIsLoading(false);
-    };
-    restoreSession();
+    }
+
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -85,9 +110,9 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
-          <footer className="py-2 text-center bg-gray-50 border-t print:hidden">
-            <Link to="/admin-auth" className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors uppercase tracking-widest font-bold">
-              Unity Care - Management
+          <footer className="py-4 text-center bg-white border-t border-slate-200 print:hidden">
+            <Link to="/admin-auth" className="text-[11px] text-slate-900 hover:text-teal-600 transition-colors uppercase tracking-[0.2em] font-black">
+              UNITY CARE - MANAGEMENT
             </Link>
           </footer>
         </div>

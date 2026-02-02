@@ -72,6 +72,21 @@ export interface Transaction {
   timestamp: number;
 }
 
+export interface Suggestion {
+  id: string;
+  userId: string;
+  userName: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface ContactConfig {
+  whatsapp: string;
+  facebook: string;
+  email: string;
+  phone: string;
+}
+
 export interface AssistanceRequest {
   id: string;
   userId: string;

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
@@ -5,7 +6,8 @@ import { useAuth } from '../App';
 import { UserStatus, User as UserType } from '../types';
 import { 
   Phone, User, ShieldCheck, ArrowRight, ArrowLeft, Camera, 
-  CheckCircle2, X, Droplets, ChevronDown, Loader2, Globe, Search, MapPin, Briefcase, Calendar, Info, ScrollText, Package, HandHelping
+  CheckCircle2, X, Droplets, ChevronDown, Loader2, Globe, Search, MapPin, Briefcase, Calendar, Info, ScrollText, Package, HandHelping, 
+  FileCheck, ShieldAlert, HeartHandshake, Zap, Scale, Trash2
 } from 'lucide-react';
 
 const BD_LOCATION_DATA: Record<string, string[]> = {
@@ -95,9 +97,6 @@ const COUNTRY_DIAL_CODES = [
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
-/**
- * Enhanced compression to ensure files are well under 1MB
- */
 const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -123,7 +122,6 @@ const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Prom
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      // Increased compression quality for better visibility but lower size
       resolve(canvas.toDataURL('image/jpeg', 0.6));
     };
     img.onerror = () => resolve(base64Str);
@@ -190,7 +188,6 @@ const AuthPage: React.FC = () => {
     
     try {
       const users = db.getUsers();
-      // Intelligent matching: compare only the last 10 digits to handle any formatting (+880 vs 0 vs none)
       const normalizeForMatch = (phone: string) => phone.replace(/\D/g, '').slice(-10);
       const searchDigits = normalizeForMatch(phoneInput);
       
@@ -254,7 +251,6 @@ const AuthPage: React.FC = () => {
     const fullPhone = getNormalizedPhone();
     
     try {
-      // Ensure we only pass necessary plain data
       const registrationData = {
         name: formData.name,
         phone: fullPhone,
@@ -281,7 +277,6 @@ const AuthPage: React.FC = () => {
         setIsSubmitting(false); 
       }, 3000);
     } catch (err: any) {
-      console.error("Registration Error:", err);
       setError(err.message || 'রেজিস্ট্রেশন করতে সমস্যা হয়েছে।');
       setIsSubmitting(false);
     }
@@ -313,7 +308,7 @@ const AuthPage: React.FC = () => {
   const selectBtnClass = "w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-left flex justify-between items-center hover:border-teal-500 transition-all active:scale-95 shadow-sm";
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 py-6 font-['Hind_Siliguri']">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 py-10 font-['Hind_Siliguri']">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
            <div className="w-16 h-16 bg-teal-600 rounded-[1.5rem] shadow-xl flex items-center justify-center mx-auto mb-4 border-4 border-white rotate-3">
@@ -323,7 +318,7 @@ const AuthPage: React.FC = () => {
            <p className="text-slate-400 font-bold text-[10px] mt-2 uppercase tracking-[0.3em] leading-none">{isLogin ? 'সদস্য লগইন' : `নিবন্ধন - ধাপ ${step}/৩`}</p>
         </div>
 
-        <div className="bg-white p-8 rounded-[3rem] shadow-2xl border-4 border-white relative overflow-hidden">
+        <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl border border-slate-100 relative overflow-hidden">
           {error && <div className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-xs font-bold border border-rose-100 flex items-center gap-4 animate-in shake duration-500"><X className="w-5 h-5" /> {error}</div>}
           {success && <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-bold border border-emerald-100 flex items-center gap-4"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
@@ -420,51 +415,55 @@ const AuthPage: React.FC = () => {
               )}
               
               {step === 3 && (
-                <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                  <div className="relative">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-[2.5rem] blur opacity-20"></div>
+                <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+                  <div className="bg-white rounded-[2rem] overflow-hidden">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-100 shrink-0">
+                        <FileCheck className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-slate-900 premium-text leading-tight">নীতিমালা ও শর্তাবলী</h3>
+                        <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Unity Care Foundation Charter</p>
+                      </div>
+                    </div>
                     
-                    <div className="relative p-6 bg-teal-50/95 backdrop-blur-md rounded-[2rem] border-2 border-teal-200 shadow-xl overflow-hidden">
-                      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-teal-100/50">
-                        <div className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg ring-4 ring-white"><ScrollText className="w-7 h-7" /></div>
-                        <div>
-                          <h3 className="text-teal-950 font-black text-lg uppercase tracking-tight leading-none">নীতিমালা ও শর্তাবলী</h3>
-                          <p className="text-[9px] text-teal-600 font-bold uppercase mt-2 tracking-widest">Unity Care Foundation</p>
+                    <div className="space-y-3 max-h-[24rem] overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
+                      {[
+                        { icon: <ShieldCheck className="w-5 h-5" />, text: "সংগঠনের সকল কার্যক্রমে পূর্ণ স্বচ্ছতা ও সততা বজায় রাখা আপনার প্রধান নৈতিক দায়িত্ব।" },
+                        { icon: <Info className="w-5 h-5" />, text: "আপনার ব্যক্তিগত তথ্য সংগঠনের কাজের বাইরে অন্য কোথাও প্রকাশ বা ব্যবহার করা হবে না।" },
+                        { icon: <HeartHandshake className="w-5 h-5" />, text: "জমাকৃত প্রতিটি অর্থ শুধুমাত্র আর্তমানবতার সেবা, দুর্যোগ মোকাবিলা ও সমাজকল্যাণে ব্যয় হবে।" },
+                        { icon: <ShieldAlert className="w-5 h-5" />, text: "সংগঠনের পরিচয় ব্যবহার করে কোনো ব্যক্তিগত ফায়দা বা রাজনৈতিক কাজ করা সম্পূর্ণ নিষিদ্ধ।" },
+                        { icon: <Zap className="w-5 h-5" />, text: "বিশেষ দুর্যোগে স্বেচ্ছাসেবী হিসেবে সশরীরে কাজ করার মানসিক প্রস্তুতি থাকতে হবে।" },
+                        { icon: <Scale className="w-5 h-5" />, text: "সদস্যপদ সক্রিয় রাখতে মাসিক ফি বা অনুদান নিয়মিত প্রদান করে তহবিলে সহযোগিতা করতে হবে।" },
+                        { icon: <Trash2 className="w-5 h-5" />, text: "সংগঠনের আদর্শ পরিপন্থী কোনো কাজের প্রমাণ পাওয়া গেলে সদস্যপদ বাতিল হতে পারে।" }
+                      ].map((policy, i) => (
+                        <div key={i} className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-teal-50/30 transition-colors group">
+                           <div className="shrink-0 w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center text-teal-600 group-hover:scale-110 transition-transform">
+                              {policy.icon}
+                           </div>
+                           <p className="text-[13px] font-bold text-slate-700 leading-relaxed pt-1">{policy.text}</p>
                         </div>
-                      </div>
-                      
-                      <div className="max-h-[22rem] overflow-y-auto pr-4 mb-6 space-y-4 text-[12px] font-black text-slate-800 leading-[1.6] custom-scrollbar">
-                        {[
-                          "সংগঠনের সকল কার্যক্রমে পূর্ণ স্বচ্ছতা ও সততা বজায় রাখা আপনার প্রধান নৈতিক দায়িত্ব।",
-                          "আপনার ব্যক্তিগত তথ্য সংগঠনের কাজের বাইরে অন্য কোথাও প্রকাশ বা ব্যবহার করা হবে না।",
-                          "জমাকৃত প্রতিটি অর্থ শুধুমাত্র আর্তমানবতার সেবা, দুর্যোগ মোকাবিলা ও সমাজকল্যাণে ব্যয় হবে।",
-                          "সংগঠনের পরিচয় ব্যবহার করে কোনো ব্যক্তিগত ফায়দা বা রাজনৈতিক কাজ করা সম্পূর্ণ নিষিদ্ধ।",
-                          "বিশেষ দুর্যোগে স্বেচ্ছাসেবী হিসেবে সশরীরে কাজ করার মানসিক প্রস্তুতি থাকতে হবে।",
-                          "সদস্যপদ সক্রিয় রাখতে মাসিক ফি বা অনুদান নিয়মিত প্রদান করে তহবিলে সহযোগিতা করতে হবে।",
-                          "সংগঠনের আদর্শ পরিপন্থী কোনো কাজের প্রমাণ পাওয়া গেলে সদস্যপদ বাতিল হতে পারে।"
-                        ].map((policy, i) => (
-                          <div key={i} className="flex gap-4 items-start bg-white/60 p-4 rounded-2xl border border-teal-100/50 shadow-sm">
-                             <span className="shrink-0 w-8 h-8 bg-teal-600 text-white text-base flex items-center justify-center rounded-full font-black mt-1 shadow-md border-2 border-white">{i+1}</span>
-                             <p>{policy}</p>
+                      ))}
+                    </div>
+
+                    <div className="mt-8">
+                       <label className="flex items-start gap-4 p-5 bg-teal-600 rounded-3xl cursor-pointer shadow-xl shadow-teal-100 active:scale-[0.98] transition-all border-b-4 border-teal-800 group">
+                          <div className="pt-1">
+                            <input 
+                              type="checkbox" 
+                              className="w-6 h-6 rounded-lg accent-white cursor-pointer ring-2 ring-white/20" 
+                              checked={formData.policyConsent} 
+                              onChange={e => setFormData({...formData, policyConsent: e.target.checked})} 
+                            />
                           </div>
-                        ))}
-                      </div>
-                      
-                      <label className="flex items-center gap-5 cursor-pointer p-6 bg-white rounded-3xl border-2 border-teal-300 shadow-xl active:scale-95 transition-all ring-4 ring-teal-500/5 group">
-                        <input 
-                          type="checkbox" 
-                          className="w-10 h-10 rounded-xl accent-teal-600 cursor-pointer shrink-0" 
-                          checked={formData.policyConsent} 
-                          onChange={e => setFormData({...formData, policyConsent: e.target.checked})} 
-                        />
-                        <span className="text-base font-black text-teal-950 leading-tight uppercase group-hover:text-teal-600 transition-colors">আমি সংগঠনের সকল নীতিমালা ও শর্তাবলী অত্যন্ত গুরুত্বের সাথে মেনে চলার অঙ্গীকার করছি।</span>
-                      </label>
+                          <span className="text-white font-black text-[13px] leading-tight uppercase group-hover:opacity-90">আমি সংগঠনের সকল নীতিমালা ও শর্তাবলী অত্যন্ত গুরুত্বের সাথে মেনে চলার অঙ্গীকার করছি।</span>
+                       </label>
                     </div>
                   </div>
                   
-                  <div className="flex gap-4">
-                    <button onClick={() => setStep(2)} className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-8 h-8" /></button>
-                    <button onClick={handleRegister} disabled={isSubmitting} className="flex-grow py-5 bg-teal-600 text-white rounded-2xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 border-teal-900 ring-offset-4 ring-teal-500 hover:ring-2">
+                  <div className="flex gap-4 pt-2">
+                    <button onClick={() => setStep(2)} className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-8 h-8" /></button>
+                    <button onClick={handleRegister} disabled={isSubmitting} className="flex-grow py-5 bg-slate-900 text-white rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 border-black tracking-widest">
                       {isSubmitting ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : 'নিবন্ধন সম্পন্ন করুন'}
                     </button>
                   </div>

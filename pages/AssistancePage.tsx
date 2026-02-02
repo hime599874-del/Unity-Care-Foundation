@@ -6,7 +6,8 @@ import { db } from '../services/db';
 import { AssistanceStatus, AssistanceRequest } from '../types';
 import { 
   ArrowLeft, HandHelping, MessageSquare, Send, 
-  Clock, CheckCircle2, XCircle, Info, Loader2, AlertCircle, ChevronRight
+  Clock, CheckCircle2, XCircle, Info, Loader2, AlertCircle, ChevronRight,
+  Zap, HeartPulse, GraduationCap, Utensils
 } from 'lucide-react';
 
 const AssistancePage: React.FC = () => {
@@ -77,6 +78,13 @@ const AssistancePage: React.FC = () => {
     }
   };
 
+  const CATEGORIES = [
+    { id: 'Emergency', label: 'জরুরি', icon: <Zap className="w-6 h-6" />, color: 'bg-amber-50 text-amber-600', active: 'bg-amber-600 text-white' },
+    { id: 'Medical', label: 'চিকিৎসা', icon: <HeartPulse className="w-6 h-6" />, color: 'bg-rose-50 text-rose-600', active: 'bg-rose-600 text-white' },
+    { id: 'Education', label: 'শিক্ষা', icon: <GraduationCap className="w-6 h-6" />, color: 'bg-blue-50 text-blue-600', active: 'bg-blue-600 text-white' },
+    { id: 'Food', label: 'খাদ্য সাহায্য', icon: <Utensils className="w-6 h-6" />, color: 'bg-emerald-50 text-emerald-600', active: 'bg-emerald-600 text-white' }
+  ];
+
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
       <div className="px-6 pt-8 pb-6 bg-white border-b border-slate-100 sticky top-0 z-30 flex items-center gap-4">
@@ -92,16 +100,21 @@ const AssistancePage: React.FC = () => {
       <div className="p-6 space-y-8">
         {/* Request Form */}
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100">
-           <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-2 gap-3">
-                 {['Emergency', 'Medical', 'Education', 'Food'].map(cat => (
+           <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                 {CATEGORIES.map(cat => (
                    <button 
-                     key={cat} 
+                     key={cat.id} 
                      type="button" 
-                     onClick={() => setCategory(cat)}
-                     className={`py-3 rounded-2xl font-black text-[10px] uppercase tracking-wider border-2 transition-all ${category === cat ? 'bg-teal-50 border-teal-500 text-teal-700 shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
+                     onClick={() => setCategory(cat.id)}
+                     className={`group flex flex-col items-center gap-3 p-4 rounded-[2rem] border-2 transition-all active:scale-95 ${category === cat.id ? 'border-slate-800 bg-slate-900 shadow-xl' : 'bg-slate-50 border-slate-100'}`}
                    >
-                     {cat === 'Emergency' ? 'জরুরি' : cat === 'Medical' ? 'চিকিৎসা' : cat === 'Education' ? 'শিক্ষা' : 'খাদ্য সাহায্য'}
+                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-all ${category === cat.id ? 'bg-white/20 text-white ring-4 ring-white/10' : cat.color}`}>
+                        {cat.icon}
+                     </div>
+                     <span className={`font-black text-[10px] uppercase tracking-wider ${category === cat.id ? 'text-white' : 'text-slate-400'}`}>
+                        {cat.label}
+                     </span>
                    </button>
                  ))}
               </div>
@@ -110,7 +123,7 @@ const AssistancePage: React.FC = () => {
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">প্রয়োজনীয় টাকার পরিমাণ (ঐচ্ছিক)</p>
                  <input 
                    type="number" 
-                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-teal-500 font-black text-lg text-teal-700" 
+                   className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-black text-xl text-teal-700 transition-all" 
                    placeholder="৳ ০.০০" 
                    value={amount} 
                    onChange={e => setAmount(e.target.value)} 
@@ -121,7 +134,7 @@ const AssistancePage: React.FC = () => {
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">আবেদনের বিস্তারিত কারণ</p>
                  <textarea 
                    rows={4} 
-                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-teal-500 font-bold text-xs text-slate-800" 
+                   className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold text-xs text-slate-800 transition-all" 
                    placeholder="আপনার সমস্যার কথা বিস্তারিতভাবে এখানে লিখুন যাতে আমাদের যাচাই করতে সুবিধা হয়..."
                    value={reason}
                    onChange={e => setReason(e.target.value)}
@@ -145,22 +158,25 @@ const AssistancePage: React.FC = () => {
            </h3>
            <div className="space-y-4">
               {userRequests.map(req => (
-                <div key={req.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                   <div className="flex justify-between items-start mb-3">
-                      <div>
-                         <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusStyle(req.status)}`}>
-                            {getStatusText(req.status)}
-                         </span>
-                         <p className="text-[9px] text-slate-400 font-bold uppercase mt-2 tracking-wider">{toBengaliNumber(new Date(req.timestamp).toLocaleDateString('bn-BD'))}</p>
+                <div key={req.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                   <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getStatusStyle(req.status)} border shadow-sm`}>
+                            {req.status === AssistanceStatus.APPROVED ? <CheckCircle2 className="w-5 h-5" /> : req.status === AssistanceStatus.REJECTED ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                         </div>
+                         <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-800">{getStatusText(req.status)}</span>
+                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{toBengaliNumber(new Date(req.timestamp).toLocaleDateString('bn-BD'))}</p>
+                         </div>
                       </div>
-                      {req.amount > 0 && <p className="font-black text-slate-800 text-lg">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}
+                      {req.amount > 0 && <p className="font-black text-slate-800 text-xl">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}
                    </div>
-                   <p className="text-[11px] font-bold text-slate-600 leading-relaxed mb-4">{req.reason}</p>
+                   <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4">{req.reason}</p>
                    
                    {req.adminNote && (
-                     <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex gap-3 items-start">
-                        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                        <p className="text-[10px] font-black text-blue-800 italic leading-snug">এডমিন নোট: {req.adminNote}</p>
+                     <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex gap-3 items-start">
+                        <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                        <p className="text-[11px] font-black text-blue-800 italic leading-snug">এডমিন নোট: {req.adminNote}</p>
                      </div>
                    )}
                 </div>

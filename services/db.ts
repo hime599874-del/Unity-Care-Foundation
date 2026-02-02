@@ -10,16 +10,14 @@ import {
   query, 
   orderBy, 
   where,
-  getDocs,
   deleteDoc,
   runTransaction,
   increment,
-  writeBatch,
-  getDoc,
   limit,
-  setDoc
+  setDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, ContactConfig } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
@@ -34,26 +32,42 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = initializeFirestore(app, {
   experimentalForceLongPolling: true,
+  useFetchStreams: false
 });
 
-const sanitize = (data: any): any => {
+const toPlainObject = (data: any): any => {
+  if (data === null || data === undefined) return data;
+  if (data.toDate && typeof data.toDate === 'function') return data.toDate().getTime();
+  if (Array.isArray(data)) return data.map(toPlainObject);
+  if (typeof data === 'object') {
+    const plain: any = {};
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        plain[key] = toPlainObject(data[key]);
+      }
+    }
+    return plain;
+  }
+  return data;
+};
+
+const sanitizeForUpload = (data: any, seen = new WeakSet()): any => {
   if (data === null || data === undefined) return null;
   const type = typeof data;
   if (type === 'string' || type === 'number' || type === 'boolean') return data;
   if (data instanceof Date) return data.getTime();
-  if (Array.isArray(data)) return data.map(item => sanitize(item));
-  
   if (type === 'object') {
-    if (Object.prototype.toString.call(data) !== '[object Object]' || data['$$typeof']) return null;
+    if (seen.has(data)) return null;
+    seen.add(data);
+    if (Array.isArray(data)) return data.map(item => sanitizeForUpload(item, seen)).filter(i => i !== null);
     const clean: any = {};
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const value = data[key];
-        if (typeof value === 'function' || key.startsWith('_')) continue;
-        clean[key] = sanitize(value);
+        const val = sanitizeForUpload(data[key], seen);
+        if (val !== null && val !== undefined) clean[key] = val;
       }
     }
-    return clean;
+    return Object.keys(clean).length > 0 ? clean : null;
   }
   return null;
 };
@@ -63,7 +77,14 @@ class FirebaseDB {
   private transactions: Transaction[] = [];
   private assistanceRequests: AssistanceRequest[] = [];
   private expenses: Expense[] = [];
+  private suggestions: Suggestion[] = [];
   private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0 };
+  private contactConfig: ContactConfig = {
+    whatsapp: 'https://chat.whatsapp.com/C39euDOPaskI3KoeNZMW2H?mode=gi_t',
+    facebook: 'https://www.facebook.com/share/17peDnCVEV/',
+    email: 'unitycarefoundation07@gmail.com',
+    phone: '01777599874'
+  };
   private listeners: (() => void)[] = [];
 
   constructor() { this.initRealtimeSync(); }
@@ -71,22 +92,32 @@ class FirebaseDB {
   private initRealtimeSync() {
     try {
       onSnapshot(collection(firestore, "users"), (snapshot) => {
-        this.users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
+        this.users = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as User[];
         this.updateLocalStats();
         this.notify();
       });
-      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(100)), (snapshot) => {
-        this.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
+      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(1000)), (snapshot) => {
+        this.transactions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Transaction[];
         this.updateLocalStats();
         this.notify();
       });
       onSnapshot(query(collection(firestore, "assistance_requests"), orderBy("timestamp", "desc")), (snapshot) => {
-        this.assistanceRequests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AssistanceRequest[];
+        this.assistanceRequests = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as AssistanceRequest[];
         this.notify();
       });
       onSnapshot(collection(firestore, "expenses"), (snapshot) => {
-        this.expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Expense[];
+        this.expenses = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Expense[];
         this.notify();
+      });
+      onSnapshot(query(collection(firestore, "suggestions"), orderBy("timestamp", "desc")), (snapshot) => {
+        this.suggestions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Suggestion[];
+        this.notify();
+      });
+      onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
+        if (snapshot.exists()) {
+          this.contactConfig = toPlainObject(snapshot.data()) as ContactConfig;
+          this.notify();
+        }
       });
       onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
         if (snapshot.exists()) {
@@ -95,7 +126,7 @@ class FirebaseDB {
           this.notify();
         }
       });
-    } catch (e) {}
+    } catch (e) { console.error("Firestore sync error:", e); }
   }
 
   private updateLocalStats() {
@@ -118,110 +149,99 @@ class FirebaseDB {
   getTransactions(): Transaction[] { return this.transactions; }
   getAssistanceRequests(): AssistanceRequest[] { return this.assistanceRequests; }
   getExpenses(): Expense[] { return this.expenses; }
+  getSuggestions(): Suggestion[] { return this.suggestions; }
   getStats(): AppStats { return this.stats; }
+  getContactConfig(): ContactConfig { return this.contactConfig; }
 
-  async registerUser(userData: any) {
-    const cleanData = sanitize({ ...userData, status: UserStatus.PENDING, totalDonation: 0, registeredAt: Date.now(), lastActive: Date.now() });
-    await addDoc(collection(firestore, "users"), cleanData);
-  }
-
-  async submitAssistanceRequest(reqData: any) {
-    const cleanReq = sanitize({ ...reqData, status: AssistanceStatus.PENDING, timestamp: Date.now() });
-    await addDoc(collection(firestore, "assistance_requests"), cleanReq);
-  }
-
-  async updateAssistanceStatus(reqId: string, status: AssistanceStatus, adminNote?: string) {
-    await updateDoc(doc(firestore, "assistance_requests", reqId), sanitize({ status, adminNote }));
-  }
-
-  async deleteAssistanceRequest(reqId: string) {
-    await deleteDoc(doc(firestore, "assistance_requests", reqId));
+  async updateContactConfig(config: ContactConfig) {
+    await setDoc(doc(firestore, "metadata", "contact"), sanitizeForUpload(config), { merge: true });
   }
 
   async recalculateStats() {
-    const txs = await getDocs(collection(firestore, "transactions"));
-    const exps = await getDocs(collection(firestore, "expenses"));
-    let collectionTotal = 0;
-    let expenseTotal = 0;
-    txs.forEach(d => { if (d.data().status === TransactionStatus.APPROVED) collectionTotal += (d.data().amount || 0); });
-    exps.forEach(d => { expenseTotal += (d.data().amount || 0); });
-    await setDoc(doc(firestore, "metadata", "stats"), { totalCollection: collectionTotal, totalExpense: expenseTotal });
+    const txSnapshot = await getDocs(query(collection(firestore, "transactions"), where("status", "==", TransactionStatus.APPROVED)));
+    const expSnapshot = await getDocs(collection(firestore, "expenses"));
+    let totalCol = 0; txSnapshot.forEach(d => { totalCol += d.data().amount || 0; });
+    let totalExp = 0; expSnapshot.forEach(d => { totalExp += d.data().amount || 0; });
+    const statsRef = doc(firestore, "metadata", "stats");
+    await setDoc(statsRef, { totalCollection: totalCol, totalExpense: totalExp }, { merge: true });
+    return { totalCol, totalExp };
   }
 
-  async clearFinanceRecords() {
-    const batch = writeBatch(firestore);
-    batch.set(doc(firestore, "metadata", "stats"), { totalCollection: 0, totalExpense: 0 });
-    const txSnap = await getDocs(collection(firestore, "transactions"));
-    txSnap.forEach(d => batch.delete(d.ref));
-    const expSnap = await getDocs(collection(firestore, "expenses"));
-    expSnap.forEach(d => batch.delete(d.ref));
-    const userSnap = await getDocs(collection(firestore, "users"));
-    userSnap.forEach(uDoc => { batch.update(uDoc.ref, { totalDonation: 0, yearlyDonation: 0, transactionCount: 0 }); });
-    await batch.commit();
+  async registerUser(userData: any) {
+    const cleanData = sanitizeForUpload({ ...userData, status: UserStatus.PENDING, totalDonation: 0, transactionCount: 0, registeredAt: Date.now(), lastActive: Date.now() });
+    await addDoc(collection(firestore, "users"), cleanData);
   }
 
   async submitTransaction(txData: any) {
-    const cleanTx = sanitize({ ...txData, status: TransactionStatus.PENDING, timestamp: Date.now() });
+    const cleanTx = sanitizeForUpload({ ...txData, status: TransactionStatus.PENDING, timestamp: Date.now() });
     await addDoc(collection(firestore, "transactions"), cleanTx);
   }
 
-  async addManualTransaction(txData: any) {
+  async submitSuggestion(userId: string, userName: string, message: string) {
+    const cleanData = sanitizeForUpload({ userId, userName, message, timestamp: Date.now() });
+    await addDoc(collection(firestore, "suggestions"), cleanData);
+  }
+
+  async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Admin Manual', customDate?: string) {
+    const txData = { userId, userName, amount, method, status: TransactionStatus.APPROVED, transactionId: `ADM-${Date.now().toString().slice(-6)}`, date: customDate || new Date().toISOString().split('T')[0], timestamp: customDate ? new Date(customDate).getTime() : Date.now(), fundType: 'General' };
     await runTransaction(firestore, async (transaction) => {
+      const userRef = doc(firestore, "users", userId);
+      const statsRef = doc(firestore, "metadata", "stats");
+      const txRef = doc(collection(firestore, "transactions"));
+      transaction.set(txRef, txData);
+      transaction.update(userRef, { totalDonation: increment(amount), transactionCount: increment(1) });
+      transaction.set(statsRef, { totalCollection: increment(amount) }, { merge: true });
+    });
+  }
+
+  async approveTransaction(txId: string) {
+    const txDocRef = doc(firestore, "transactions", txId);
+    await runTransaction(firestore, async (transaction) => {
+      const txSnap = await transaction.get(txDocRef);
+      if (!txSnap.exists()) return;
+      const txData = txSnap.data();
+      if (txData.status === TransactionStatus.APPROVED) return;
       const userRef = doc(firestore, "users", txData.userId);
       const statsRef = doc(firestore, "metadata", "stats");
-      const newTxRef = doc(collection(firestore, "transactions"));
-      transaction.set(newTxRef, sanitize({ ...txData, status: TransactionStatus.APPROVED, timestamp: Date.now() }));
+      transaction.update(txDocRef, { status: TransactionStatus.APPROVED });
       transaction.update(userRef, { totalDonation: increment(txData.amount), transactionCount: increment(1) });
       transaction.set(statsRef, { totalCollection: increment(txData.amount) }, { merge: true });
     });
   }
 
-  async approveTransaction(txId: string) {
-    const tx = this.transactions.find(t => t.id === txId);
-    if (!tx || tx.status === TransactionStatus.APPROVED) return;
-    await runTransaction(firestore, async (transaction) => {
-      const txRef = doc(firestore, "transactions", txId);
-      const userRef = doc(firestore, "users", tx.userId);
-      const statsRef = doc(firestore, "metadata", "stats");
-      transaction.update(txRef, { status: TransactionStatus.APPROVED });
-      transaction.update(userRef, { totalDonation: increment(tx.amount), transactionCount: increment(1) });
-      transaction.set(statsRef, { totalCollection: increment(tx.amount) }, { merge: true });
-    });
-  }
-
   async rejectTransaction(txId: string) { await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED }); }
-  
   async addDetailedExpense(amount: number, reason: string, proofImage?: string) {
     await runTransaction(firestore, async (transaction) => {
       const statsRef = doc(firestore, "metadata", "stats");
+      const statsSnap = await transaction.get(statsRef);
+      const statsData = statsSnap.data() || { totalCollection: 0, totalExpense: 0 };
+      const currentBalance = (statsData.totalCollection || 0) - (statsData.totalExpense || 0);
+      if (amount > currentBalance) throw new Error("Insufficient Funds: তহবিলে পর্যাপ্ত টাকা নেই!");
       const expRef = doc(collection(firestore, "expenses"));
-      transaction.set(expRef, sanitize({ amount, reason, date: new Date().toISOString().split('T')[0], timestamp: Date.now(), proofImage }));
+      transaction.set(expRef, sanitizeForUpload({ amount, reason, date: new Date().toISOString().split('T')[0], timestamp: Date.now(), proofImage }));
       transaction.set(statsRef, { totalExpense: increment(amount) }, { merge: true });
-    });
-  }
-
-  async deleteExpense(id: string, amount: number) {
-    await runTransaction(firestore, async (transaction) => {
-      const statsRef = doc(firestore, "metadata", "stats");
-      const expRef = doc(firestore, "expenses", id);
-      transaction.delete(expRef);
-      transaction.set(statsRef, { totalExpense: increment(-amount) }, { merge: true });
     });
   }
 
   async updateLastActive(userId: string) { try { await updateDoc(doc(firestore, "users", userId), { lastActive: Date.now() }); } catch (e) {} }
   async deleteUser(id: string) { await deleteDoc(doc(firestore, "users", id)); }
-  async updateUser(id: string, updates: any) { await updateDoc(doc(firestore, "users", id), sanitize(updates)); }
-  async sendNotification(userId: string, message: string) { await addDoc(collection(firestore, "notifications"), sanitize({ userId, message, timestamp: Date.now(), isRead: false })); }
+  async updateUser(id: string, updates: any) { await updateDoc(doc(firestore, "users", id), sanitizeForUpload(updates)); }
+  async sendNotification(userId: string, message: string) { await addDoc(collection(firestore, "notifications"), sanitizeForUpload({ userId, message, timestamp: Date.now(), isRead: false })); }
+  async updateAssistanceStatus(reqId: string, status: AssistanceStatus, adminNote?: string) {
+    const updates: any = { status }; if (adminNote) updates.adminNote = adminNote;
+    await updateDoc(doc(firestore, "assistance_requests", reqId), updates);
+  }
+
   subscribeToNotifications(userId: string, callback: (notifs: Notification[]) => void) {
     const q = query(collection(firestore, "notifications"), where("userId", "==", userId));
     return onSnapshot(q, (snapshot) => {
-      const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Notification[];
+      const notifs = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Notification[];
       callback(notifs.sort((a, b) => b.timestamp - a.timestamp));
     });
   }
   async markNotificationAsRead(notifId: string) { await updateDoc(doc(firestore, "notifications", notifId), { isRead: true }); }
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
+  async submitAssistanceRequest(reqData: any) { await addDoc(collection(firestore, "assistance_requests"), sanitizeForUpload({ ...reqData, status: AssistanceStatus.PENDING, timestamp: Date.now() })); }
 }
 
 export const db = new FirebaseDB();
