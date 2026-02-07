@@ -36,36 +36,45 @@ const firestore = initializeFirestore(app, {
 });
 
 /**
- * Strips all internal metadata and non-plain objects to prevent circular reference errors.
- * Ensures that only JSON-serializable plain objects enter the app state.
+ * Robustly strips internal metadata and non-plain objects to prevent circular reference errors.
+ * Uses a WeakSet to track visited objects and prevent infinite recursion.
  */
-const toPlainObject = (data: any): any => {
+const toPlainObject = (data: any, seen = new WeakSet()): any => {
   if (data === null || data === undefined) return data;
   
-  // Handle basic primitives
-  if (typeof data !== 'object') return data;
+  const type = typeof data;
+  
+  // Return basic primitives as is
+  if (type !== 'object') return data;
 
   // Handle Firebase Timestamps or standard Dates
   if (typeof data.toDate === 'function') return data.toDate().getTime();
   if (data instanceof Date) return data.getTime();
   
+  // Prevent circular references
+  if (seen.has(data)) return null;
+  seen.add(data);
+
   // Handle Arrays
-  if (Array.isArray(data)) return data.map(toPlainObject);
+  if (Array.isArray(data)) return data.map(item => toPlainObject(item, seen));
   
   // Handle Plain Objects strictly (POJOs)
-  if (Object.prototype.toString.call(data) === '[object Object]') {
+  const proto = Object.getPrototypeOf(data);
+  if (proto === Object.prototype || proto === null) {
     const plain: any = {};
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        // Recurse to clean deep objects
-        const cleaned = toPlainObject(data[key]);
-        if (cleaned !== undefined) plain[key] = cleaned;
+        // Skip internal firebase properties
+        if (key.startsWith('_')) continue;
+        
+        const val = toPlainObject(data[key], seen);
+        if (val !== undefined) plain[key] = val;
       }
     }
     return plain;
   }
   
-  // Discard any other complex/circular/Firebase internal objects
+  // Discard any other complex/circular or non-plain objects (like DocumentReference, etc.)
   return null;
 };
 
@@ -139,12 +148,8 @@ class FirebaseDB {
       });
       onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
         if (snapshot.exists()) {
-          const cleanedStats = toPlainObject(snapshot.data());
-          this.stats = { 
-            ...this.stats, 
-            totalCollection: cleanedStats.totalCollection || 0, 
-            totalExpense: cleanedStats.totalExpense || 0 
-          };
+          const data = toPlainObject(snapshot.data());
+          this.stats = { ...this.stats, totalCollection: data.totalCollection || 0, totalExpense: data.totalExpense || 0 };
           this.notify();
         }
       });
@@ -189,9 +194,6 @@ class FirebaseDB {
     return { totalCol, totalExp };
   }
 
-  /**
-   * Register user using phone number as unique ID to prevent double registration from double clicks.
-   */
   async registerUser(userData: any) {
     const phoneId = userData.phone.replace(/\D/g, '');
     const cleanData = sanitizeForUpload({ 
@@ -202,7 +204,6 @@ class FirebaseDB {
       registeredAt: Date.now(), 
       lastActive: Date.now() 
     });
-    // Use setDoc with a unique ID to handle accidental double clicks
     await setDoc(doc(firestore, "users", `u_${phoneId}`), cleanData);
   }
 

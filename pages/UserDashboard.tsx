@@ -8,7 +8,7 @@ import {
   Wallet, CreditCard, Award, User as UserIcon, 
   List, ArrowUpRight, TrendingUp, Bell, ChevronRight,
   ShieldCheck, X, Clock, Plus, TrendingDown, Receipt, Users, HandHelping,
-  Lightbulb, Info, Smartphone, CheckCircle2, Send, Loader2, MessageSquare, Facebook, Mail, PhoneCall
+  Lightbulb, Info, Smartphone, CheckCircle2, Send, Loader2, MessageSquare, Facebook, Mail, PhoneCall, Copy, Landmark, Building2
 } from 'lucide-react';
 
 const UserDashboard: React.FC = () => {
@@ -26,6 +26,7 @@ const UserDashboard: React.FC = () => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [suggestionText, setSuggestionText] = useState('');
   const [isSendingSuggestion, setIsSendingSuggestion] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -55,7 +56,6 @@ const UserDashboard: React.FC = () => {
     return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
   };
 
-  // Define formatTime function to fix the 'Cannot find name formatTime' error
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('en-US', { 
       hour: '2-digit', 
@@ -81,6 +81,12 @@ const UserDashboard: React.FC = () => {
       setShowSuggestionModal(false);
       alert('আপনার পরামর্শ এডমিন প্যানেলে পাঠানো হয়েছে। ধন্যবাদ!');
     } catch (e) { alert('সমস্যা হয়েছে।'); } finally { setIsSendingSuggestion(false); }
+  };
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   };
 
   return (
@@ -151,9 +157,9 @@ const UserDashboard: React.FC = () => {
             { icon: <CreditCard className="w-5 h-5" />, label: 'দান', color: 'bg-indigo-600', path: '/transaction' },
             { icon: <HandHelping className="w-5 h-5" />, label: 'আবেদন', color: 'bg-teal-600', path: '/assistance' },
             { icon: <Award className="w-5 h-5" />, label: 'সেরা দাতা', color: 'bg-amber-500', path: '/leaderboard' },
-            { icon: <List className="w-5 h-5" />, label: 'ইতিহাস', color: 'bg-violet-600', path: '/history' },
+            { icon: <List className="w-5 h-5" />, label: 'আপনার হিসাব', color: 'bg-violet-600', path: '/history' },
             { icon: <Lightbulb className="w-5 h-5" />, label: 'পরামর্শ', color: 'bg-emerald-600', action: () => setShowSuggestionModal(true) },
-            { icon: <Info className="w-5 h-5" />, label: 'গাইড', color: 'bg-blue-600', action: () => setShowPaymentModal(true) },
+            { icon: <Info className="w-5 h-5" />, label: 'পেমেন্ট তথ্য', color: 'bg-blue-600', action: () => setShowPaymentModal(true) },
             { icon: <MessageSquare className="w-5 h-5" />, label: 'যোগাযোগ', color: 'bg-rose-600', action: () => setShowContactModal(true) },
             { icon: <Receipt className="w-5 h-5" />, label: 'ভাউচার', color: 'bg-slate-700', path: '/expenses' },
           ].map((item, idx) => (
@@ -250,25 +256,72 @@ const UserDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Payment Guide Modal */}
+      {/* Payment Information Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6">
-           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 overflow-hidden">
-              <div className="p-6 bg-blue-600 text-white flex justify-between items-center">
-                 <div className="flex items-center gap-3"><Smartphone className="w-6 h-6" /><h3 className="font-black uppercase text-sm tracking-widest">পেমেন্ট গাইড</h3></div>
+           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 overflow-hidden flex flex-col">
+              <div className="p-6 bg-blue-600 text-white flex justify-between items-center shrink-0">
+                 <div className="flex items-center gap-3"><Landmark className="w-6 h-6" /><h3 className="font-black uppercase text-sm tracking-widest">পেমেন্ট তথ্য</h3></div>
                  <button onClick={() => setShowPaymentModal(false)} className="p-2 bg-white/20 rounded-xl"><X className="w-5 h-5" /></button>
               </div>
-              <div className="p-8 space-y-6">
-                 <div className="bg-blue-50 p-6 rounded-[2rem] border-2 border-blue-100 text-center space-y-2">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">অফিসিয়াল নম্বর</p>
-                    <h3 className="text-2xl font-black text-slate-900">{contactConfig.phone}</h3>
-                    <div className="flex justify-center gap-2 pt-2">
+              <div className="p-6 space-y-5 overflow-y-auto no-scrollbar">
+                 {/* Alrajhi Bank Details */}
+                 <div className="bg-blue-50/80 p-5 rounded-[2rem] border-2 border-blue-100 space-y-4">
+                    <div className="flex items-center gap-3 border-b border-blue-100 pb-2">
+                       <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center"><Building2 className="w-4 h-4" /></div>
+                       <h4 className="text-[11px] font-black text-blue-900 uppercase tracking-widest">Alrajhi bank information</h4>
+                    </div>
+                    
+                    <div className="space-y-3">
+                       <div className="flex flex-col gap-1">
+                          <p className="text-[9px] font-black text-blue-500 uppercase tracking-wider">Account Name</p>
+                          <div className="flex justify-between items-center">
+                             <p className="text-xs font-black text-slate-900">MD JAHIDUL ISLAM</p>
+                          </div>
+                       </div>
+                       
+                       <div className="flex flex-col gap-1">
+                          <p className="text-[9px] font-black text-blue-500 uppercase tracking-wider">Account Number</p>
+                          <div className="flex justify-between items-center group cursor-pointer" onClick={() => copyToClipboard('077040010006087859970', 'acc')}>
+                             <p className="text-sm font-black text-slate-900">077040010006087859970</p>
+                             <div className="flex items-center gap-1">
+                                {copiedField === 'acc' && <span className="text-[8px] font-black text-emerald-600 animate-in fade-in">Copied!</span>}
+                                <Copy className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-600" />
+                             </div>
+                          </div>
+                       </div>
+                       
+                       <div className="flex flex-col gap-1">
+                          <p className="text-[9px] font-black text-blue-500 uppercase tracking-wider">IBAN</p>
+                          <div className="flex justify-between items-center group cursor-pointer" onClick={() => copyToClipboard('SA17 8000 0859 6080 1785 9970', 'iban')}>
+                             <p className="text-[10px] font-black text-slate-900 break-all leading-tight">SA17 8000 0859 6080 1785 9970</p>
+                             <div className="flex items-center gap-1 shrink-0 ml-2">
+                                {copiedField === 'iban' && <span className="text-[8px] font-black text-emerald-600">Copied!</span>}
+                                <Copy className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-600" />
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* Mobile Banking Section */}
+                 <div className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 text-center space-y-3">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">অফিসিয়াল মোবাইল ব্যাংকিং</p>
+                    <div className="flex items-center justify-center gap-2 text-xl font-black text-slate-900 group cursor-pointer" onClick={() => copyToClipboard(contactConfig.phone, 'phone')}>
+                       {toBengaliNumber(contactConfig.phone)}
+                       <div className="relative">
+                          {copiedField === 'phone' && <span className="absolute -top-6 left-0 text-[8px] font-black text-emerald-600 whitespace-nowrap">Copied!</span>}
+                          <Copy className="w-4 h-4 text-slate-300 group-hover:text-teal-600" />
+                       </div>
+                    </div>
+                    <div className="flex justify-center gap-2 pt-1">
                        {['বিকাশ', 'নগদ', 'রকেট', 'উপায়'].map(tag => (
-                         <span key={tag} className="px-2 py-1 bg-white border border-blue-200 rounded-lg text-[8px] font-black text-blue-700">{tag}</span>
+                         <span key={tag} className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[8px] font-black text-slate-600 shadow-sm">{tag}</span>
                        ))}
                     </div>
                  </div>
-                 <button onClick={() => setShowPaymentModal(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs active:scale-95 shadow-xl">ঠিক আছে</button>
+                 
+                 <button onClick={() => setShowPaymentModal(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest active:scale-95 shadow-xl shadow-slate-200 mt-2">ঠিক আছে</button>
               </div>
            </div>
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
@@ -98,9 +99,12 @@ const ExpensePage: React.FC = () => {
               {exp.proofImage && (
                 <button 
                   onClick={() => setSelectedImage(exp.proofImage!)}
-                  className="w-full py-3 bg-slate-50 border border-dashed border-slate-200 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black text-slate-500 uppercase hover:bg-slate-100 transition-colors"
+                  className="w-full py-4 bg-teal-50 border border-teal-100/50 rounded-3xl flex items-center justify-center gap-3 text-[11px] font-black text-teal-700 uppercase hover:bg-teal-100 hover:border-teal-200 transition-all active:scale-[0.98] shadow-sm group"
                 >
-                  <ImageIcon className="w-4 h-4 text-blue-500" /> ভাউচার/প্রমাণ দেখুন
+                  <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-200 group-hover:scale-110 group-hover:rotate-6 transition-all">
+                    <ImageIcon className="w-4 h-4" />
+                  </div>
+                  <span>খরচের বিস্তারিত</span>
                 </button>
               )}
             </div>
