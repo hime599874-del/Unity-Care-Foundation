@@ -52,6 +52,8 @@ export interface User {
   policyConsent: boolean;
   status: UserStatus;
   profilePic?: string;
+  designation?: string;
+  isPermanentMember?: boolean;
   totalDonation: number;
   yearlyDonation: number;
   transactionCount: number;
@@ -80,11 +82,21 @@ export interface Suggestion {
   timestamp: number;
 }
 
+export interface Complaint {
+  id: string;
+  userId: string;
+  userName: string;
+  message: string;
+  timestamp: number;
+}
+
 export interface ContactConfig {
   whatsapp: string;
   facebook: string;
+  messenger: string;
   email: string;
   phone: string;
+  policyUrl?: string;
 }
 
 export interface AssistanceRequest {

@@ -352,7 +352,7 @@ const AuthPage: React.FC = () => {
                    <input 
                     type="tel" 
                     name="phone-login"
-                    autocomplete="tel"
+                    autoComplete="tel"
                     className={inputClass} 
                     placeholder="নম্বর লিখুন..." 
                     value={phoneInput} 
@@ -385,7 +385,7 @@ const AuthPage: React.FC = () => {
                    <input 
                     type="text" 
                     name="full-name"
-                    autocomplete="name"
+                    autoComplete="name"
                     className={inputClass} 
                     placeholder="আপনার পূর্ণ নাম" 
                     value={formData.name} 
@@ -400,7 +400,7 @@ const AuthPage: React.FC = () => {
                       <input 
                         type="tel" 
                         name="user-phone"
-                        autocomplete="tel"
+                        autoComplete="tel"
                         className={inputClass} 
                         placeholder="মোবাইল নম্বর" 
                         value={phoneInput} 
@@ -415,7 +415,7 @@ const AuthPage: React.FC = () => {
                       </button>
                       <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
-                        <input type="number" name="birth-year" autocomplete="bday-year" className={`${inputClass} pl-10 text-[11px]`} placeholder="জন্ম সাল (৪ সংখ্যা)" value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
+                        <input type="number" name="birth-year" autoComplete="bday-year" className={`${inputClass} pl-10 text-[11px]`} placeholder="জন্ম সাল (৪ সংখ্যা)" value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
                       </div>
                    </div>
 

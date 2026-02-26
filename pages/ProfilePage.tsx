@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
@@ -93,8 +92,7 @@ const ProfilePage: React.FC = () => {
 
   const memberId = currentUser?.phone?.slice(-4) || '0000';
   const toBengaliNumber = (num: number | string) => {
-    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+    return num.toString();
   };
 
   const inputClass = "w-full pl-12 p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-bold text-black transition-all";
@@ -160,7 +158,7 @@ const ProfilePage: React.FC = () => {
                 <input 
                   id="profile-display-name"
                   name="user-full-name"
-                  autocomplete="name"
+                  autoComplete="name"
                   className={inputClass} 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
@@ -176,7 +174,7 @@ const ProfilePage: React.FC = () => {
                 <input 
                   id="profile-user-email"
                   name="user-email-address"
-                  autocomplete="email"
+                  autoComplete="email"
                   className={inputClass} 
                   type="email" 
                   value={email} 

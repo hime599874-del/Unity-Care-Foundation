@@ -1,412 +1,865 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, ContactConfig } from '../types';
-import { toPng } from 'html-to-image';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
-  Calendar, LogOut, Plus, 
-  MessageCircle, Send, Wallet, Camera, FileText, Hash, Download, ImageIcon,
-  UserCheck, UserCircle, Loader2, Droplet, MapPin, Clock, 
-  Phone, User as UserIcon, Coins, PlusCircle, CreditCard, UserPlus, Printer,
-  ShieldCheck, History as HistoryIcon, RefreshCw, HandHelping, Info, AlertCircle, Briefcase, Home, Lightbulb, Settings, Facebook, Smartphone, Mail
+  LogOut, Plus, 
+  MessageCircle, Send, Wallet,
+  Loader2, Phone, User as UserIcon, ShieldCheck,
+  MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
+  Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
+  Download, Smartphone, Landmark, Award
 } from 'lucide-react';
+import { toPng } from 'html-to-image';
 
 const toBengaliNumber = (num: number | string) => {
-  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+  return num.toString();
 };
 
 const AdminDashboard: React.FC = () => {
   const { setIsAdmin } = useAuth();
   const navigate = useNavigate();
+  const reportRef = useRef<HTMLDivElement>(null);
+  
   const [users, setUsers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [assistanceReqs, setAssistanceReqs] = useState<AssistanceRequest[]>([]);
+  const [assistance, setAssistance] = useState<AssistanceRequest[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [stats, setStats] = useState(db.getStats());
   const [contactConfig, setContactConfig] = useState<ContactConfig>(db.getContactConfig());
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'settings'>('overview');
+  const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings'>('overview');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseReason, setExpenseReason] = useState('');
-  const [expenseImage, setExpenseImage] = useState<string | null>(null);
-  const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
-  const [isFixingStats, setIsFixingStats] = useState(false);
-  const [isUpdatingConfig, setIsUpdatingConfig] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   
-  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const [viewingAssistance, setViewingAssistance] = useState<AssistanceRequest | null>(null);
   const [notifMessage, setNotifMessage] = useState('');
-  const [isSendingNotif, setIsSendingNotif] = useState(false);
+  const [adminNote, setAdminNote] = useState('');
   
   const [manualAmount, setManualAmount] = useState('');
   const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isAddingFunds, setIsAddingFunds] = useState(false);
-
-  const reportRef = useRef<HTMLDivElement>(null);
-  const profileCardRef = useRef<HTMLDivElement>(null);
+  const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [userDesignation, setUserDesignation] = useState('');
 
   useEffect(() => {
     const refreshData = () => {
       setUsers(db.getUsers());
       setTransactions(db.getTransactions().sort((a,b) => b.timestamp - a.timestamp));
-      setExpenses(db.getExpenses().sort((a,b) => b.timestamp - a.timestamp));
-      setAssistanceReqs(db.getAssistanceRequests().sort((a,b) => b.timestamp - a.timestamp));
+      setAssistance(db.getAssistanceRequests().sort((a,b) => b.timestamp - a.timestamp));
       setSuggestions(db.getSuggestions().sort((a,b) => b.timestamp - a.timestamp));
+      setComplaints(db.getComplaints().sort((a,b) => b.timestamp - a.timestamp));
+      setExpenses(db.getExpenses().sort((a,b) => b.timestamp - a.timestamp));
       setStats(db.getStats());
-      setContactConfig(db.getContactConfig());
-      
-      if (viewingUser) {
-        const updated = db.getUsers().find(u => u.id === viewingUser.id);
-        if (updated) setViewingUser(updated);
-      }
+      const latestConfig = db.getContactConfig();
+      setContactConfig(latestConfig);
+      // Only update settings form if the user isn't currently editing it
+      // or if they just switched to the settings tab
     };
     refreshData();
-    const unsubscribe = db.subscribe(refreshData);
-    return unsubscribe;
-  }, [viewingUser?.id]);
+    return db.subscribe(refreshData);
+  }, []);
 
-  const handleLogout = () => { setIsAdmin(false); navigate('/'); };
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      setSettingsForm(db.getContactConfig());
+    }
+  }, [activeTab]);
 
-  const trackProcess = async (id: string, action: () => Promise<void>) => {
-    if (processingIds.has(id)) return;
-    setProcessingIds(prev => new Set(prev).add(id));
-    try { await action(); } catch (e) { console.error(e); } finally {
-      setProcessingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+  useEffect(() => {
+    if (viewingUser) {
+      setUserDesignation(viewingUser.designation || 'ভেরিফাইড সদস্য');
+    }
+  }, [viewingUser]);
+
+  const handleUpdateDesignation = async () => {
+    if (!viewingUser || !userDesignation.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await db.updateUser(viewingUser.id, { designation: userDesignation.trim() });
+      setViewingUser({ ...viewingUser, designation: userDesignation.trim() });
+      alert('পদবী সফলভাবে আপডেট করা হয়েছে।');
+    } catch (e) {
+      alert('আপডেট ব্যর্থ হয়েছে।');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleApproveUser = (id: string) => trackProcess(id, () => db.updateUser(id, { status: UserStatus.APPROVED }));
-  const handleRejectUser = (id: string) => trackProcess(id, async () => { if(confirm("নিবন্ধনটি বাতিল করবেন?")) await db.updateUser(id, { status: UserStatus.REJECTED }); });
-  const handleDeleteUser = (id: string) => trackProcess(id, async () => { if(confirm("সদস্যটি স্থায়ীভাবে মুছে ফেলবেন?")) { await db.deleteUser(id); setViewingUser(null); } });
-  const handleApproveTx = (id: string) => trackProcess(id, () => db.approveTransaction(id));
-  const handleRejectTx = (id: string) => trackProcess(id, async () => { if(confirm("লেনদেনটি বাতিল করবেন?")) await db.rejectTransaction(id); });
-
-  const handleFixStats = async () => {
-    if (isFixingStats) return;
-    setIsFixingStats(true);
+  const handleTogglePermanentMember = async () => {
+    if (!viewingUser) return;
+    setIsSubmitting(true);
     try {
-      const results = await db.recalculateStats();
-      alert(`হিসাব ঠিক করা হয়েছে। বর্তমান মোট সংগ্রহ: ৳${results.totalCol}`);
-    } catch (e) { alert('সমস্যা হয়েছে।'); } finally { setIsFixingStats(false); }
+      const newStatus = !viewingUser.isPermanentMember;
+      await db.updateUser(viewingUser.id, { isPermanentMember: newStatus });
+      setViewingUser({ ...viewingUser, isPermanentMember: newStatus });
+    } catch (e) {
+      alert('আপডেট ব্যর্থ হয়েছে।');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleUpdateContactConfig = async () => {
-    setIsUpdatingConfig(true);
+    setIsSubmitting(true);
     try {
-      await db.updateContactConfig(contactConfig);
-      alert('যোগাযোগ তথ্য আপডেট করা হয়েছে। এটি সকল ইউজারের কাছে সাথে সাথেই কার্যকর হবে।');
-    } catch (e) { alert('আপডেট করতে সমস্যা হয়েছে।'); } finally { setIsUpdatingConfig(false); }
-  };
-
-  const handleDownloadProfile = async () => {
-    if (!profileCardRef.current) return;
-    try {
-      const dataUrl = await toPng(profileCardRef.current, { quality: 1, backgroundColor: '#ffffff' });
-      const link = document.createElement('a');
-      link.download = `Profile-${viewingUser?.name}-${Date.now()}.png`;
-      link.href = dataUrl; link.click();
-    } catch (err) { alert('ডাউনলোড করতে সমস্যা হয়েছে।'); }
-  };
-
-  const handleExpenseImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setExpenseImage(reader.result as string);
-      reader.readAsDataURL(file);
+      await db.updateContactConfig(settingsForm);
+      alert('কন্টাক্ট সেটিংস সফলভাবে সেভ করা হয়েছে।');
+    } catch (e) {
+      alert('সেভিংস ব্যর্থ হয়েছে।');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleLogout = () => { setIsAdmin(false); navigate('/'); };
+
+  const handleUpdateStatus = async (id: string, type: 'user' | 'tx' | 'assistance', status: any) => {
+    try {
+      if (type === 'user') await db.updateUser(id, { status });
+      if (type === 'tx') status === TransactionStatus.APPROVED ? await db.approveTransaction(id) : await db.rejectTransaction(id);
+      if (type === 'assistance') {
+        await db.updateAssistanceStatus(id, status, adminNote);
+        setViewingAssistance(null);
+        setAdminNote('');
+      }
+    } catch (e) { alert('সমস্যা হয়েছে।'); }
   };
 
   const handleAddExpense = async () => {
-    const amountNum = parseFloat(expenseAmount);
-    if (!expenseAmount || !expenseReason || isSubmittingExpense) return;
-    const currentBalance = stats.totalCollection - (expenses.length === 0 ? 0 : stats.totalExpense);
-    if (amountNum > currentBalance) return alert("তহবিলে পর্যাপ্ত টাকা নেই!");
-    setIsSubmittingExpense(true);
+    if (!expenseAmount || !expenseReason || isSubmitting) return;
+    setIsSubmitting(true);
     try {
-      await db.addDetailedExpense(amountNum, expenseReason, expenseImage || undefined);
-      setExpenseAmount(''); setExpenseReason(''); setExpenseImage(null);
+      await db.addDetailedExpense(parseFloat(expenseAmount), expenseReason);
+      setExpenseAmount(''); setExpenseReason('');
       alert('ব্যয় সফলভাবে যোগ করা হয়েছে।');
-    } catch (e: any) { alert(e.message); } finally { setIsSubmittingExpense(false); }
+    } catch (e: any) { alert(e.message); } finally { setIsSubmitting(false); }
   };
 
-  const handleDeleteExpense = (id: string, amount: number) => trackProcess(id, async () => {
-    if (confirm("এই ব্যয়ের হিসাবটি স্থায়ীভাবে মুছে ফেলবেন? এটি ডাটাবেস থেকে মুছে যাবে এবং তহবিলের হিসাব আপডেট হবে।")) {
-      await db.deleteExpense(id, amount);
-      alert('ব্যয়ের হিসাবটি মুছে ফেলা হয়েছে।');
-    }
-  });
-
   const handleSendMessage = async () => {
-    if (!viewingUser || !notifMessage.trim() || isSendingNotif) return;
-    setIsSendingNotif(true);
+    if (!viewingUser || !notifMessage.trim()) return;
     try {
       await db.sendNotification(viewingUser.id, notifMessage.trim());
       setNotifMessage('');
       alert('বার্তা পাঠানো হয়েছে।');
-    } catch (e) { alert('বার্তা পাঠানো যায়নি।'); } finally { setIsSendingNotif(false); }
-  };
-
-  const handleDownloadReport = async () => {
-    if (!reportRef.current) return;
-    try {
-      const dataUrl = await toPng(reportRef.current, { 
-        quality: 1, 
-        backgroundColor: '#ffffff',
-        pixelRatio: 2
-      });
-      const link = document.createElement('a');
-      link.download = `Ledger-${Date.now()}.png`;
-      link.href = dataUrl; link.click();
-    } catch (err) { alert('ডাউনলোড করতে সমস্যা হয়েছে।'); }
+    } catch (e) { alert('ব্যর্থ হয়েছে।'); }
   };
 
   const handleAddManualFunds = async () => {
-    if (!viewingUser || !manualAmount || parseFloat(manualAmount) <= 0 || isAddingFunds) return;
-    if (!confirm(`${toBengaliNumber(manualAmount)} টাকা সরাসরি সদস্যের একাউন্টে যোগ করতে চান?`)) return;
-    setIsAddingFunds(true);
+    if (!viewingUser || !manualAmount) return;
     try {
       await db.addManualTransaction(viewingUser.id, viewingUser.name, parseFloat(manualAmount), 'Admin Manual', manualDate);
       setManualAmount('');
-      alert('সফলভাবে টাকা যোগ করা হয়েছে।');
-    } catch (e) { alert('সমস্যা হয়েছে।'); } finally { setIsAddingFunds(false); }
+      alert('সফলভাবে যোগ হয়েছে।');
+    } catch (e) { alert('ব্যর্থ হয়েছে।'); }
+  };
+
+  const downloadTransactionsAsImage = async () => {
+    if (!reportRef.current || isCapturing) return;
+    setIsCapturing(true);
+    try {
+      await new Promise(r => setTimeout(r, 400));
+      const dataUrl = await toPng(reportRef.current, { backgroundColor: '#F1F5F9', pixelRatio: 3 });
+      const link = document.createElement('a');
+      link.download = `Ledger_Report_${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } finally { setIsCapturing(false); }
+  };
+
+  const downloadAsExcel = () => {
+    const approvedTxs = transactions.filter(t => t.status === TransactionStatus.APPROVED);
+    const headers = ['SL', 'Date', 'Name', 'Phone', 'Amount', 'Method', 'Transaction ID'];
+    const rows = approvedTxs.map((t, index) => [
+      index + 1,
+      t.date,
+      t.userName,
+      db.getUser(t.userId)?.phone || 'N/A',
+      t.amount,
+      t.method,
+      t.transactionId
+    ]);
+    
+    const csvRows = [headers, ...rows];
+    const csvString = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Donation_Report_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadMonthlyExcelReport = () => {
+    const [year, month] = reportMonth.split('-').map(Number);
+    const monthName = new Date(year, month - 1).toLocaleString('bn-BD', { month: 'long', year: 'numeric' });
+    
+    // Filter transactions for the selected month
+    const monthlyTxs = transactions.filter(t => {
+      const d = new Date(t.timestamp);
+      return d.getFullYear() === year && (d.getMonth() + 1) === month && t.status === TransactionStatus.APPROVED;
+    });
+
+    // Filter expenses for the selected month
+    const monthlyExpenses = expenses.filter(e => {
+      const d = new Date(e.timestamp);
+      return d.getFullYear() === year && (d.getMonth() + 1) === month;
+    });
+
+    const totalCollection = monthlyTxs.reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const donorIds = new Set(monthlyTxs.map(t => t.userId));
+    const donorCount = donorIds.size;
+    const netBalance = stats.totalCollection - stats.totalExpense;
+
+    // Find members who haven't paid this month
+    const approvedUsers = users.filter(u => u.status === UserStatus.APPROVED);
+    const unpaidMembers = approvedUsers.filter(u => !donorIds.has(u.id));
+
+    const csvRows = [
+      ['ইউনিটি কেয়ার ফাউন্ডেশন - মাসিক রিপোর্ট (Monthly Report)'],
+      ['মাসের নাম', monthName],
+      ['এই মাসে মোট আদায়', `৳${totalCollection}`],
+      ['মোট দাতা সংখ্যা', `${donorCount} জন`],
+      ['এই মাসে মোট ব্যয়', `৳${totalExpense}`],
+      ['বর্তমান মোট তহবিল (Total Balance)', `৳${netBalance}`],
+      [],
+      ['আদায়ের তালিকা (Donation List)'],
+      ['SL', 'তারিখ (Date)', 'সদস্যের নাম (Name)', 'পরিচয় (ID)', 'পরিমাণ (Amount)', 'মাধ্যম (Method)'],
+    ];
+
+    monthlyTxs.forEach((t, index) => {
+      const user = db.getUser(t.userId);
+      csvRows.push([
+        index + 1,
+        t.date,
+        t.userName,
+        user?.phone?.slice(-4) || '0000',
+        t.amount,
+        t.method
+      ]);
+    });
+
+    csvRows.push([], ['বকেয়া সদস্যদের তালিকা (Unpaid Members List)'], ['SL', 'নাম (Name)', 'পরিচয় (ID)', 'মোবাইল (Mobile)', 'ঠিকানা (Address)']);
+
+    unpaidMembers.forEach((m, index) => {
+      csvRows.push([
+        index + 1,
+        m.name,
+        m.phone.slice(-4),
+        m.phone,
+        `${m.address?.district || ''}, ${m.address?.upazila || ''}`
+      ]);
+    });
+
+    const csvString = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Monthly_Report_${reportMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const filteredUsers = useMemo(() => users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone.includes(searchQuery)), [users, searchQuery]);
   const netBalance = stats.totalCollection - (expenses.length === 0 ? 0 : stats.totalExpense);
 
   return (
-    <div className="bg-[#F1F5F9] min-h-screen font-['Hind_Siliguri'] pb-10">
-      <header className="px-6 py-5 bg-white border-b border-slate-200 sticky top-0 z-50 flex justify-between items-center shadow-sm">
+    <div className="bg-[#F1F5F9] min-h-screen font-['Hind_Siliguri'] pb-20">
+      <header className="px-6 py-5 bg-white border-b sticky top-0 z-50 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-teal-600 rounded-xl shadow-lg"><LayoutDashboard className="w-5 h-5 text-white" /></div>
-          <div><h1 className="text-base font-black tracking-tighter">এডমিন প্যানেল</h1><p className="text-[8px] text-teal-600 font-black uppercase tracking-widest mt-1">Unity Care Foundation</p></div>
+          <div className="p-2.5 bg-[#0D9488] rounded-xl text-white shadow-lg"><LayoutDashboard className="w-5 h-5" /></div>
+          <div><h1 className="text-base font-black uppercase leading-none">এডমিন প্যানেল</h1><p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">Unity Care Foundation</p></div>
         </div>
-        <button onClick={handleLogout} className="p-2.5 bg-rose-50 text-rose-600 rounded-xl border border-rose-100"><LogOut className="w-5 h-5" /></button>
+        <button onClick={handleLogout} className="p-3 bg-rose-50 text-rose-600 rounded-2xl active:scale-95 transition-all"><LogOut className="w-6 h-6" /></button>
       </header>
 
-      {/* Tabs Menu */}
-      <div className="bg-white border-b border-slate-200 px-6 overflow-x-auto flex gap-6 scrollbar-hide no-scrollbar sticky top-[72px] z-40 shadow-sm">
+      <div className="bg-white border-b px-6 overflow-x-auto flex gap-6 sticky top-[73px] z-40 no-scrollbar shadow-sm">
         {[
-          { id: 'overview', label: 'ওভারভিউ', icon: <TrendingUp className="w-3.5 h-3.5" /> },
-          { id: 'users', label: 'সদস্য তালিকা', icon: <Users className="w-3.5 h-3.5" /> },
-          { id: 'assistance', label: 'আবেদন', icon: <HandHelping className="w-3.5 h-3.5" /> },
-          { id: 'txs', label: 'লেনদেন', icon: <DollarSign className="w-3.5 h-3.5" /> },
-          { id: 'expense', label: 'ব্যয়', icon: <TrendingDown className="w-3.5 h-3.5" /> },
-          { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-3.5 h-3.5" /> },
-          { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-3.5 h-3.5" /> }
+          { id: 'overview', label: 'ওভারভিউ', icon: <TrendingUp className="w-4 h-4" /> },
+          { id: 'users', label: 'সদস্য তালিকা', icon: <Users className="w-4 h-4" /> },
+          { id: 'assistance', label: 'আবেদন', icon: <HandHelping className="w-4 h-4" /> },
+          { id: 'txs', label: 'লেনদেন', icon: <DollarSign className="w-4 h-4" /> },
+          { id: 'expense', label: 'ব্যয়', icon: <TrendingDown className="w-4 h-4" /> },
+          { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-4 h-4" /> },
+          { id: 'complaints', label: 'অভিযোগ', icon: <AlertCircle className="w-4 h-4" /> },
+          { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" /> }
         ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`py-4 px-1 border-b-2 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap ${activeTab === tab.id ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-400'}`}>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`py-5 px-1 border-b-[3px] text-[10px] font-black uppercase flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id ? 'border-[#0D9488] text-[#0D9488]' : 'border-transparent text-slate-400'}`}>
             {tab.icon} {tab.label}
           </button>
         ))}
       </div>
 
-      <main className="p-4 max-w-4xl mx-auto space-y-5">
-        {/* OVERVIEW TAB */}
+      <main className="p-5 max-w-lg mx-auto space-y-6 md:max-w-4xl">
         {activeTab === 'overview' && (
-          <div className="space-y-5 animate-in fade-in">
-            <div className="flex justify-between items-center bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-               <div className="flex flex-col"><h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">গ্লোবাল সামারি</h3><p className="text-[8px] text-rose-500 font-bold uppercase mt-1">হিসাব আপডেট করতে পাশের বাটনে চাপুন</p></div>
-               <button onClick={handleFixStats} disabled={isFixingStats} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">{isFixingStats ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} হিসাব ঠিক করুন</button>
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard label="মোট সদস্য" value={`${toBengaliNumber(stats.totalUsers)} জন`} icon={<Users className="w-6 h-6" />} color="bg-blue-50 text-blue-600" />
+              <StatCard label="মোট আদায়" value={`৳${toBengaliNumber(stats.totalCollection.toLocaleString())}`} icon={<TrendingUp className="w-6 h-6" />} color="bg-emerald-50 text-emerald-600" />
+              <StatCard label="মোট ব্যয়" value={`৳${toBengaliNumber(stats.totalExpense.toLocaleString())}`} icon={<TrendingDown className="w-6 h-6" />} color="bg-rose-50 text-rose-600" />
+              <div className="bg-[#0D9488] p-5 rounded-[2.5rem] text-white shadow-xl flex flex-col justify-between h-28 border border-white/20">
+                <p className="text-[9px] font-black uppercase opacity-80 leading-none tracking-widest">বর্তমান তহবিল</p>
+                <h3 className="text-2xl font-black leading-none italic">৳{toBengaliNumber(netBalance.toLocaleString())}</h3>
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard label="মোট সদস্য" value={`${toBengaliNumber(stats.totalUsers)} জন`} icon={<Users className="w-4 h-4" />} color="bg-blue-50 text-blue-600" />
-              <StatCard label="মোট আদায়" value={`৳${toBengaliNumber(stats.totalCollection.toLocaleString())}`} icon={<TrendingUp className="w-4 h-4" />} color="bg-emerald-50 text-emerald-600" />
-              <StatCard label="মোট ব্যয়" value={`৳${toBengaliNumber((expenses.length === 0 ? 0 : stats.totalExpense).toLocaleString())}`} icon={<TrendingDown className="w-4 h-4" />} color="bg-rose-50 text-rose-600" />
-              <div className="bg-teal-600 p-4 rounded-3xl text-white shadow-xl flex flex-col justify-between"><p className="text-[8px] font-black uppercase tracking-widest opacity-80">বর্তমান ফান্ড</p><h3 className="text-lg font-black">৳{toBengaliNumber(netBalance.toLocaleString())}</h3></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-               <SectionBox title="নতুন মেম্বার রিকোয়েস্ট" count={users.filter(u=>u.status===UserStatus.PENDING).length} color="bg-teal-600">
-                  {users.filter(u=>u.status===UserStatus.PENDING).map(u => (
-                    <div key={u.id} className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
-                       <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center font-black text-teal-600 border border-teal-100">{u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : u.name[0]}</div><div><p className="text-[11px] font-black">{u.name}</p><p className="text-[9px] text-slate-400 font-bold">{u.phone}</p></div></div>
-                       <div className="flex gap-1.5"><button disabled={processingIds.has(u.id)} onClick={() => handleApproveUser(u.id)} className="p-1.5 bg-emerald-600 text-white rounded-lg shadow-sm">{processingIds.has(u.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}</button><button onClick={() => handleRejectUser(u.id)} className="p-1.5 bg-rose-600 text-white rounded-lg"><X className="w-3.5 h-3.5" /></button></div>
-                    </div>
-                  ))}
-               </SectionBox>
-               <SectionBox title="পেমেন্ট রিকোয়েস্ট" count={transactions.filter(t=>t.status===TransactionStatus.PENDING).length} color="bg-amber-500">
-                  {transactions.filter(t=>t.status===TransactionStatus.PENDING).map(t => (
-                    <div key={t.id} className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
-                       <div><p className="text-[11px] font-black">{t.userName}</p><p className="text-sm font-black text-amber-600">৳{toBengaliNumber(t.amount)}</p></div>
-                       <div className="flex gap-1.5"><button disabled={processingIds.has(t.id)} onClick={() => handleApproveTx(t.id)} className="p-1.5 bg-emerald-600 text-white rounded-lg">{processingIds.has(t.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}</button><button onClick={() => handleRejectTx(t.id)} className="p-1.5 bg-rose-600 text-white rounded-lg"><X className="w-3.5 h-3.5" /></button></div>
-                    </div>
-                  ))}
-               </SectionBox>
-            </div>
-          </div>
-        )}
 
-        {/* USERS TAB */}
-        {activeTab === 'users' && (
-          <div className="space-y-3 animate-in fade-in">
-             <div className="flex items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm"><Search className="w-4 h-4 text-slate-400" /><input type="text" placeholder="সদস্য খুঁজুন..." className="w-full outline-none font-bold text-xs" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
-             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-x-auto"><table className="w-full text-left"><thead className="bg-slate-50 border-b"><tr className="text-[9px] font-black uppercase text-slate-400 tracking-widest"><th className="px-5 py-3">সদস্য</th><th className="px-5 py-3">ঠিকানা</th><th className="px-5 py-3">রক্তের গ্রুপ</th><th className="px-5 py-3">অ্যাকশন</th></tr></thead><tbody className="divide-y">{filteredUsers.map(u => (<tr key={u.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => setViewingUser(u)}><td className="px-5 py-3"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center">{u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : <UserCircle className="w-5 h-5 text-slate-300" />}</div><div><p className="font-black text-[11px] text-slate-800">{u.name}</p><p className="text-[9px] text-slate-400 font-bold">{u.phone}</p></div></div></td><td className="px-5 py-3 text-[10px] font-bold text-slate-600">{u.address?.district}, {u.address?.upazila}</td><td className="px-5 py-3"><span className="p-1.5 bg-rose-50 text-rose-600 rounded-lg font-black text-[9px] border border-rose-100">{u.bloodGroup}</span></td><td className="px-5 py-3 flex gap-2"><button onClick={(e) => { e.stopPropagation(); setViewingUser(u); }} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg shadow-sm"><MessageCircle className="w-4 h-4" /></button><button onClick={(e) => { e.stopPropagation(); handleDeleteUser(u.id); }} className="p-2 text-rose-400"><Trash2 className="w-4 h-4" /></button></td></tr>))}</tbody></table></div>
-          </div>
-        )}
-
-        {/* ASSISTANCE TAB */}
-        {activeTab === 'assistance' && (
-           <div className="space-y-4 animate-in fade-in">
-              <h3 className="text-xs font-black uppercase tracking-widest ml-2">সাহায্যের আবেদনসমূহ</h3>
-              {assistanceReqs.map(req => (
-                <div key={req.id} className="bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm space-y-3">
-                   <div className="flex justify-between items-start">
-                      <div className="flex gap-3">
-                         <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><HandHelping className="w-6 h-6" /></div>
-                         <div>
-                            <h4 className="font-black text-sm">{req.userName}</h4>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{req.category} • {toBengaliNumber(new Date(req.timestamp).toLocaleDateString('bn-BD'))}</p>
-                         </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SectionBox title="মেম্বার রিকোয়েস্ট" count={users.filter(u=>u.status===UserStatus.PENDING).length} color="bg-indigo-600">
+                {users.filter(u=>u.status===UserStatus.PENDING).map(u => (
+                  <div key={u.id} className="p-4 bg-white border rounded-[1.8rem] flex items-center justify-between shadow-sm hover:border-indigo-200 transition-colors">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
+                        <UserIcon className="w-5 h-5" />
                       </div>
-                      <p className="font-black text-indigo-600 text-lg">৳{toBengaliNumber(req.amount || 0)}</p>
-                   </div>
-                   <p className="text-[11px] font-bold text-slate-600 bg-slate-50 p-3 rounded-xl">"{req.reason}"</p>
-                   {req.status === AssistanceStatus.PENDING && (
-                     <div className="flex gap-3 pt-2">
-                        <button onClick={() => trackProcess(req.id, () => db.updateAssistanceStatus(req.id, AssistanceStatus.APPROVED, "Approved by Admin"))} className="flex-grow py-3 bg-emerald-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100 flex items-center justify-center gap-2">অনুমোদন</button>
-                        <button onClick={() => trackProcess(req.id, () => db.updateAssistanceStatus(req.id, AssistanceStatus.REJECTED, "Rejected by Admin"))} className="flex-grow py-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl font-black text-[10px] uppercase tracking-widest">বাতিল</button>
-                     </div>
-                   )}
-                </div>
-              ))}
-           </div>
-        )}
+                      <div className="overflow-hidden">
+                        <p className="text-sm font-black truncate">{u.name}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase">{u.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                       <button onClick={() => handleUpdateStatus(u.id, 'user', UserStatus.APPROVED)} className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><Check className="w-5 h-5" /></button>
+                       <button onClick={() => { if(confirm("এই মেম্বার রিকোয়েস্টটি বাতিল করবেন?")) db.deleteUser(u.id); }} className="p-2.5 bg-rose-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><X className="w-5 h-5" /></button>
+                    </div>
+                  </div>
+                ))}
+                {users.filter(u=>u.status===UserStatus.PENDING).length === 0 && (
+                  <p className="text-center py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">কোন মেম্বার রিকোয়েস্ট নেই</p>
+                )}
+              </SectionBox>
 
-        {/* TRANSACTIONS TAB */}
-        {activeTab === 'txs' && (
-           <div className="space-y-4 animate-in fade-in">
-              <div className="flex justify-between items-center bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-                 <h3 className="text-xs font-black uppercase tracking-widest">সকল লেনদেন লেজার</h3>
-                 <button onClick={handleDownloadReport} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"><Download className="w-3.5 h-3.5" /> রিপোর্ট সেভ</button>
-              </div>
-              <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden" ref={reportRef}>
-                 <div className="p-8 bg-teal-600 text-white flex justify-between items-center">
-                    <div><h2 className="text-xl font-black italic uppercase">UNITY CARE FOUNDATION</h2><p className="text-[10px] font-black uppercase opacity-80 mt-1">সফল লেনদেন রিপোর্ট</p></div>
-                    <div className="text-right"><p className="text-2xl font-black">৳{toBengaliNumber(stats.totalCollection.toLocaleString())}</p></div>
-                 </div>
-                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-black">
-                        <thead className="bg-slate-50 border-b">
-                          <tr className="text-[9px] font-black uppercase tracking-widest">
-                              <th className="px-6 py-4">তারিখ</th>
-                              <th className="px-6 py-4">সদস্যের ছবি ও নাম</th>
-                              <th className="px-6 py-4">পরিমাণ</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {transactions.filter(t => t.status === TransactionStatus.APPROVED).map(t => {
-                             const user = users.find(u => u.id === t.userId);
-                             return (
-                               <tr key={t.id}>
-                                   <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{toBengaliNumber(t.date)}</td>
-                                   <td className="px-6 py-4 font-black text-[11px] flex items-center gap-2">
-                                      <div className="w-6 h-6 rounded bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
-                                         {user?.profilePic ? <img src={user.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-3 h-3 m-auto text-slate-300" />}
-                                      </div>
-                                      {t.userName}
-                                   </td>
-                                   <td className="px-6 py-4 font-black text-teal-600 text-base italic">৳{toBengaliNumber(t.amount.toLocaleString())}</td>
-                               </tr>
-                             );
-                          })}
-                        </tbody>
-                    </table>
-                 </div>
-              </div>
-           </div>
-        )}
-
-        {/* EXPENSE TAB */}
-        {activeTab === 'expense' && (
-          <div className="space-y-5 animate-in fade-in">
-             <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-md space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                   <div className="flex items-center gap-3"><div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-lg shadow-rose-100"><TrendingDown className="w-5 h-5" /></div><h3 className="text-[10px] font-black uppercase tracking-widest">নতুন ব্যয়ের হিসাব যোগ করুন</h3></div>
-                   <div className="bg-teal-50 px-4 py-2 rounded-2xl border border-teal-100"><p className="text-[8px] font-black text-teal-600 uppercase tracking-widest leading-none mb-1">অবশিষ্ট ফান্ড</p><p className="text-xs font-black text-teal-900 leading-none">৳{toBengaliNumber(netBalance.toLocaleString())}</p></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-rose-600">৳</span><input type="number" className="w-full p-4 pl-8 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-lg shadow-inner" placeholder="টাকা..." value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} /></div>
-                   <input type="text" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-sm shadow-inner" placeholder="ব্যয়ের কারণ..." value={expenseReason} onChange={e => setExpenseReason(e.target.value)} />
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center gap-3">
-                   {expenseImage ? <img src={expenseImage} className="w-full max-h-40 object-contain rounded-xl" /> : <ImageIcon className="w-10 h-10 text-slate-300" />}
-                   <label className="px-6 py-2 bg-white border border-slate-200 rounded-xl font-black text-[10px] uppercase cursor-pointer hover:bg-slate-50">ভাউচার ছবি আপলোড<input type="file" className="hidden" accept="image/*" onChange={handleExpenseImage} /></label>
-                </div>
-                <button onClick={handleAddExpense} disabled={!expenseAmount || !expenseReason || isSubmittingExpense} className="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-sm shadow-xl active:scale-95 disabled:opacity-50">{isSubmittingExpense ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'হিসাব যোগ করুন'}</button>
-             </div>
-             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden"><table className="w-full text-left"><thead className="bg-slate-50 border-b"><tr className="text-[8px] font-black uppercase text-slate-400 tracking-widest"><th className="px-5 py-3">তারিখ</th><th className="px-5 py-3">বিবরণ</th><th className="px-5 py-3">টাকা</th><th className="px-5 py-3">অ্যাকশন</th></tr></thead><tbody className="divide-y">{expenses.map(e => (<tr key={e.id}><td className="px-5 py-4 text-[10px] font-bold text-slate-500">{toBengaliNumber(e.date)}</td><td className="px-5 py-4 font-black text-slate-800 text-[11px]">{e.reason}</td><td className="px-5 py-4 font-black text-rose-600 text-sm">৳{toBengaliNumber(e.amount.toLocaleString())}</td><td className="px-5 py-4 flex gap-2">{e.proofImage && <button onClick={() => window.open(e.proofImage)} className="text-teal-600 underline font-black text-[9px]">ভাউচার</button>}<button onClick={() => handleDeleteExpense(e.id, e.amount)} disabled={processingIds.has(e.id)} className="p-1.5 text-rose-400 hover:text-rose-600 transition-colors ml-auto">{processingIds.has(e.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button></td></tr>))}</tbody></table></div>
+              <SectionBox title="লেনদেন রিকোয়েস্ট" count={transactions.filter(t=>t.status===TransactionStatus.PENDING).length} color="bg-amber-500">
+                {transactions.filter(t=>t.status===TransactionStatus.PENDING).map(t => (
+                  <div key={t.id} className="p-4 bg-white border rounded-[1.8rem] flex items-center justify-between shadow-sm hover:border-amber-200 transition-colors">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+                        <Smartphone className="w-5 h-5" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-sm font-black truncate">{t.userName}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase">৳{toBengaliNumber(t.amount)} • {t.method}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                       <button onClick={() => handleUpdateStatus(t.id, 'tx', TransactionStatus.APPROVED)} className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><Check className="w-5 h-5" /></button>
+                       <button onClick={() => handleUpdateStatus(t.id, 'tx', TransactionStatus.REJECTED)} className="p-2.5 bg-rose-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><X className="w-5 h-5" /></button>
+                    </div>
+                  </div>
+                ))}
+                {transactions.filter(t=>t.status===TransactionStatus.PENDING).length === 0 && (
+                  <p className="text-center py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">কোন লেনদেন রিকোয়েস্ট নেই</p>
+                )}
+              </SectionBox>
+            </div>
           </div>
         )}
 
-        {/* SUGGESTIONS TAB */}
-        {activeTab === 'suggestions' && (
-           <div className="space-y-4 animate-in fade-in">
-              <h3 className="text-xs font-black uppercase tracking-widest ml-2">মেম্বারদের পরামর্শ</h3>
-              {suggestions.map(s => (
-                 <div key={s.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2">
-                    <div className="flex justify-between items-center"><h4 className="text-[11px] font-black text-slate-800">{s.userName}</h4><span className="text-[8px] font-bold text-slate-400 uppercase">{toBengaliNumber(new Date(s.timestamp).toLocaleDateString('bn-BD'))}</span></div>
-                    <p className="text-[12px] font-bold text-slate-600 leading-relaxed italic">"{s.message}"</p>
+        {activeTab === 'users' && (
+          <div className="space-y-4 animate-in fade-in">
+             <div className="flex items-center gap-3 bg-white p-4 rounded-3xl border shadow-sm max-w-lg mx-auto">
+                <Search className="w-5 h-5 text-slate-400" />
+                <input type="text" placeholder="সদস্য খুঁজুন..." className="w-full outline-none font-bold text-sm" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+             </div>
+             
+             <div className="bg-white rounded-3xl border shadow-sm overflow-hidden">
+                <div className="overflow-x-auto no-scrollbar">
+                   <table className="w-full text-left border-collapse min-w-[600px]">
+                      <thead className="bg-slate-50 border-b">
+                         <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                            <th className="px-6 py-4">সদস্য</th>
+                            <th className="px-6 py-4">ঠিকানা</th>
+                            <th className="px-6 py-4 text-center">রক্তের গ্রুপ</th>
+                            <th className="px-6 py-4 text-center">অ্যাকশন</th>
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                         {filteredUsers.map(u => (
+                           <tr key={u.id} className="hover:bg-slate-50 transition-colors group">
+                              <td className="px-6 py-4" onClick={() => setViewingUser(u)}>
+                                 <div className="flex items-center gap-4 cursor-pointer">
+                                    <div className="w-12 h-12 rounded-[1.2rem] bg-slate-100 overflow-hidden shrink-0 border-2 border-white shadow-sm group-hover:scale-105 transition-transform">
+                                       {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-6 h-6 m-3 text-slate-300" />}
+                                    </div>
+                                    <div>
+                                       <p className="font-black text-sm text-slate-800">{u.name}</p>
+                                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{u.phone}</p>
+                                    </div>
+                                 </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                 <div className="text-[11px] font-bold text-slate-500 leading-tight">
+                                    <p className="text-slate-800 font-black mb-0.5 uppercase">{u.address?.district || '—'}</p>
+                                    <p>{u.address?.upazila || '—'}</p>
+                                 </div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                 {u.bloodGroup && (
+                                   <span className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[11px] font-black border border-rose-100/50">
+                                      {u.bloodGroup}
+                                   </span>
+                                 )}
+                              </td>
+                              <td className="px-6 py-4">
+                                 <div className="flex items-center justify-center gap-3">
+                                    <button onClick={() => setViewingUser(u)} className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm">
+                                       <MessageCircle className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => { if(confirm("মুছে ফেলবেন?")) db.deleteUser(u.id); }} className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors shadow-sm">
+                                       <Trash2 className="w-4 h-4" />
+                                    </button>
+                                 </div>
+                              </td>
+                           </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
+             </div>
+          </div>
+        )}
+
+        {activeTab === 'assistance' && (
+          <div className="space-y-4 animate-in fade-in max-w-lg mx-auto">
+             <div className="bg-[#0D9488] p-6 rounded-[2.5rem] text-white shadow-xl mb-4">
+                <h3 className="text-xl font-black italic">সাহায্যের আবেদনসমূহ</h3>
+                <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">সব আবেদনের তালিকা</p>
+             </div>
+             <div className="space-y-4">
+                {assistance.map(req => (
+                  <div key={req.id} onClick={() => setViewingAssistance(req)} className="bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col gap-3 group active:scale-[0.98] transition-all cursor-pointer">
+                     <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center"><HandHelping className="w-6 h-6" /></div>
+                           <div><p className="text-xs font-black">{req.userName}</p><p className="text-[9px] text-slate-400 font-bold uppercase">{req.category}</p></div>
+                        </div>
+                        <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${req.status === AssistanceStatus.APPROVED ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                           {req.status}
+                        </div>
+                     </div>
+                     <p className="text-[11px] font-bold text-slate-600 line-clamp-2">{req.reason}</p>
+                     {req.amount > 0 && <p className="text-sm font-black text-rose-600">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}
+                  </div>
+                ))}
+                {assistance.length === 0 && <div className="text-center py-20 opacity-20"><AlertCircle className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন আবেদন নেই</p></div>}
+             </div>
+          </div>
+        )}
+
+        {activeTab === 'txs' && (
+           <div className="space-y-4 animate-in fade-in max-w-lg mx-auto">
+              <div className="bg-white p-5 rounded-[2rem] shadow-sm border space-y-4">
+                 <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-widest">মাসিক রিপোর্ট (Excel)</h3>
+                    <FileSpreadsheet className="w-5 h-5 text-[#0D9488]" />
                  </div>
-              ))}
-              {suggestions.length === 0 && <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-100"><Lightbulb className="w-12 h-12 text-slate-100 mx-auto mb-2" /><p className="text-[10px] font-black text-slate-300 uppercase">কোন পরামর্শ নেই</p></div>}
+                 <div className="flex gap-3">
+                    <input 
+                      type="month" 
+                      className="flex-grow p-4 bg-slate-50 border rounded-2xl outline-none font-black text-sm" 
+                      value={reportMonth} 
+                      onChange={e => setReportMonth(e.target.value)} 
+                    />
+                    <button 
+                      onClick={downloadMonthlyExcelReport}
+                      className="px-6 py-4 bg-[#0D9488] text-white rounded-2xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" /> ডাউনলোড
+                    </button>
+                 </div>
+              </div>
+
+              <div className="bg-white p-3 rounded-2xl shadow-sm border flex gap-2 justify-end items-center">
+                 <button onClick={downloadAsExcel} className="p-2 bg-slate-100 text-slate-600 rounded-lg" title="Excel"><FileSpreadsheet className="w-4 h-4" /></button>
+                 <button onClick={downloadTransactionsAsImage} disabled={isCapturing} className="flex items-center gap-2 px-4 py-2 bg-[#0D9488] text-white rounded-xl text-[9px] font-black uppercase shadow-md active:scale-95 transition-all">
+                   <LucideImageIcon className="w-3.5 h-3.5" /> ছবি ডাউনলোড
+                 </button>
+              </div>
+
+              <div ref={reportRef} className="bg-[#F8FAFC] rounded-[3.5rem] shadow-2xl overflow-hidden border border-white max-w-[420px] mx-auto pb-10">
+                <div className="bg-[#0D9488] pt-12 pb-10 px-8 text-center relative overflow-hidden rounded-b-[3.5rem]">
+                   <h2 className="text-2xl font-black text-white italic tracking-tight">UNITY CARE FOUNDATION</h2>
+                   <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-teal-100 mt-2 opacity-80 italic">লে ন দে ন  রি পো র্ট</p>
+                   <h1 className="text-6xl font-black text-white italic mt-6 leading-none drop-shadow-2xl">
+                     ৳{toBengaliNumber(stats.totalCollection.toLocaleString())}
+                   </h1>
+                </div>
+
+                <div className="p-2 pt-4">
+                  <div className="bg-white rounded-[2.5rem] overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50/80 border-b border-slate-100">
+                        <tr className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em]">
+                          <th className="px-5 py-3">তারিখ</th>
+                          <th className="px-2 py-3">সদস্যের তথ্য</th>
+                          <th className="px-5 py-3 text-right">পরিমাণ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {transactions.filter(t => t.status === TransactionStatus.APPROVED).map(t => {
+                          const user = db.getUser(t.userId);
+                          return (
+                            <tr key={t.id} className="group hover:bg-slate-50/40 transition-colors">
+                              <td className="px-5 py-2.5 align-middle">
+                                <p className="text-[9px] font-bold text-slate-400">
+                                  {toBengaliNumber(t.date)}
+                                </p>
+                              </td>
+                              <td className="px-2 py-2.5 align-middle">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                    {user?.profilePic ? (
+                                      <img src={user.profilePic} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <UserIcon className="w-4 h-4 m-2.5 text-slate-300" />
+                                    )}
+                                  </div>
+                                  <div className="overflow-hidden leading-none">
+                                    <p className="text-[12px] font-black text-slate-800 uppercase italic truncate">{t.userName}</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {toBengaliNumber(user?.phone?.slice(-4) || '0000')}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-2.5 text-right align-middle">
+                                <p className="text-[17px] font-black text-[#0D9488] italic">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
            </div>
         )}
 
-        {/* SETTINGS TAB */}
-        {activeTab === 'settings' && (
-          <div className="space-y-5 animate-in fade-in">
-             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
-                <div className="flex items-center gap-3"><div className="p-2.5 bg-slate-800 text-white rounded-2xl"><Settings className="w-6 h-6" /></div><div><h3 className="text-sm font-black uppercase tracking-widest">গ্লোবাল সেটিংস</h3><p className="text-[9px] font-black text-teal-600 uppercase tracking-widest">যোগাযোগ লিঙ্ক পরিবর্তন করুন</p></div></div>
+        {activeTab === 'expense' && (
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
+             <div className="bg-white p-8 rounded-[3rem] border shadow-xl space-y-6">
+                <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-widest">নতুন ব্যয় হিসাব</h3>
                 <div className="space-y-4">
-                   <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp Group Link</label><div className="relative"><Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" /><input type="text" className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-xs" value={contactConfig.whatsapp} onChange={e => setContactConfig({...contactConfig, whatsapp: e.target.value})} /></div></div>
-                   <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Facebook Page Link</label><div className="relative"><Facebook className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600" /><input type="text" className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-xs" value={contactConfig.facebook} onChange={e => setContactConfig({...contactConfig, facebook: e.target.value})} /></div></div>
-                   <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Official Email</label><div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500" /><input type="text" className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-xs" value={contactConfig.email} onChange={e => setContactConfig({...contactConfig, email: e.target.value})} /></div></div>
-                   <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Emergency Phone Number</label><div className="relative"><Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-teal-600" /><input type="text" className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-xs" value={contactConfig.phone} onChange={e => setContactConfig({...contactConfig, phone: e.target.value})} /></div></div>
+                   <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-black text-2xl text-rose-600" placeholder="৳ 0.00" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} />
+                   <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" placeholder="ব্যয়ের কারণ..." value={expenseReason} onChange={e => setExpenseReason(e.target.value)} />
                 </div>
-                <button onClick={handleUpdateContactConfig} disabled={isUpdatingConfig} className="w-full py-4 bg-teal-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 disabled:opacity-50">{isUpdatingConfig ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'সব আপডেট করুন'}</button>
+                <button onClick={handleAddExpense} disabled={isSubmitting} className="w-full py-5 bg-rose-600 text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 border-b-4 border-rose-800">ব্যয় যোগ করুন</button>
              </div>
+             <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                   <tbody className="divide-y">
+                      {expenses.map(e => (
+                        <tr key={e.id} className="text-[11px] font-bold hover:bg-slate-50">
+                           <td className="px-6 py-4 text-slate-400">{toBengaliNumber(e.date)}</td>
+                           <td className="px-6 py-4">{e.reason}</td>
+                           <td className="px-6 py-4 text-rose-600 text-right font-black">৳{toBengaliNumber(e.amount)}</td>
+                        </tr>
+                      ))}
+                   </tbody>
+                </table>
+             </div>
+          </div>
+        )}
+
+        {activeTab === 'suggestions' && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-4 max-w-lg mx-auto">
+            <div className="bg-gradient-to-br from-[#6366F1] to-[#4F46E5] p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+              <div className="flex items-center gap-5 relative z-10">
+                <div className="p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-inner">
+                  <Lightbulb className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">পরামর্শ বক্স</h2>
+                  <p className="text-xs font-bold text-indigo-100 uppercase tracking-widest mt-1">সদস্যদের ফিডব্যাক</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {suggestions.length === 0 ? (
+                <div className="bg-white p-12 rounded-[3rem] text-center border border-dashed border-slate-300">
+                  <p className="text-slate-400 font-bold">কোন পরামর্শ পাওয়া যায়নি</p>
+                </div>
+              ) : (
+                suggestions.map(s => (
+                  <div key={s.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-xs">
+                          {s.userName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{s.userName}</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {new Date(s.timestamp).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50/50 p-5 rounded-3xl border border-slate-50">
+                      <p className="text-[13px] font-bold text-slate-700 leading-relaxed italic">"{s.message}"</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'complaints' && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-4 max-w-lg mx-auto">
+            <div className="bg-gradient-to-br from-rose-600 to-pink-700 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+              <div className="flex items-center gap-5 relative z-10">
+                <div className="p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-inner">
+                  <AlertCircle className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">অভিযোগ বক্স</h2>
+                  <p className="text-xs font-bold text-rose-100 uppercase tracking-widest mt-1">সদস্যদের অভিযোগ</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {complaints.length === 0 ? (
+                <div className="bg-white p-12 rounded-[3rem] text-center border border-dashed border-slate-300">
+                  <p className="text-slate-400 font-bold">কোন অভিযোগ পাওয়া যায়নি</p>
+                </div>
+              ) : (
+                complaints.map(c => (
+                  <div key={c.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 font-black text-xs">
+                          {c.userName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{c.userName}</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {new Date(c.timestamp).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-rose-50/30 p-5 rounded-3xl border border-rose-50">
+                      <p className="text-[13px] font-bold text-slate-700 leading-relaxed italic">"{c.message}"</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
+             <div className="space-y-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">কন্টাক্ট সেটিংস</p>
+                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="WhatsApp Group Link" value={settingsForm.whatsapp} onChange={e => setSettingsForm({...settingsForm, whatsapp: e.target.value})} />
+                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Facebook Page Link" value={settingsForm.facebook} onChange={e => setSettingsForm({...settingsForm, facebook: e.target.value})} />
+                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Messenger Link" value={settingsForm.messenger} onChange={e => setSettingsForm({...settingsForm, messenger: e.target.value})} />
+                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Official Email" value={settingsForm.email} onChange={e => setSettingsForm({...settingsForm, email: e.target.value})} />
+                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Phone Number" value={settingsForm.phone} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})} />
+                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="নীতিমালা লিঙ্ক (Google Drive PDF)" value={settingsForm.policyUrl || ''} onChange={e => setSettingsForm({...settingsForm, policyUrl: e.target.value})} />
+             </div>
+             <button 
+               onClick={handleUpdateContactConfig} 
+               disabled={isSubmitting}
+               className="w-full py-5 bg-[#0D9488] text-white rounded-3xl font-black uppercase text-xs shadow-lg active:scale-95 border-b-4 border-teal-800 disabled:opacity-50 disabled:scale-100"
+             >
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'সেটিংস সেভ করুন'}
+             </button>
+             <button onClick={() => db.recalculateStats()} className="w-full py-5 bg-indigo-50 text-indigo-600 rounded-3xl font-black uppercase text-[10px] flex items-center justify-center gap-3 active:scale-95 border border-indigo-100"><RefreshCw className="w-5 h-5" /> ডাটা হিসাব রিসেট করুন</button>
           </div>
         )}
       </main>
 
-      {/* MEMBER PROFILE MODAL */}
       {viewingUser && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-           <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden relative animate-in zoom-in-95 flex flex-col max-h-[90vh]">
-              <div ref={profileCardRef} className="bg-white overflow-hidden">
-                <div className="bg-teal-600 p-6 flex flex-col items-center text-white relative">
-                   <button onClick={() => setViewingUser(null)} className="absolute top-4 left-4 p-2 bg-white/20 rounded-xl md:hidden z-10"><X className="w-4 h-4" /></button>
-                   <button onClick={handleDownloadProfile} className="absolute top-4 right-4 p-2 bg-white/20 rounded-xl z-10 hover:bg-white/30 transition-all"><Download className="w-4 h-4" /></button>
-                   <div className="w-20 h-20 rounded-[1.8rem] bg-white border-4 border-white shadow-xl overflow-hidden mb-3">{viewingUser.profilePic ? <img src={viewingUser.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-8 h-8 text-teal-100 m-6" />}</div>
-                   <h2 className="text-lg font-black italic text-center leading-tight">{viewingUser.name}</h2>
-                   <p className="text-[8px] font-black uppercase tracking-[0.2em] opacity-80 mt-1 italic">সদস্য আইডি: {toBengaliNumber(viewingUser.phone.slice(-4))}</p>
-                   <div className="flex gap-4 mt-4 w-full justify-center"><div className="flex items-center gap-1.5"><Phone className="w-3 h-3 opacity-70" /><p className="text-[9px] font-bold">{toBengaliNumber(viewingUser.phone)}</p></div><div className="flex items-center gap-1.5"><MapPin className="w-3 h-3 opacity-70" /><p className="text-[9px] font-bold">{viewingUser.address?.district}</p></div></div>
-                </div>
-                <div className="p-4 grid grid-cols-2 gap-2">
-                   {[
-                      { label: 'পেশা', val: viewingUser.profession || 'নেই', icon: <Briefcase className="w-3 h-3 text-indigo-500" /> },
-                      { label: 'মোট দান', val: `৳${toBengaliNumber(viewingUser.totalDonation?.toLocaleString() || 0)}`, icon: <DollarSign className="w-3 h-3 text-emerald-500" /> },
-                      { label: 'লেনদেন', val: `${toBengaliNumber(viewingUser.transactionCount || 0)} টি`, icon: <HistoryIcon className="w-3 h-3 text-amber-500" /> },
-                      { label: 'যোগদান', val: toBengaliNumber(new Date(viewingUser.registeredAt).toLocaleDateString('bn-BD')), icon: <Calendar className="w-3 h-3 text-blue-500" /> },
-                   ].map((item, i) => (
-                      <div key={i} className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 flex flex-col justify-center"><p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p><div className="flex items-center gap-1.5">{item.icon}<span className="text-[10px] font-black">{item.val}</span></div></div>
-                   ))}
-                   <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 col-span-2"><p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">স্থায়ী ঠিকানা</p><div className="flex items-center gap-1.5"><Home className="w-3 h-3 text-rose-500" /><span className="text-[10px] font-black">{viewingUser.address?.village}, {viewingUser.address?.upazila}</span></div></div>
-                </div>
+        <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 h-[94vh]">
+              <div className="relative bg-[#0D9488] pt-10 pb-12 px-8 text-center shrink-0">
+                 <div className="absolute top-6 left-6">
+                    <button onClick={() => setViewingUser(null)} className="p-2.5 bg-white/20 rounded-xl backdrop-blur-md text-white active:scale-90 transition-all">
+                       <X className="w-5 h-5" />
+                    </button>
+                 </div>
+                 <div className="absolute top-6 right-6">
+                    <button className="p-2.5 bg-white/20 rounded-xl backdrop-blur-md text-white active:scale-90 transition-all">
+                       <Download className="w-5 h-5" />
+                    </button>
+                 </div>
+                 <div className="flex flex-col items-center">
+                    <div className="w-28 h-28 rounded-3xl bg-white p-1 mb-4 shadow-2xl relative overflow-hidden border-4 border-white/20">
+                       {viewingUser.profilePic ? <img src={viewingUser.profilePic} className="w-full h-full object-cover rounded-2xl" /> : <UserIcon className="w-12 h-12 m-7 text-slate-200" />}
+                    </div>
+                    <h2 className="text-2xl font-black text-white tracking-tight">{viewingUser.name}</h2>
+                    <p className="text-[11px] font-bold text-teal-50 uppercase tracking-[0.1em] mt-1 opacity-90">সদস্য আইডি: {toBengaliNumber(viewingUser.phone.slice(-4))}</p>
+                    
+                    <div className="flex items-center justify-center gap-4 mt-4 text-white/90">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                        <Phone className="w-3.5 h-3.5" /> {toBengaliNumber(viewingUser.phone)}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                        <MapPin className="w-3.5 h-3.5" /> {viewingUser.address?.district || '—'}
+                      </div>
+                    </div>
+                 </div>
               </div>
-              <div className="flex-grow p-4 space-y-3 overflow-y-auto no-scrollbar">
-                 <div className="bg-indigo-50/50 p-4 rounded-3xl border border-indigo-100"><h4 className="text-[8px] font-black text-indigo-900 uppercase tracking-widest mb-2 flex items-center gap-1.5"><MessageCircle className="w-3 h-3" /> বার্তা পাঠান</h4><div className="flex gap-2"><input type="text" className="w-full p-2.5 bg-white border border-indigo-100 rounded-xl outline-none font-bold text-[10px]" placeholder="বার্তা লিখুন..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} /><button onClick={handleSendMessage} disabled={!notifMessage.trim() || isSendingNotif} className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-md active:scale-95">{isSendingNotif ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}</button></div></div>
-                 <div className="bg-emerald-50/50 p-4 rounded-3xl border border-emerald-100"><h4 className="text-[8px] font-black text-emerald-900 uppercase tracking-widest mb-2 flex items-center gap-1.5"><PlusCircle className="w-3 h-3" /> ফান্ড যোগ করুন</h4><div className="grid grid-cols-2 gap-2 mb-2"><input type="number" className="p-2.5 bg-white border border-emerald-100 rounded-xl outline-none font-black text-[11px]" placeholder="টাকা..." value={manualAmount} onChange={e => setManualAmount(e.target.value)} /><input type="date" className="p-2.5 bg-white border border-emerald-100 rounded-xl outline-none font-black text-[9px]" value={manualDate} onChange={e => setManualDate(e.target.value)} /></div><button onClick={handleAddManualFunds} disabled={!manualAmount || isAddingFunds} className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-black uppercase text-[9px] shadow-sm active:scale-95">{isAddingFunds ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : 'টাকা যোগ করুন'}</button></div>
+
+              <div className="flex-grow overflow-y-auto bg-[#F8FAFC] p-6 space-y-5 no-scrollbar">
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
+                       <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Briefcase className="w-4 h-4" /></div>
+                       <div>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">পেশা</p>
+                         <p className="text-[11px] font-black text-slate-800 truncate max-w-[80px]">{viewingUser.profession}</p>
+                       </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
+                       <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><DollarSign className="w-4 h-4" /></div>
+                       <div>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">মোট দান</p>
+                         <p className="text-[11px] font-black text-slate-800">৳{toBengaliNumber(viewingUser.totalDonation || 0)}</p>
+                       </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
+                       <div className="p-2 bg-amber-50 text-amber-600 rounded-xl"><RefreshCw className="w-4 h-4" /></div>
+                       <div>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">লেনদেন</p>
+                         <p className="text-[11px] font-black text-slate-800">{toBengaliNumber(viewingUser.transactionCount || 0)} টি</p>
+                       </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
+                       <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Calendar className="w-4 h-4" /></div>
+                       <div>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">যোগদান</p>
+                         <p className="text-[11px] font-black text-slate-800">{new Date(viewingUser.registeredAt).toLocaleDateString('bn-BD')}</p>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="w-4 h-4 text-rose-500" />
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">স্থায়ী ঠিকানা</p>
+                    </div>
+                    <p className="text-[12px] font-bold text-slate-800">
+                      {viewingUser.address?.village}, {viewingUser.address?.ward} নং ওয়ার্ড, {viewingUser.address?.union}, {viewingUser.address?.upazila}, {viewingUser.address?.district}।
+                    </p>
+                 </div>
+
+                  <div className="bg-amber-50/50 p-5 rounded-[2.5rem] border border-amber-100 flex items-center justify-between mb-4">
+                     <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white rounded-2xl shadow-sm">
+                           <Award className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest leading-none">স্থায়ী সদস্য</p>
+                           <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-1">হোমপেজে প্রদর্শিত হবে</p>
+                        </div>
+                     </div>
+                     <button 
+                        onClick={handleTogglePermanentMember}
+                        disabled={isSubmitting}
+                        className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isPermanentMember ? 'bg-amber-500' : 'bg-slate-200'}`}
+                     >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isPermanentMember ? 'left-7' : 'left-1'}`}></div>
+                     </button>
+                  </div>
+
+                 <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
+                     <div className="flex items-center gap-2 ml-1">
+                      <ShieldCheck className="w-4 h-4 text-teal-600" />
+                      <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">সদস্য পদবী (Designation)</p>
+                    </div>
+                    <div className="flex gap-2">
+                       <input type="text" className="flex-grow p-4 bg-white border border-teal-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="যেমন: চেয়ারম্যান, সদস্য..." value={userDesignation} onChange={e => setUserDesignation(e.target.value)} />
+                       <button onClick={handleUpdateDesignation} disabled={isSubmitting} className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center">
+                         {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                       </button>
+                    </div>
+                 </div>
+
+                 <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-3">
+                    <div className="flex items-center gap-2 ml-1">
+                      <MessageCircle className="w-4 h-4 text-indigo-600" />
+                      <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">বার্তা পাঠান</p>
+                    </div>
+                    <div className="flex gap-2">
+                       <input type="text" className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="বার্তা লিখুন..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} />
+                       <button onClick={handleSendMessage} className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all"><Send className="w-5 h-5" /></button>
+                    </div>
+                 </div>
+
+                 <div className="bg-emerald-50/50 p-5 rounded-[2.5rem] border border-emerald-100 space-y-4">
+                    <div className="flex items-center gap-2 ml-1">
+                      <Plus className="w-4 h-4 text-emerald-600" />
+                      <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">ফান্ড যোগ করুন</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                       <input type="number" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-black text-sm shadow-sm" placeholder="টাকা..." value={manualAmount} onChange={e => setManualAmount(e.target.value)} />
+                       <input type="date" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-bold text-[10px] shadow-sm" value={manualDate} onChange={e => setManualDate(e.target.value)} />
+                    </div>
+                    <button onClick={handleAddManualFunds} className="w-full py-4 bg-[#0D9488] text-white rounded-2xl font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all">টাকা যোগ করুন</button>
+                 </div>
+
+                 <button onClick={() => { if(confirm("মুছে ফেলবেন?")) { db.deleteUser(viewingUser.id); setViewingUser(null); } }} className="w-full py-4 bg-rose-50 text-rose-600 rounded-[2rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 border border-rose-100 active:scale-95 transition-all">
+                    <Trash2 className="w-4 h-4" /> ডিলিট মেম্বার
+                 </button>
               </div>
-              <button onClick={() => setViewingUser(null)} className="p-4 text-slate-400 font-black text-[10px] uppercase border-t hover:bg-slate-50 hidden md:block">বন্ধ করুন</button>
+           </div>
+        </div>
+      )}
+
+      {viewingAssistance && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+              <div className="p-8 bg-teal-600 text-white flex justify-between items-center">
+                 <h3 className="font-black uppercase text-sm tracking-widest">আবেদন বিস্তারিত</h3>
+                 <button onClick={() => setViewingAssistance(null)}><X className="w-6 h-6" /></button>
+              </div>
+              <div className="p-8 space-y-6">
+                 <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">আবেদনকারীর নাম</p>
+                    <p className="text-lg font-black text-slate-800">{viewingAssistance.userName}</p>
+                 </div>
+                 <div className="p-5 bg-slate-50 rounded-2xl border">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">আবেদনের কারণ</p>
+                    <p className="text-[13px] font-bold text-slate-700 leading-relaxed italic">"{viewingAssistance.reason}"</p>
+                 </div>
+                 {viewingAssistance.amount > 0 && (
+                   <div className="flex justify-between items-center px-4">
+                      <p className="text-xs font-black text-slate-400 uppercase">প্রার্থিত অর্থ</p>
+                      <p className="text-2xl font-black text-rose-600">৳{toBengaliNumber(viewingAssistance.amount.toLocaleString())}</p>
+                   </div>
+                 )}
+                 <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">এডমিন নোট</p>
+                    <textarea className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold text-xs" placeholder="মতামত লিখুন..." value={adminNote} onChange={e => setAdminNote(e.target.value)} />
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.APPROVED)} className="py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg">অ্যাপ্রুভ</button>
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REJECTED)} className="py-4 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg">রিজেক্ট</button>
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.DISBURSED)} className="col-span-2 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg">পেমেন্ট কমপ্লিট</button>
+                 </div>
+              </div>
            </div>
         </div>
       )}
@@ -415,11 +868,17 @@ const AdminDashboard: React.FC = () => {
 };
 
 const StatCard = ({ label, value, icon, color }: { label: string, value: string, icon: any, color: string }) => (
-  <div className="bg-white p-4 rounded-3xl border border-slate-200 h-24 flex flex-col justify-between shadow-sm"><div className={`w-8 h-8 rounded-xl flex items-center justify-center border border-white shadow-md ${color}`}>{icon}</div><div className="mt-1"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">{label}</p><h3 className="text-[13px] font-black text-slate-900 leading-none mt-1.5 italic">{value}</h3></div></div>
+  <div className="bg-white p-5 rounded-[2.5rem] border h-28 flex flex-col justify-between shadow-sm">
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm ${color}`}>{icon}</div>
+    <div className="mt-1"><p className="text-[9px] font-black text-slate-400 uppercase leading-none">{label}</p><h3 className="text-sm font-black text-slate-900 leading-none mt-2">{value}</h3></div>
+  </div>
 );
 
 const SectionBox = ({ title, count, children, color }: { title: string, count: number, children?: React.ReactNode, color: string }) => (
-  <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm flex flex-col h-full"><div className={`p-4 ${color} text-white flex justify-between items-center`}><h4 className="text-[10px] font-black uppercase tracking-widest">{title}</h4><span className="text-[9px] font-black bg-black/20 px-3 py-1 rounded-full">{toBengaliNumber(count)}</span></div><div className="p-4 space-y-3 flex-grow bg-slate-50/20">{children}</div></div>
+  <div className="bg-white rounded-[3rem] border overflow-hidden shadow-sm flex flex-col">
+    <div className={`p-5 ${color} text-white flex justify-between items-center shadow-inner`}><h4 className="text-[10px] font-black uppercase tracking-widest">{title}</h4><span className="text-[10px] font-black bg-black/20 px-3 py-1 rounded-full">{toBengaliNumber(count)}</span></div>
+    <div className="p-4 space-y-4 bg-slate-50/10">{children}</div>
+  </div>
 );
 
 export default AdminDashboard;

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { HashRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { User, UserStatus } from './types';
 import { db } from './services/db';
 import WelcomePage from './pages/WelcomePage';
@@ -14,7 +14,7 @@ import ProfilePage from './pages/ProfilePage';
 import ExpensePage from './pages/ExpensePage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAuth from './pages/AdminAuth';
-import { Heart } from 'lucide-react';
+import { Heart, Home, CreditCard, User as UserIcon } from 'lucide-react';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -29,6 +29,69 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
+};
+
+const BottomNav: React.FC = () => {
+  const { currentUser, isAdmin } = useAuth();
+  const location = useLocation();
+  
+  // Hide if not logged in, or if in admin mode, or if not on the dashboard page
+  if (!currentUser || isAdmin || location.pathname !== '/dashboard') return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3 flex justify-around items-center z-[100] shadow-[0_-4px_20px_rgba(0,0,0,0.03)] rounded-t-[2.5rem] print:hidden bottom-nav">
+      <Link to="/dashboard" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
+        <Home className="w-6 h-6" />
+        <span className="text-[9px] font-black uppercase tracking-widest">হোম</span>
+      </Link>
+      <Link to="/transaction" className="flex flex-col items-center gap-1 -mt-12">
+        <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center shadow-xl shadow-teal-200 border-4 border-white text-white active:scale-90 transition-all">
+          <CreditCard className="w-7 h-7" />
+        </div>
+        <span className="text-[9px] font-black text-teal-700 uppercase tracking-widest mt-1">দান করুন</span>
+      </Link>
+      <Link to="/profile" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
+        <UserIcon className="w-6 h-6" />
+        <span className="text-[9px] font-black uppercase tracking-widest">প্রোফাইল</span>
+      </Link>
+    </div>
+  );
+};
+
+const AppContent: React.FC = () => {
+  const { currentUser, isAdmin } = useAuth();
+  const location = useLocation();
+  const isDashboard = location.pathname === '/dashboard';
+  const showNav = currentUser && !isAdmin && isDashboard;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <main className={`flex-grow ${showNav ? 'pb-24' : ''}`}>
+        <Routes>
+          <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <WelcomePage />} />
+          <Route path="/auth" element={currentUser ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
+          <Route path="/dashboard" element={currentUser ? <UserDashboard /> : <Navigate to="/" replace />} />
+          <Route path="/transaction" element={currentUser ? <TransactionPage /> : <Navigate to="/" replace />} />
+          <Route path="/assistance" element={currentUser ? <AssistancePage /> : <Navigate to="/" replace />} />
+          <Route path="/history" element={currentUser ? <HistoryPage /> : <Navigate to="/" replace />} />
+          <Route path="/leaderboard" element={currentUser ? <LeaderboardPage /> : <Navigate to="/" replace />} />
+          <Route path="/profile" element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />} />
+          <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
+          <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
+          <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      
+      <BottomNav />
+
+      <footer className={`py-8 text-center bg-white border-t border-slate-200 print:hidden ${showNav ? 'mb-20' : ''}`}>
+        <Link to="/admin-auth" className="text-[11px] text-slate-900 hover:text-teal-600 transition-colors uppercase tracking-[0.2em] font-black">
+          UNITY CARE - MANAGEMENT
+        </Link>
+      </footer>
+    </div>
+  );
 };
 
 const App: React.FC = () => {
@@ -46,8 +109,6 @@ const App: React.FC = () => {
         if (user && user.status === UserStatus.APPROVED) {
           setCurrentUser(prevUser => {
             if (!prevUser) return user;
-            // Safer comparison to avoid circular JSON error
-            // Update if essential stats changed or generic refresh triggered
             const hasChanged = 
               user.totalDonation !== prevUser.totalDonation || 
               user.transactionCount !== prevUser.transactionCount ||
@@ -62,7 +123,6 @@ const App: React.FC = () => {
       if (isLoading) setIsLoading(false);
     });
 
-    // Initial check for session
     if (savedId) {
       const user = db.getUser(savedId);
       if (user && user.status === UserStatus.APPROVED) {
@@ -93,29 +153,7 @@ const App: React.FC = () => {
   return (
     <AuthContext.Provider value={{ currentUser, setCurrentUser, isAdmin, setIsAdmin }}>
       <HashRouter>
-        <div className="min-h-screen flex flex-col">
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <WelcomePage />} />
-              <Route path="/auth" element={currentUser ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
-              <Route path="/dashboard" element={currentUser ? <UserDashboard /> : <Navigate to="/" replace />} />
-              <Route path="/transaction" element={currentUser ? <TransactionPage /> : <Navigate to="/" replace />} />
-              <Route path="/assistance" element={currentUser ? <AssistancePage /> : <Navigate to="/" replace />} />
-              <Route path="/history" element={currentUser ? <HistoryPage /> : <Navigate to="/" replace />} />
-              <Route path="/leaderboard" element={currentUser ? <LeaderboardPage /> : <Navigate to="/" replace />} />
-              <Route path="/profile" element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />} />
-              <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
-              <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
-              <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <footer className="py-4 text-center bg-white border-t border-slate-200 print:hidden">
-            <Link to="/admin-auth" className="text-[11px] text-slate-900 hover:text-teal-600 transition-colors uppercase tracking-[0.2em] font-black">
-              UNITY CARE - MANAGEMENT
-            </Link>
-          </footer>
-        </div>
+        <AppContent />
       </HashRouter>
     </AuthContext.Provider>
   );

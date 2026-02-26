@@ -15,9 +15,10 @@ import {
   increment,
   limit,
   setDoc,
-  getDocs
+  getDocs,
+  enableMultiTabIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, ContactConfig } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
@@ -30,67 +31,149 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+/**
+ * CRITICAL: Use initializeFirestore with experimentalForceLongPolling to bypass 
+ * network restrictions that cause the "10 seconds timeout" error.
+ */
 const firestore = initializeFirestore(app, {
   experimentalForceLongPolling: true,
   useFetchStreams: false
 });
 
+// Enable Offline Persistence to ensure the app works even when connection is flaky
+// We catch the error to prevent app crash if persistence is already enabled or unsupported
+enableMultiTabIndexedDbPersistence(firestore).catch((err) => {
+    if (err.code === 'failed-precondition') {
+        console.warn("Firestore: Multiple tabs open, persistence enabled in only one tab.");
+    } else if (err.code === 'unimplemented') {
+        console.warn("Firestore: The current browser does not support persistence.");
+    } else {
+        console.error("Firestore persistence error:", err);
+    }
+});
+
 /**
- * Robustly strips internal metadata and non-plain objects to prevent circular reference errors.
- * Uses a WeakSet to track visited objects and prevent infinite recursion.
+ * Safe logging to prevent circularity errors during error reporting.
  */
-const toPlainObject = (data: any, seen = new WeakSet()): any => {
+const safeError = (msg: string, err: any) => {
+    try {
+        // Avoid JSON.stringify on potentially circular Firestore error objects.
+        // Modern consoles handle circularity. If we need a plain object, we'd need a circular-safe clone.
+        console.error(msg, err);
+    } catch (e) {
+        console.error(msg, "[Circular Error Object]");
+    }
+};
+
+/**
+ * Robust deep cleaning to convert Firestore snapshots to plain JS objects.
+ * Prevents internal circular references from polluting the application state.
+ * Specifically targets minified Firestore internal objects like 'Q$1' and 'Sa'.
+ */
+const toPlainObject = (data: any, visited = new WeakSet()): any => {
   if (data === null || data === undefined) return data;
   
   const type = typeof data;
-  
-  // Return basic primitives as is
   if (type !== 'object') return data;
-
-  // Handle Firebase Timestamps or standard Dates
+  
+  // Circularity check
+  if (visited.has(data)) return "[Circular]";
+  
+  // Convert Firestore Timestamp to epoch
   if (typeof data.toDate === 'function') return data.toDate().getTime();
+  
+  // Standard Dates to epoch
   if (data instanceof Date) return data.getTime();
   
-  // Prevent circular references
-  if (seen.has(data)) return null;
-  seen.add(data);
-
-  // Handle Arrays
-  if (Array.isArray(data)) return data.map(item => toPlainObject(item, seen));
-  
-  // Handle Plain Objects strictly (POJOs)
-  const proto = Object.getPrototypeOf(data);
-  if (proto === Object.prototype || proto === null) {
-    const plain: any = {};
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        // Skip internal firebase properties
-        if (key.startsWith('_')) continue;
-        
-        const val = toPlainObject(data[key], seen);
-        if (val !== undefined) plain[key] = val;
-      }
-    }
-    return plain;
+  // Arrays
+  if (Array.isArray(data)) {
+    visited.add(data);
+    return data.map(i => toPlainObject(i, visited));
   }
   
-  // Discard any other complex/circular or non-plain objects (like DocumentReference, etc.)
-  return null;
+  // Aggressive check for Firestore internal objects or non-plain objects
+  const constructorName = data.constructor?.name;
+  const isPlain = data.constructor === Object || Object.getPrototypeOf(data) === null;
+  
+  const hasFirestoreMarkers = 
+    data.firestore || 
+    data._firestore || 
+    data.converter || 
+    data._delegate || 
+    data.src || 
+    data.i || // Common minified internal property
+    (constructorName && (
+      constructorName === 'Q$1' || 
+      constructorName === 'Sa' || 
+      constructorName === 'DocumentReference' || 
+      constructorName === 'Query' ||
+      constructorName === 'CollectionReference' ||
+      (constructorName.length <= 3 && !['Obj', 'Arr', 'Dat'].includes(constructorName.slice(0,3)))
+    ));
+
+  if (!isPlain || hasFirestoreMarkers) {
+    if (data.id && typeof data.id === 'string') return data.id;
+    if (data.path && typeof data.path === 'string') return data.path;
+    return null;
+  }
+  
+  // Plain Objects
+  visited.add(data);
+  const result: any = {};
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      // Exclude internal Firestore metadata/circular properties
+      if (key.startsWith('_') || key === 'firestore' || key === 'converter' || key === 'src' || key === 'i') continue;
+      
+      const val = data[key];
+      if (typeof val === 'function') continue;
+      
+      result[key] = toPlainObject(val, visited);
+    }
+  }
+  return result;
 };
 
-const sanitizeForUpload = (data: any, seen = new WeakSet()): any => {
+const sanitizeForUpload = (data: any, visited = new WeakSet()): any => {
   if (data === null || data === undefined) return null;
+  
   const type = typeof data;
   if (type === 'string' || type === 'number' || type === 'boolean') return data;
   if (data instanceof Date) return data.getTime();
+  
   if (type === 'object') {
-    if (seen.has(data)) return null;
-    seen.add(data);
-    if (Array.isArray(data)) return data.map(item => sanitizeForUpload(item, seen)).filter(i => i !== null);
+    if (visited.has(data)) return null;
+    visited.add(data);
+
+    if (Array.isArray(data)) {
+      return data.map(i => sanitizeForUpload(i, visited)).filter(i => i !== null);
+    }
+
+    const constructorName = data.constructor?.name;
+    const isPlain = data.constructor === Object || Object.getPrototypeOf(data) === null;
+    
+    const hasMarkers = 
+      data.firestore || 
+      data._firestore || 
+      data.src || 
+      data.i || 
+      data._delegate ||
+      (constructorName && (
+        constructorName === 'Q$1' || 
+        constructorName === 'Sa' || 
+        constructorName.length <= 3
+      ));
+
+    if (!isPlain || hasMarkers) {
+      return null;
+    }
+
     const clean: any = {};
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const val = sanitizeForUpload(data[key], seen);
+        if (key.startsWith('_') || key === 'src' || key === 'i' || key === 'firestore') continue;
+        const val = sanitizeForUpload(data[key], visited);
         if (val !== null && val !== undefined) clean[key] = val;
       }
     }
@@ -105,12 +188,15 @@ class FirebaseDB {
   private assistanceRequests: AssistanceRequest[] = [];
   private expenses: Expense[] = [];
   private suggestions: Suggestion[] = [];
+  private complaints: Complaint[] = [];
   private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0 };
   private contactConfig: ContactConfig = {
     whatsapp: 'https://chat.whatsapp.com/C39euDOPaskI3KoeNZMW2H?mode=gi_t',
     facebook: 'https://www.facebook.com/share/17peDnCVEV/',
+    messenger: 'https://m.me/unitycarefoundation',
     email: 'unitycarefoundation07@gmail.com',
-    phone: '01777599874'
+    phone: '01777599874',
+    policyUrl: 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk'
   };
   private listeners: (() => void)[] = [];
 
@@ -122,38 +208,54 @@ class FirebaseDB {
         this.users = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as User[];
         this.updateLocalStats();
         this.notify();
-      });
-      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(1000)), (snapshot) => {
+      }, (error) => safeError("Firestore: Users sync error:", error));
+
+      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(2000)), (snapshot) => {
         this.transactions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Transaction[];
         this.updateLocalStats();
         this.notify();
-      });
+      }, (error) => safeError("Firestore: Transactions sync error:", error));
+
       onSnapshot(query(collection(firestore, "assistance_requests"), orderBy("timestamp", "desc")), (snapshot) => {
         this.assistanceRequests = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as AssistanceRequest[];
         this.notify();
-      });
+      }, (error) => safeError("Firestore: Assistance sync error:", error));
+
       onSnapshot(collection(firestore, "expenses"), (snapshot) => {
         this.expenses = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Expense[];
         this.notify();
-      });
+      }, (error) => safeError("Firestore: Expenses sync error:", error));
+
       onSnapshot(query(collection(firestore, "suggestions"), orderBy("timestamp", "desc")), (snapshot) => {
         this.suggestions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Suggestion[];
         this.notify();
-      });
+      }, (error) => safeError("Firestore: Suggestions sync error:", error));
+
+      onSnapshot(query(collection(firestore, "complaints"), orderBy("timestamp", "desc")), (snapshot) => {
+        this.complaints = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Complaint[];
+        this.notify();
+      }, (error) => safeError("Firestore: Complaints sync error:", error));
+
       onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
         if (snapshot.exists()) {
-          this.contactConfig = toPlainObject(snapshot.data()) as ContactConfig;
-          this.notify();
+          const data = toPlainObject(snapshot.data());
+          if (data) {
+            this.contactConfig = data as ContactConfig;
+            this.notify();
+          }
         }
       });
+
       onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
         if (snapshot.exists()) {
           const data = toPlainObject(snapshot.data());
-          this.stats = { ...this.stats, totalCollection: data.totalCollection || 0, totalExpense: data.totalExpense || 0 };
-          this.notify();
+          if (data) {
+            this.stats = { ...this.stats, totalCollection: data.totalCollection || 0, totalExpense: data.totalExpense || 0 };
+            this.notify();
+          }
         }
       });
-    } catch (e) { console.error("Firestore sync error:", e); }
+    } catch (e) { safeError("Firestore: Initialization catch block:", e); }
   }
 
   private updateLocalStats() {
@@ -177,6 +279,7 @@ class FirebaseDB {
   getAssistanceRequests(): AssistanceRequest[] { return this.assistanceRequests; }
   getExpenses(): Expense[] { return this.expenses; }
   getSuggestions(): Suggestion[] { return this.suggestions; }
+  getComplaints(): Complaint[] { return this.complaints; }
   getStats(): AppStats { return this.stats; }
   getContactConfig(): ContactConfig { return this.contactConfig; }
 
@@ -215,6 +318,11 @@ class FirebaseDB {
   async submitSuggestion(userId: string, userName: string, message: string) {
     const cleanData = sanitizeForUpload({ userId, userName, message, timestamp: Date.now() });
     await addDoc(collection(firestore, "suggestions"), cleanData);
+  }
+
+  async submitComplaint(userId: string, userName: string, message: string) {
+    const cleanData = sanitizeForUpload({ userId, userName, message, timestamp: Date.now() });
+    await addDoc(collection(firestore, "complaints"), cleanData);
   }
 
   async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Admin Manual', customDate?: string) {

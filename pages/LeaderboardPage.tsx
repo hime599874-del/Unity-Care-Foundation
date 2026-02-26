@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
@@ -19,15 +18,12 @@ const LeaderboardPage: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // Helper function to convert English numbers to Bengali numerals
   const toBengaliNumber = (num: number | string) => {
-    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+    return num.toString();
   };
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen font-['Hind_Siliguri']">
-      {/* Header */}
       <div className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-[#F8FAFC]/80 backdrop-blur-md z-10">
         <button onClick={() => navigate('/dashboard')} className="p-3 bg-white rounded-2xl shadow-sm text-gray-400 border border-slate-100 active:scale-90 transition-all">
           <ArrowLeft className="w-5 h-5" />
@@ -37,7 +33,6 @@ const LeaderboardPage: React.FC = () => {
       </div>
 
       <div className="p-6">
-        {/* Top 1 Highlight Card - Private View */}
         {topUsers.length > 0 && (
           <div className="bg-gradient-to-br from-teal-600 to-teal-800 p-8 rounded-[2.5rem] shadow-2xl shadow-teal-100 mb-8 relative overflow-hidden text-white">
             <Crown className="absolute right-[-20px] top-[-20px] w-40 h-40 text-white/10 -rotate-12" />
@@ -57,7 +52,6 @@ const LeaderboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* The List - IDs Only */}
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-8 py-5 bg-gray-50/50 border-b border-gray-100 flex justify-between">
             <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">সদস্য আইডি</span>
@@ -109,7 +103,6 @@ const LeaderboardPage: React.FC = () => {
           )}
         </div>
 
-        {/* Footer Privacy Note */}
         <div className="mt-10 bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100">
            <p className="text-[10px] font-bold text-blue-800 leading-relaxed text-center italic">
              "সদস্যদের গোপনীয়তা রক্ষার স্বার্থে এখানে নাম এবং ছবি প্রদর্শন করা হচ্ছে না। শুধুমাত্র চার ডিজিটের আইডি নাম্বার ব্যবহার করে আপনার অবস্থান যাচাই করুন।"

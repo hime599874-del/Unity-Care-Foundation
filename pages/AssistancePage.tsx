@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
@@ -54,8 +53,7 @@ const AssistancePage: React.FC = () => {
   };
 
   const toBengaliNumber = (num: number | string) => {
-    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+    return num.toString();
   };
 
   const getStatusStyle = (status: AssistanceStatus) => {
@@ -98,7 +96,6 @@ const AssistancePage: React.FC = () => {
       </div>
 
       <div className="p-6 space-y-8">
-        {/* Request Form */}
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100">
            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
@@ -124,7 +121,7 @@ const AssistancePage: React.FC = () => {
                  <input 
                    type="number" 
                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-black text-xl text-teal-700 transition-all" 
-                   placeholder="৳ ০.০০" 
+                   placeholder="৳ 0.00" 
                    value={amount} 
                    onChange={e => setAmount(e.target.value)} 
                  />
@@ -151,7 +148,6 @@ const AssistancePage: React.FC = () => {
            </form>
         </div>
 
-        {/* User Requests List */}
         <div className="space-y-4">
            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2 flex items-center gap-2">
               <Clock className="w-4 h-4" /> আপনার পূর্ববর্তী আবেদনসমূহ
@@ -166,7 +162,7 @@ const AssistancePage: React.FC = () => {
                          </div>
                          <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-800">{getStatusText(req.status)}</span>
-                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{toBengaliNumber(new Date(req.timestamp).toLocaleDateString('bn-BD'))}</p>
+                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{toBengaliNumber(new Date(req.timestamp).toLocaleDateString('en-US'))}</p>
                          </div>
                       </div>
                       {req.amount > 0 && <p className="font-black text-slate-800 text-xl">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}

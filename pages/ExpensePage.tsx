@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
@@ -23,17 +22,14 @@ const ExpensePage: React.FC = () => {
   }, []);
 
   const toBengaliNumber = (num: number | string) => {
-    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+    return num.toString();
   };
 
-  // Force total expense to 0 if list is empty to prevent showing phantom balances like -407
   const displayTotalExpense = (expenses.length === 0) ? 0 : stats.totalExpense;
   const currentFund = stats.totalCollection - displayTotalExpense;
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
-      {/* Header */}
       <div className="px-5 pt-8 pb-6 bg-white rounded-b-[3rem] shadow-sm border-b border-slate-100 flex items-center gap-4 sticky top-0 z-30">
         <button onClick={() => navigate('/dashboard')} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-slate-600 active:scale-90 transition-all">
           <ArrowLeft className="w-5 h-5" />
@@ -45,7 +41,6 @@ const ExpensePage: React.FC = () => {
       </div>
 
       <div className="p-5 space-y-6">
-        {/* Total Expense Summary Card */}
         <div className="bg-gradient-to-br from-rose-500 to-rose-700 p-6 rounded-[2.5rem] shadow-xl shadow-rose-100 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
            <div className="relative z-10 flex justify-between items-center">
@@ -59,7 +54,6 @@ const ExpensePage: React.FC = () => {
            </div>
         </div>
 
-        {/* Current Fund Helper Box */}
         <div className="bg-white p-5 rounded-3xl border border-blue-100 shadow-sm flex items-center justify-between">
            <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Wallet className="w-5 h-5" /></div>
@@ -68,7 +62,6 @@ const ExpensePage: React.FC = () => {
            <p className="text-xl font-black text-blue-700">৳{toBengaliNumber(currentFund.toLocaleString())}</p>
         </div>
 
-        {/* Expense List */}
         <div className="space-y-4">
           <div className="flex justify-between items-center px-2">
             <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">খরচের তালিকা</h3>
@@ -119,12 +112,10 @@ const ExpensePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer Organization Quote */}
       <div className="text-center py-10 opacity-30">
          <p className="text-[9px] font-black uppercase tracking-[0.4em]">United for Humanity • Official Records</p>
       </div>
 
-      {/* Image Modal */}
       {selectedImage && (
         <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
