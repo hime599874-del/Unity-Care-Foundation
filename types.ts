@@ -59,6 +59,8 @@ export interface User {
   transactionCount: number;
   registeredAt: number;
   lastActive?: number;
+  expiryDate?: string;
+  isIdCardEnabled?: boolean;
 }
 
 export interface Transaction {
@@ -118,6 +120,18 @@ export interface Expense {
   reason: string;
   proofImage?: string;
   date: string;
+  timestamp: number;
+}
+
+export interface ProjectProgress {
+  id: string;
+  name: string;
+  targetAmount: number;
+  collectedAmount: number; // Can be auto-calculated or manual
+  progressType: 'Auto' | 'Manual';
+  manualPercentage?: number;
+  status: 'Ongoing' | 'Completed' | 'Pending';
+  deadline: string;
   timestamp: number;
 }
 

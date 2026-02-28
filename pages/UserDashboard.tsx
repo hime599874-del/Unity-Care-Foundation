@@ -261,24 +261,24 @@ const UserDashboard: React.FC = () => {
 
         {/* Highlight Stats (Compact Design) */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white p-4 rounded-[1.8rem] shadow-sm border border-slate-100 flex items-center gap-4 active:scale-95 transition-all">
-             <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
-                <Users className="w-5 h-5 relative z-10" />
+          <div className="bg-gradient-to-br from-[#00F2FE] to-[#4FACFE] p-3.5 rounded-[2rem] shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95 transition-all border border-white/30 relative overflow-hidden group">
+             <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 shadow-lg text-white relative z-10 border border-white/40">
+                <Users className="w-4 h-4" />
              </div>
-             <div className="overflow-hidden">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">মোট সদস্য</p>
-                <h3 className="text-sm font-black text-slate-800 truncate">{toBengaliNumber(appStats.totalUsers)} জন</h3>
+             <div className="overflow-hidden relative z-10">
+                <p className="text-[7px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট সদস্য</p>
+                <h3 className="text-xs font-black text-white truncate">{toBengaliNumber(appStats.totalUsers)} জন</h3>
              </div>
           </div>
-          <button onClick={() => navigate('/expenses')} className="bg-white p-4 rounded-[1.8rem] shadow-sm border border-slate-100 flex items-center gap-4 active:scale-95 transition-all text-left">
-             <div className="w-10 h-10 bg-gradient-to-br from-rose-400 to-pink-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
-                <TrendingDown className="w-5 h-5 relative z-10" />
+          <button onClick={() => navigate('/expenses')} className="bg-gradient-to-br from-[#F093FB] to-[#F5576C] p-3.5 rounded-[2rem] shadow-xl shadow-rose-500/20 flex items-center gap-3 active:scale-95 transition-all text-left border border-white/30 relative overflow-hidden group">
+             <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 shadow-lg text-white relative z-10 border border-white/40">
+                <TrendingDown className="w-4 h-4" />
              </div>
-             <div className="overflow-hidden">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">মোট খরচ</p>
-                <h3 className="text-sm font-black text-slate-800 truncate">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString())}</h3>
+             <div className="overflow-hidden relative z-10">
+                <p className="text-[7px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট খরচ</p>
+                <h3 className="text-xs font-black text-white truncate">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString())}</h3>
              </div>
           </button>
         </div>
@@ -297,6 +297,7 @@ const UserDashboard: React.FC = () => {
             { icon: <Info className="w-6 h-6" />, label: 'পেমেন্ট', color: 'from-blue-500 to-indigo-600', action: () => setShowPaymentModal(true) },
             { icon: <MessageSquare className="w-6 h-6" />, label: 'যোগাযোগ', color: 'from-pink-500 to-rose-600', action: () => setShowContactModal(true) },
             { icon: <Receipt className="w-6 h-6" />, label: 'ভাউচার', color: 'from-slate-500 to-slate-700', path: '/expenses' },
+            { icon: <Activity className="w-6 h-6" />, label: 'অগ্রগতি', color: 'from-indigo-400 to-violet-600', path: '/progress' },
           ].map((item, idx) => (
             <button 
               key={idx} 
@@ -318,40 +319,50 @@ const UserDashboard: React.FC = () => {
         </div>
 
         {/* Recent Transactions */}
-        <div className="space-y-5">
+        <div className="space-y-4">
            <div className="flex justify-between items-center px-2">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">সাম্প্রতিক লেনদেন</h3>
-              <button onClick={() => navigate('/history')} className="text-[10px] font-black text-teal-600 uppercase tracking-widest">সব দেখুন</button>
+              <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">সাম্প্রতিক লেনদেন</h3>
+              <button onClick={() => navigate('/history')} className="text-[9px] font-black text-teal-600 uppercase tracking-widest">সব দেখুন</button>
            </div>
-           <div className="space-y-4">
-              {allTransactions.filter(t => t.userId === currentUser?.id).slice(0, 3).map((tx) => (
-                <div key={tx.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100/50 flex justify-between items-center hover:shadow-md transition-all active:scale-[0.98]">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg relative overflow-hidden">
-                      <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
-                      <ArrowUpRight className="w-6 h-6 relative z-10" />
+           <div className="space-y-3">
+              {allTransactions.filter(t => t.userId === currentUser?.id).slice(0, 3).map((tx, idx) => {
+                const gradients = [
+                  "from-[#4FACFE] to-[#00F2FE]", // Cyan/Blue
+                  "from-[#667EEA] to-[#764BA2]", // Blue/Purple
+                  "from-[#F093FB] to-[#F5576C]", // Pink/Rose
+                  "from-[#FA709A] to-[#FEE140]"  // Pink/Yellow
+                ];
+                const gradient = gradients[idx % gradients.length];
+                
+                return (
+                  <div key={tx.id} className={`bg-gradient-to-r ${gradient} p-3.5 rounded-[2rem] shadow-lg shadow-slate-200/40 flex justify-between items-center hover:shadow-xl transition-all active:scale-[0.98] border border-white/30 relative overflow-hidden group`}>
+                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                    <div className="flex items-center gap-3 relative z-10">
+                      <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-white shadow-md border border-white/40">
+                        <ArrowUpRight className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-black text-white text-[11px] tracking-tight leading-none">{tx.method}</p>
+                        <p className="text-[7px] text-white/80 font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" /> {toBengaliNumber(tx.date)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-black text-slate-800 text-sm tracking-tight">{tx.method}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {toBengaliNumber(tx.date)}
-                      </p>
+                    <div className="text-right relative z-10">
+                      <p className="font-black text-white text-sm italic leading-none">৳{toBengaliNumber(tx.amount)}</p>
+                      <span className={`text-[6px] font-black uppercase px-2 py-0.5 rounded-full mt-1.5 inline-block border border-white/30 ${
+                        tx.status === TransactionStatus.APPROVED ? 'bg-emerald-400/40 text-white' : 
+                        tx.status === TransactionStatus.REJECTED ? 'bg-rose-400/40 text-white' : 
+                        'bg-amber-400/40 text-white'
+                      }`}>
+                        {tx.status === TransactionStatus.APPROVED ? 'সফল' : 
+                         tx.status === TransactionStatus.REJECTED ? 'বাতিল' : 
+                         'পেন্ডিং'}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-black text-slate-900 text-lg italic">৳{toBengaliNumber(tx.amount)}</p>
-                    <span className={`text-[8px] font-black uppercase px-3 py-1 rounded-full mt-1 inline-block ${
-                      tx.status === TransactionStatus.APPROVED ? 'bg-emerald-50 text-emerald-700' : 
-                      tx.status === TransactionStatus.REJECTED ? 'bg-rose-50 text-rose-700' : 
-                      'bg-amber-50 text-amber-700'
-                    }`}>
-                      {tx.status === TransactionStatus.APPROVED ? 'সফল' : 
-                       tx.status === TransactionStatus.REJECTED ? 'বাতিল' : 
-                       'পেন্ডিং'}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {allTransactions.filter(t => t.userId === currentUser?.id).length === 0 && (
                 <div className="bg-white p-10 rounded-[2.5rem] text-center border border-dashed border-slate-200">
                   <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">কোন লেনদেন পাওয়া যায়নি</p>

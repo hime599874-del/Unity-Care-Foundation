@@ -4,8 +4,9 @@ import { useAuth } from '../App';
 import { db } from '../services/db';
 import { 
   ArrowLeft, Camera, User, Mail, Phone, Save, 
-  CheckCircle2, Hash, LogOut, Loader2
+  CheckCircle2, Hash, LogOut, Loader2, Award, QrCode, X, Download
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
   return new Promise((resolve) => {
@@ -42,6 +43,7 @@ const ProfilePage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showIdCard, setShowIdCard] = useState(false);
 
   const navigate = useNavigate();
 
@@ -200,8 +202,102 @@ const ProfilePage: React.FC = () => {
           >
             {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-6 h-6" /> তথ্য সেভ করুন</>}
           </button>
+
+          {currentUser?.isIdCardEnabled && (
+            <button 
+              onClick={() => setShowIdCard(true)}
+              className="w-full py-5 bg-white text-teal-700 border-2 border-teal-600 rounded-[2rem] font-black text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all mt-4"
+            >
+              <Award className="w-6 h-6" /> সাংগঠনিক আইডি কার্ড
+            </button>
+          )}
         </div>
       </div>
+
+      {showIdCard && currentUser && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 overflow-y-auto no-scrollbar">
+          <div className="w-full max-w-sm animate-in zoom-in-95 duration-500 flex flex-col items-center">
+            {/* Lanyard/Ribbon */}
+            <div className="flex flex-col items-center -mb-1">
+              <div className="w-10 h-32 bg-[#0D9488] relative flex flex-col items-center shadow-2xl">
+                <div className="absolute top-4 w-8 h-8 bg-white/20 rounded-full border border-white/30 flex items-center justify-center overflow-hidden">
+                   <img src="https://i.ibb.co/v4mYpXW/logo.png" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = "https://picsum.photos/seed/logo/40/40")} />
+                </div>
+                <div className="absolute -bottom-2 w-12 h-4 bg-slate-300 rounded-full border-2 border-slate-400 shadow-inner"></div>
+              </div>
+              <div className="w-14 h-4 bg-slate-400 rounded-t-lg shadow-md z-10"></div>
+            </div>
+
+            {/* ID Card Body */}
+            <div className="w-full aspect-[2.5/4] bg-white rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden relative border border-slate-200 flex flex-col">
+              {/* Geometric Background Patterns */}
+              <div className="absolute inset-0 z-0 opacity-100 pointer-events-none">
+                {/* Top Teal Pattern */}
+                <div className="absolute top-0 left-0 right-0 h-40 bg-[#0D9488] clip-path-id-top"></div>
+                {/* Darker Geometric Accents */}
+                <div className="absolute top-0 left-0 w-full h-48 bg-[#064E3B] clip-path-id-accent-1 opacity-90"></div>
+                <div className="absolute top-0 right-0 w-full h-48 bg-[#064E3B] clip-path-id-accent-2 opacity-90"></div>
+                
+                {/* Bottom Patterns */}
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#0D9488] clip-path-id-bottom-left opacity-80"></div>
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#064E3B] clip-path-id-bottom-right opacity-80"></div>
+              </div>
+
+              {/* Card Content */}
+              <div className="relative z-10 flex flex-col items-center pt-12 px-6 flex-grow">
+                {/* Profile Picture */}
+                <div className="w-36 h-36 rounded-full bg-white p-1.5 shadow-xl mb-6 border-4 border-white/50 overflow-hidden">
+                  {currentUser.profilePic ? (
+                    <img src={currentUser.profilePic} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <User className="w-16 h-16 m-10 text-slate-200" />
+                  )}
+                </div>
+
+                {/* Name Pill */}
+                <div className="bg-[#0D9488] px-8 py-2 rounded-full shadow-lg mb-4">
+                  <h2 className="text-xl font-black text-white uppercase tracking-wider text-center">{currentUser.name}</h2>
+                </div>
+
+                {/* Info Section */}
+                <div className="text-center space-y-1 mb-6">
+                  <p className="text-lg font-black text-slate-800 uppercase tracking-widest">ID {currentUser.phone.slice(-4)}</p>
+                  <p className="text-sm font-bold text-slate-600">Phone : {currentUser.phone}</p>
+                  <p className="text-sm font-bold text-slate-600">Blood group : <span className="text-rose-600">{currentUser.bloodGroup || '—'}</span></p>
+                  <p className="text-[10px] font-bold text-slate-400 italic mt-2">check expiry date and more information</p>
+                </div>
+
+                {/* QR Code */}
+                <div className="mt-auto mb-8">
+                  <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
+                    <QRCodeSVG 
+                      value={`${window.location.origin}/#/u/${currentUser.id}`}
+                      size={120}
+                      level="M"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 mt-8 w-full">
+              <button 
+                onClick={() => setShowIdCard(false)}
+                className="flex-grow py-4 bg-white/10 text-white rounded-2xl font-black uppercase text-xs backdrop-blur-md border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <X className="w-4 h-4" /> বন্ধ করুন
+              </button>
+              <button 
+                onClick={() => window.print()}
+                className="flex-grow py-4 bg-teal-500 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-teal-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" /> প্রিন্ট করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

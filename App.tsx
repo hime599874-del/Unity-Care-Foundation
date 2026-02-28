@@ -14,6 +14,8 @@ import ProfilePage from './pages/ProfilePage';
 import ExpensePage from './pages/ExpensePage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAuth from './pages/AdminAuth';
+import ProgressPage from './pages/ProgressPage';
+import PublicProfilePage from './pages/PublicProfilePage';
 import { Heart, Home, CreditCard, User as UserIcon } from 'lucide-react';
 
 interface AuthContextType {
@@ -77,8 +79,10 @@ const AppContent: React.FC = () => {
           <Route path="/leaderboard" element={currentUser ? <LeaderboardPage /> : <Navigate to="/" replace />} />
           <Route path="/profile" element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />} />
           <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
+          <Route path="/progress" element={currentUser ? <ProgressPage /> : <Navigate to="/" replace />} />
           <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
           <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
+          <Route path="/u/:userId" element={<PublicProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

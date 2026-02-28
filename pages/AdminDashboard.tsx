@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
@@ -11,9 +11,10 @@ import {
   Loader2, Phone, User as UserIcon, ShieldCheck,
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
-  Download, Smartphone, Landmark, Award
+  Download, Smartphone, Landmark, Award, Activity, QrCode
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import { QRCodeSVG } from 'qrcode.react';
 
 const toBengaliNumber = (num: number | string) => {
   return num.toString();
@@ -30,16 +31,29 @@ const AdminDashboard: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [projects, setProjects] = useState<ProjectProgress[]>([]);
   const [stats, setStats] = useState(db.getStats());
   const [contactConfig, setContactConfig] = useState<ContactConfig>(db.getContactConfig());
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr'>('overview');
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [qrSearchQuery, setQrSearchQuery] = useState('');
+  const [editingExpiry, setEditingExpiry] = useState<{ userId: string, date: string } | null>(null);
+  const [editingJoining, setEditingJoining] = useState<{ userId: string, date: string } | null>(null);
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseReason, setExpenseReason] = useState('');
+  const [expenseImage, setExpenseImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  
+  const [projectName, setProjectName] = useState('');
+  const [projectTarget, setProjectTarget] = useState('');
+  const [projectCollected, setProjectCollected] = useState('');
+  const [projectProgressType, setProjectProgressType] = useState<'Auto' | 'Manual'>('Auto');
+  const [projectManualPercent, setProjectManualPercent] = useState('');
+  const [projectStatus, setProjectStatus] = useState<'Ongoing' | 'Completed' | 'Pending'>('Ongoing');
+  const [projectDeadline, setProjectDeadline] = useState('');
   
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [viewingAssistance, setViewingAssistance] = useState<AssistanceRequest | null>(null);
@@ -59,6 +73,7 @@ const AdminDashboard: React.FC = () => {
       setSuggestions(db.getSuggestions().sort((a,b) => b.timestamp - a.timestamp));
       setComplaints(db.getComplaints().sort((a,b) => b.timestamp - a.timestamp));
       setExpenses(db.getExpenses().sort((a,b) => b.timestamp - a.timestamp));
+      setProjects(db.getProjects().sort((a,b) => b.timestamp - a.timestamp));
       setStats(db.getStats());
       const latestConfig = db.getContactConfig();
       setContactConfig(latestConfig);
@@ -80,6 +95,25 @@ const AdminDashboard: React.FC = () => {
       setUserDesignation(viewingUser.designation || 'ভেরিফাইড সদস্য');
     }
   }, [viewingUser]);
+
+  const handleAddProject = async () => {
+    if (!projectName || !projectTarget || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await db.addProject({
+        name: projectName,
+        targetAmount: parseFloat(projectTarget),
+        collectedAmount: parseFloat(projectCollected || '0'),
+        progressType: projectProgressType,
+        manualPercentage: projectProgressType === 'Manual' ? parseFloat(projectManualPercent || '0') : undefined,
+        status: projectStatus,
+        deadline: projectDeadline
+      });
+      setProjectName(''); setProjectTarget(''); setProjectCollected('');
+      setProjectManualPercent(''); setProjectDeadline('');
+      alert('প্রজেক্ট সফলভাবে যোগ করা হয়েছে।');
+    } catch (e: any) { alert(e.message); } finally { setIsSubmitting(false); }
+  };
 
   const handleUpdateDesignation = async () => {
     if (!viewingUser || !userDesignation.trim()) return;
@@ -121,6 +155,60 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleToggleIdCard = async (userId: string, currentStatus: boolean) => {
+    try {
+      await db.updateUser(userId, { isIdCardEnabled: !currentStatus });
+      alert(`আইডি কার্ড ${!currentStatus ? 'এনাবেল' : 'ডিজেবল'} করা হয়েছে।`);
+    } catch (e) { alert('ব্যর্থ হয়েছে।'); }
+  };
+
+  const handleUpdateExpiry = async (userId: string, date: string) => {
+    try {
+      await db.updateUser(userId, { expiryDate: date });
+      setEditingExpiry(null);
+      alert('মেয়াদ শেষ হওয়ার তারিখ আপডেট হয়েছে।');
+    } catch (e) { alert('ব্যর্থ হয়েছে।'); }
+  };
+
+  const handleUpdateJoining = async (userId: string, date: string) => {
+    try {
+      const timestamp = new Date(date).getTime();
+      await db.updateUser(userId, { registeredAt: timestamp });
+      setEditingJoining(null);
+      alert('যোগদানের তারিখ আপডেট হয়েছে।');
+    } catch (e) { alert('ব্যর্থ হয়েছে।'); }
+  };
+
+  const downloadQRCode = (userId: string, userName: string) => {
+    const svg = document.getElementById(`qr-${userId}`);
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width + 40;
+      canvas.height = img.height + 100;
+      if (ctx) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 20, 20);
+        ctx.fillStyle = "black";
+        ctx.font = "bold 20px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(userName, canvas.width / 2, img.height + 60);
+        ctx.font = "14px Arial";
+        ctx.fillText("Unity Care Foundation", canvas.width / 2, img.height + 85);
+      }
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `QR_${userName}_${userId}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+  };
+
   const handleLogout = () => { setIsAdmin(false); navigate('/'); };
 
   const handleUpdateStatus = async (id: string, type: 'user' | 'tx' | 'assistance', status: any) => {
@@ -139,10 +227,38 @@ const AdminDashboard: React.FC = () => {
     if (!expenseAmount || !expenseReason || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await db.addDetailedExpense(parseFloat(expenseAmount), expenseReason);
-      setExpenseAmount(''); setExpenseReason('');
+      await db.addDetailedExpense(parseFloat(expenseAmount), expenseReason, expenseImage || undefined);
+      setExpenseAmount(''); setExpenseReason(''); setExpenseImage(null);
       alert('ব্যয় সফলভাবে যোগ করা হয়েছে।');
     } catch (e: any) { alert(e.message); } finally { setIsSubmitting(false); }
+  };
+
+  const handleExpenseImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+          if (width > height) {
+            if (width > maxDim) { height *= maxDim / width; width = maxDim; }
+          } else {
+            if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          setExpenseImage(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -300,6 +416,8 @@ const AdminDashboard: React.FC = () => {
           { id: 'expense', label: 'ব্যয়', icon: <TrendingDown className="w-4 h-4" /> },
           { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-4 h-4" /> },
           { id: 'complaints', label: 'অভিযোগ', icon: <AlertCircle className="w-4 h-4" /> },
+          { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" /> },
+          { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" /> },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" /> }
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`py-5 px-1 border-b-[3px] text-[10px] font-black uppercase flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id ? 'border-[#0D9488] text-[#0D9488]' : 'border-transparent text-slate-400'}`}>
@@ -557,6 +675,37 @@ const AdminDashboard: React.FC = () => {
                 <div className="space-y-4">
                    <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-black text-2xl text-rose-600" placeholder="৳ 0.00" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} />
                    <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" placeholder="ব্যয়ের কারণ..." value={expenseReason} onChange={e => setExpenseReason(e.target.value)} />
+                   
+                   <div className="relative">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleExpenseImageChange} 
+                        className="hidden" 
+                        id="expense-image-upload" 
+                      />
+                      <label 
+                        htmlFor="expense-image-upload"
+                        className="w-full p-5 bg-slate-50 border-2 border-dashed rounded-[1.8rem] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-100 transition-all"
+                      >
+                        {expenseImage ? (
+                          <div className="relative w-full aspect-video rounded-2xl overflow-hidden">
+                            <img src={expenseImage} className="w-full h-full object-cover" alt="Expense proof" />
+                            <button 
+                              onClick={(e) => { e.preventDefault(); setExpenseImage(null); }}
+                              className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-full shadow-lg"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <LucideImageIcon className="w-8 h-8 text-slate-300" />
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ব্যয়ের প্রমাণপত্র / ছবি যোগ করুন</p>
+                          </>
+                        )}
+                      </label>
+                   </div>
                 </div>
                 <button onClick={handleAddExpense} disabled={isSubmitting} className="w-full py-5 bg-rose-600 text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 border-b-4 border-rose-800">ব্যয় যোগ করুন</button>
              </div>
@@ -566,7 +715,12 @@ const AdminDashboard: React.FC = () => {
                       {expenses.map(e => (
                         <tr key={e.id} className="text-[11px] font-bold hover:bg-slate-50">
                            <td className="px-6 py-4 text-slate-400">{toBengaliNumber(e.date)}</td>
-                           <td className="px-6 py-4">{e.reason}</td>
+                           <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                 {e.reason}
+                                 {e.proofImage && <LucideImageIcon className="w-3.5 h-3.5 text-teal-500" />}
+                              </div>
+                           </td>
                            <td className="px-6 py-4 text-rose-600 text-right font-black">৳{toBengaliNumber(e.amount)}</td>
                         </tr>
                       ))}
@@ -668,6 +822,181 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'progress' && (
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
+             <div className="bg-white p-8 rounded-[3rem] border shadow-xl space-y-6">
+                <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-widest">নতুন প্রজেক্ট যোগ করুন</h3>
+                <div className="space-y-4">
+                   <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" placeholder="প্রজেক্টের নাম..." value={projectName} onChange={e => setProjectName(e.target.value)} />
+                   <div className="grid grid-cols-2 gap-4">
+                      <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" placeholder="লক্ষ্য অর্থ (Target)" value={projectTarget} onChange={e => setProjectTarget(e.target.value)} />
+                      <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" placeholder="সংগৃহীত (Collected)" value={projectCollected} onChange={e => setProjectCollected(e.target.value)} />
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <select className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" value={projectProgressType} onChange={e => setProjectProgressType(e.target.value as any)}>
+                         <option value="Auto">অটোমেটিক (Auto)</option>
+                         <option value="Manual">ম্যানুয়াল (Manual)</option>
+                      </select>
+                      {projectProgressType === 'Manual' && (
+                        <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" placeholder="অগ্রগতি (%)" value={projectManualPercent} onChange={e => setProjectManualPercent(e.target.value)} />
+                      )}
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <select className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" value={projectStatus} onChange={e => setProjectStatus(e.target.value as any)}>
+                         <option value="Ongoing">চলমান</option>
+                         <option value="Completed">সম্পন্ন</option>
+                         <option value="Pending">বাকি</option>
+                      </select>
+                      <input type="date" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs" value={projectDeadline} onChange={e => setProjectDeadline(e.target.value)} />
+                   </div>
+                </div>
+                <button onClick={handleAddProject} disabled={isSubmitting} className="w-full py-5 bg-[#0D9488] text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 border-b-4 border-teal-800">প্রজেক্ট যোগ করুন</button>
+             </div>
+
+             <div className="space-y-4">
+                {projects.map(p => (
+                  <div key={p.id} className="bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col gap-4 group">
+                     <div className="flex justify-between items-start">
+                        <div>
+                           <h4 className="text-sm font-black text-slate-800 italic">{p.name}</h4>
+                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">লক্ষ্য: ৳{toBengaliNumber(p.targetAmount.toLocaleString())}</p>
+                        </div>
+                        <div className="flex gap-2">
+                           <button onClick={() => db.deleteProject(p.id)} className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                           </button>
+                        </div>
+                     </div>
+                     <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        <span>{p.status}</span>
+                        <span>{p.progressType}</span>
+                     </div>
+                  </div>
+                ))}
+                {projects.length === 0 && <div className="text-center py-20 opacity-20"><AlertCircle className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন প্রজেক্ট নেই</p></div>}
+             </div>
+          </div>
+        )}
+
+        {activeTab === 'qr' && (
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
+            <div className="bg-white p-4 rounded-3xl border shadow-sm flex items-center gap-3">
+              <Search className="w-5 h-5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="সদস্য খুঁজুন (নাম বা মোবাইল)..." 
+                className="w-full outline-none font-bold text-sm" 
+                value={qrSearchQuery} 
+                onChange={e => setQrSearchQuery(e.target.value)} 
+              />
+            </div>
+
+            <div className="space-y-4">
+              {users.filter(u => u.status === UserStatus.APPROVED && (u.name.toLowerCase().includes(qrSearchQuery.toLowerCase()) || u.phone.includes(qrSearchQuery))).map(u => (
+                <div key={u.id} className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-slate-100 rounded-2xl overflow-hidden border-2 border-white shadow-sm shrink-0">
+                      {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-8 h-8 m-3 text-slate-300" />}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-800">{u.name}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{u.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">যোগদানের তারিখ</p>
+                      {editingJoining?.userId === u.id ? (
+                        <div className="flex gap-2">
+                          <input 
+                            type="date" 
+                            className="w-full p-2 bg-slate-50 border rounded-xl text-xs font-bold"
+                            value={editingJoining.date}
+                            onChange={e => setEditingJoining({ ...editingJoining, date: e.target.value })}
+                          />
+                          <button onClick={() => handleUpdateJoining(u.id, editingJoining.date)} className="p-2 bg-emerald-600 text-white rounded-xl"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setEditingJoining(null)} className="p-2 bg-slate-200 text-slate-600 rounded-xl"><X className="w-4 h-4" /></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                          <span className="text-xs font-bold text-slate-700">{new Date(u.registeredAt).toISOString().split('T')[0]}</span>
+                          <button onClick={() => setEditingJoining({ userId: u.id, date: new Date(u.registeredAt).toISOString().split('T')[0] })} className="text-teal-600"><Calendar className="w-4 h-4" /></button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">মেয়াদ শেষ</p>
+                      {editingExpiry?.userId === u.id ? (
+                        <div className="flex gap-2">
+                          <input 
+                            type="date" 
+                            className="w-full p-2 bg-slate-50 border rounded-xl text-xs font-bold"
+                            value={editingExpiry.date}
+                            onChange={e => setEditingExpiry({ ...editingExpiry, date: e.target.value })}
+                          />
+                          <button onClick={() => handleUpdateExpiry(u.id, editingExpiry.date)} className="p-2 bg-emerald-600 text-white rounded-xl"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setEditingExpiry(null)} className="p-2 bg-slate-200 text-slate-600 rounded-xl"><X className="w-4 h-4" /></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                          <span className="text-xs font-bold text-slate-700">{u.expiryDate || 'নির্ধারিত নয়'}</span>
+                          <button onClick={() => setEditingExpiry({ userId: u.id, date: u.expiryDate || new Date().toISOString().split('T')[0] })} className="text-rose-600"><Calendar className="w-4 h-4" /></button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-teal-50/50 p-4 rounded-3xl border border-teal-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-xl shadow-sm">
+                        <Award className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">সাংগঠনিক আইডি কার্ড</p>
+                        <p className="text-[8px] font-bold text-teal-600 uppercase tracking-widest mt-0.5">ইউজার প্রোফাইলে দেখা যাবে</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleToggleIdCard(u.id, !!u.isIdCardEnabled)}
+                      className={`w-12 h-6 rounded-full relative transition-all duration-300 ${u.isIdCardEnabled ? 'bg-teal-500' : 'bg-slate-200'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${u.isIdCardEnabled ? 'left-7' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-4 pt-4 border-t border-slate-100">
+                    <div className="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-inner">
+                      <QRCodeSVG 
+                        id={`qr-${u.id}`}
+                        value={`নাম: ${u.name}\nমোবাইল: ${u.phone}\nরক্তের গ্রুপ: ${u.bloodGroup}\n\nলাইভ প্রোফাইল ও হিস্ট্রি দেখতে নিচের লিঙ্কে ক্লিক করুন:\n${window.location.origin}/#/u/${u.id}`} 
+                        size={220}
+                        level="M"
+                        includeMargin={true}
+                      />
+                    </div>
+                    <button 
+                      onClick={() => downloadQRCode(u.id, u.name)}
+                      className="flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-teal-200 active:scale-95 transition-all"
+                    >
+                      <Download className="w-4 h-4" /> কিউআর ডাউনলোড করুন
+                    </button>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase text-center">
+                      অফলাইনে নাম/মোবাইল এবং অনলাইনে লাইভ প্রোফাইল দেখার জন্য এই কিউআর কোডটি ব্যবহার করুন।
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {users.filter(u => u.status === UserStatus.APPROVED).length === 0 && (
+                <div className="text-center py-20 opacity-20">
+                  <QrCode className="w-16 h-16 mx-auto mb-4" />
+                  <p className="font-black uppercase tracking-widest">কোন সদস্য নেই</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {activeTab === 'settings' && (
           <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
              <div className="space-y-4">

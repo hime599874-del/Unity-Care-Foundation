@@ -18,7 +18,7 @@ import {
   getDocs,
   enableMultiTabIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
@@ -121,16 +121,15 @@ const toPlainObject = (data: any, visited = new WeakSet()): any => {
   // Plain Objects
   visited.add(data);
   const result: any = {};
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
-      // Exclude internal Firestore metadata/circular properties
-      if (key.startsWith('_') || key === 'firestore' || key === 'converter' || key === 'src' || key === 'i') continue;
-      
-      const val = data[key];
-      if (typeof val === 'function') continue;
-      
-      result[key] = toPlainObject(val, visited);
-    }
+  const keys = Object.keys(data);
+  for (const key of keys) {
+    // Exclude internal Firestore metadata/circular properties
+    if (key.startsWith('_') || key === 'firestore' || key === 'converter' || key === 'src' || key === 'i') continue;
+    
+    const val = data[key];
+    if (typeof val === 'function') continue;
+    
+    result[key] = toPlainObject(val, visited);
   }
   return result;
 };
@@ -170,12 +169,11 @@ const sanitizeForUpload = (data: any, visited = new WeakSet()): any => {
     }
 
     const clean: any = {};
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        if (key.startsWith('_') || key === 'src' || key === 'i' || key === 'firestore') continue;
-        const val = sanitizeForUpload(data[key], visited);
-        if (val !== null && val !== undefined) clean[key] = val;
-      }
+    const keys = Object.keys(data);
+    for (const key of keys) {
+      if (key.startsWith('_') || key === 'src' || key === 'i' || key === 'firestore') continue;
+      const val = sanitizeForUpload(data[key], visited);
+      if (val !== null && val !== undefined) clean[key] = val;
     }
     return Object.keys(clean).length > 0 ? clean : null;
   }
@@ -187,6 +185,7 @@ class FirebaseDB {
   private transactions: Transaction[] = [];
   private assistanceRequests: AssistanceRequest[] = [];
   private expenses: Expense[] = [];
+  private projects: ProjectProgress[] = [];
   private suggestions: Suggestion[] = [];
   private complaints: Complaint[] = [];
   private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0 };
@@ -225,6 +224,11 @@ class FirebaseDB {
         this.expenses = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Expense[];
         this.notify();
       }, (error) => safeError("Firestore: Expenses sync error:", error));
+
+      onSnapshot(collection(firestore, "projects"), (snapshot) => {
+        this.projects = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as ProjectProgress[];
+        this.notify();
+      }, (error) => safeError("Firestore: Projects sync error:", error));
 
       onSnapshot(query(collection(firestore, "suggestions"), orderBy("timestamp", "desc")), (snapshot) => {
         this.suggestions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Suggestion[];
@@ -278,6 +282,7 @@ class FirebaseDB {
   getTransactions(): Transaction[] { return this.transactions; }
   getAssistanceRequests(): AssistanceRequest[] { return this.assistanceRequests; }
   getExpenses(): Expense[] { return this.expenses; }
+  getProjects(): ProjectProgress[] { return this.projects; }
   getSuggestions(): Suggestion[] { return this.suggestions; }
   getComplaints(): Complaint[] { return this.complaints; }
   getStats(): AppStats { return this.stats; }
@@ -374,6 +379,20 @@ class FirebaseDB {
       transaction.delete(expRef);
       transaction.set(statsRef, { totalExpense: increment(-amount) }, { merge: true });
     });
+  }
+
+  async addProject(projectData: any) {
+    const cleanData = sanitizeForUpload({ ...projectData, timestamp: Date.now() });
+    await addDoc(collection(firestore, "projects"), cleanData);
+  }
+
+  async updateProject(id: string, projectData: any) {
+    const cleanData = sanitizeForUpload(projectData);
+    await updateDoc(doc(firestore, "projects", id), cleanData);
+  }
+
+  async deleteProject(id: string) {
+    await deleteDoc(doc(firestore, "projects", id));
   }
 
   async updateLastActive(userId: string) { try { await updateDoc(doc(firestore, "users", userId), { lastActive: Date.now() }); } catch (e) {} }
