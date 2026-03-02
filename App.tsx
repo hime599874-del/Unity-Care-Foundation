@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { User, UserStatus } from './types';
+import { User, UserStatus, ActivityType } from './types';
 import { db } from './services/db';
 import WelcomePage from './pages/WelcomePage';
 import AuthPage from './pages/AuthPage';
@@ -12,6 +12,7 @@ import HistoryPage from './pages/HistoryPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
 import ExpensePage from './pages/ExpensePage';
+import VoucherPage from './pages/VoucherPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAuth from './pages/AdminAuth';
 import ProgressPage from './pages/ProgressPage';
@@ -60,6 +61,26 @@ const BottomNav: React.FC = () => {
   );
 };
 
+const ActivityTracker: React.FC = () => {
+  const { currentUser, isAdmin } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (currentUser && !isAdmin) {
+      const pageName = location.pathname.replace('/', '') || 'home';
+      db.logActivity(
+        currentUser.id,
+        currentUser.name,
+        ActivityType.PAGE_VIEW,
+        `Accessed ${pageName} page`,
+        location.pathname
+      );
+    }
+  }, [location.pathname, currentUser, isAdmin]);
+
+  return null;
+};
+
 const AppContent: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
   const location = useLocation();
@@ -69,6 +90,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <main className={`flex-grow ${showNav ? 'pb-24' : ''}`}>
+        <ActivityTracker />
         <Routes>
           <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <WelcomePage />} />
           <Route path="/auth" element={currentUser ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
@@ -79,6 +101,7 @@ const AppContent: React.FC = () => {
           <Route path="/leaderboard" element={currentUser ? <LeaderboardPage /> : <Navigate to="/" replace />} />
           <Route path="/profile" element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />} />
           <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
+          <Route path="/vouchers" element={currentUser ? <VoucherPage /> : <Navigate to="/" replace />} />
           <Route path="/progress" element={currentUser ? <ProgressPage /> : <Navigate to="/" replace />} />
           <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
           <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
@@ -132,6 +155,7 @@ const App: React.FC = () => {
       if (user && user.status === UserStatus.APPROVED) {
         setCurrentUser(user);
         db.updateLastActive(user.id);
+        db.logActivity(user.id, user.name, ActivityType.LOGIN, "Entered the application");
       }
     } else {
       setIsLoading(false);

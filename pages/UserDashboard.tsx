@@ -274,7 +274,15 @@ const UserDashboard: React.FC = () => {
           <button onClick={() => navigate('/expenses')} className="bg-gradient-to-br from-[#F093FB] to-[#F5576C] p-3.5 rounded-[2rem] shadow-xl shadow-rose-500/20 flex items-center gap-3 active:scale-95 transition-all text-left border border-white/30 relative overflow-hidden group">
              <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
              <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 shadow-lg text-white relative z-10 border border-white/40">
-                <TrendingDown className="w-4 h-4" />
+                <div className="relative w-5 h-5 flex items-center justify-center">
+                  {/* Chair */}
+                  <div className="absolute bottom-0.5 w-3 h-2 bg-blue-600 rounded-sm"></div>
+                  {/* Person */}
+                  <div className="absolute bottom-1 w-2.5 h-3 bg-amber-400 rounded-md"></div>
+                  <div className="absolute top-0.5 w-2 h-2 bg-pink-100 rounded-full"></div>
+                  {/* Laptop */}
+                  <div className="absolute bottom-2 w-3.5 h-2 bg-slate-800 rounded-sm border border-slate-700"></div>
+                </div>
              </div>
              <div className="overflow-hidden relative z-10">
                 <p className="text-[7px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট খরচ</p>
@@ -296,7 +304,73 @@ const UserDashboard: React.FC = () => {
             { icon: <AlertCircle className="w-6 h-6" />, label: 'অভিযোগ', color: 'from-rose-500 to-pink-600', action: () => setShowComplaintModal(true) },
             { icon: <Info className="w-6 h-6" />, label: 'পেমেন্ট', color: 'from-blue-500 to-indigo-600', action: () => setShowPaymentModal(true) },
             { icon: <MessageSquare className="w-6 h-6" />, label: 'যোগাযোগ', color: 'from-pink-500 to-rose-600', action: () => setShowContactModal(true) },
-            { icon: <Receipt className="w-6 h-6" />, label: 'ভাউচার', color: 'from-slate-500 to-slate-700', path: '/expenses' },
+            { 
+              icon: (
+                <div className="relative w-8 h-8 flex items-center justify-center">
+                  {/* 3D Character Background Elements */}
+                  <div className="absolute -top-1 -left-1 w-3 h-3 bg-amber-200/40 rounded-full blur-sm"></div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-200/40 rounded-full blur-sm"></div>
+                  
+                  {/* Chair */}
+                  <div className="absolute bottom-1 w-4 h-3 bg-blue-600 rounded-sm shadow-sm"></div>
+                  <div className="absolute bottom-0 w-1 h-2 bg-blue-700 left-1/2 -translate-x-1/2"></div>
+                  
+                  {/* Person Legs */}
+                  <div className="absolute bottom-2 w-3 h-2 bg-slate-900 rounded-full"></div>
+                  
+                  {/* Torso (Yellow) */}
+                  <div className="absolute bottom-3 w-4 h-4 bg-amber-400 rounded-lg shadow-inner border border-amber-500/20"></div>
+                  
+                  {/* Head */}
+                  <div className="absolute top-1 w-2.5 h-2.5 bg-[#FFE4E1] rounded-full border border-pink-200 shadow-sm"></div>
+                  {/* Hair */}
+                  <div className="absolute top-1 w-2.5 h-1 bg-slate-800 rounded-t-full"></div>
+                  
+                  {/* Laptop (Dark) */}
+                  <div className="absolute bottom-4 w-5 h-3 bg-slate-800 rounded-sm transform -rotate-6 border border-slate-700 shadow-md flex items-center justify-center">
+                    <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                  </div>
+                  
+                  {/* Floating Notification Dot */}
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full shadow-sm border border-rose-400 flex items-center justify-center">
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                  </div>
+                </div>
+              ), 
+              label: 'খরচ', 
+              color: 'from-rose-500 to-rose-700', 
+              path: '/expenses' 
+            },
+            { 
+              icon: (
+                <div className="relative w-8 h-8 flex items-center justify-center">
+                  {/* 3D Scroll Background */}
+                  <div className="absolute inset-0 bg-blue-500 rounded-sm transform -rotate-3 shadow-lg"></div>
+                  <div className="absolute inset-0 bg-blue-600 rounded-sm transform rotate-2 shadow-md"></div>
+                  <div className="absolute inset-0 bg-blue-500 rounded-sm flex flex-col items-center pt-1 px-1 gap-0.5 border border-blue-400/30">
+                    {/* Invoice Label */}
+                    <div className="w-full bg-white rounded-[1px] py-0.5 flex items-center justify-center mb-0.5 shadow-sm">
+                      <span className="text-[4px] font-black text-blue-700 leading-none tracking-tighter">INVOICE</span>
+                    </div>
+                    {/* Lines and Dollar Sign */}
+                    <div className="w-full flex justify-between items-end px-0.5 pb-0.5">
+                      <div className="flex flex-col gap-0.5 w-3">
+                        <div className="h-[1.5px] w-full bg-white/60 rounded-full"></div>
+                        <div className="h-[1.5px] w-full bg-white/60 rounded-full"></div>
+                        <div className="h-[1.5px] w-3/4 bg-white/60 rounded-full"></div>
+                      </div>
+                      <div className="text-amber-400 font-black text-[10px] leading-none drop-shadow-sm">$</div>
+                    </div>
+                  </div>
+                  {/* Roll Effects */}
+                  <div className="absolute -top-1 left-0 right-0 h-1.5 bg-blue-700 rounded-full shadow-inner"></div>
+                  <div className="absolute -bottom-1 left-0 right-0 h-1.5 bg-blue-700 rounded-full shadow-inner"></div>
+                </div>
+              ), 
+              label: 'ভাউচার', 
+              color: 'from-blue-500 to-indigo-700', 
+              path: '/vouchers' 
+            },
             { icon: <Activity className="w-6 h-6" />, label: 'অগ্রগতি', color: 'from-indigo-400 to-violet-600', path: '/progress' },
           ].map((item, idx) => (
             <button 
@@ -335,7 +409,11 @@ const UserDashboard: React.FC = () => {
                 const gradient = gradients[idx % gradients.length];
                 
                 return (
-                  <div key={tx.id} className={`bg-gradient-to-r ${gradient} p-3.5 rounded-[2rem] shadow-lg shadow-slate-200/40 flex justify-between items-center hover:shadow-xl transition-all active:scale-[0.98] border border-white/30 relative overflow-hidden group`}>
+                  <div 
+                    key={tx.id} 
+                    onClick={() => navigate('/vouchers', { state: { transactionId: tx.id } })}
+                    className={`cursor-pointer bg-gradient-to-r ${gradient} p-3.5 rounded-[2rem] shadow-lg shadow-slate-200/40 flex justify-between items-center hover:shadow-xl transition-all active:scale-[0.98] border border-white/30 relative overflow-hidden group`}
+                  >
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
                     <div className="flex items-center gap-3 relative z-10">
                       <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-white shadow-md border border-white/40">
@@ -678,7 +756,7 @@ const UserDashboard: React.FC = () => {
                   <Award className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-black uppercase text-sm tracking-widest">স্থায়ী সদস্য</h3>
+                  <h3 className="font-black uppercase text-sm tracking-widest">স্থায়ী সদস্য ({toBengaliNumber(db.getUsers().filter(u => u.isPermanentMember).length)})</h3>
                   <p className="text-[9px] font-bold text-blue-100 uppercase tracking-widest mt-0.5">আমাদের গর্বিত সদস্যবৃন্দ</p>
                 </div>
               </div>

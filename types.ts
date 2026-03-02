@@ -149,3 +149,19 @@ export interface Notification {
   timestamp: number;
   isRead: boolean;
 }
+
+export enum ActivityType {
+  LOGIN = 'LOGIN',
+  PAGE_VIEW = 'PAGE_VIEW',
+  ACTION = 'ACTION'
+}
+
+export interface MemberActivity {
+  id: string;
+  userId: string;
+  userName: string;
+  type: ActivityType;
+  description: string;
+  path?: string;
+  timestamp: number;
+}

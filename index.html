@@ -17,10 +17,14 @@
     <!-- Google Fonts with crossorigin attribute to prevent CORS issues with html-to-image -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700;900&family=Dancing+Script:wght@600&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://fonts.cdnfonts.com/css/jalliya" rel="stylesheet">
     
     <style>
-        :root { --bn-font: 'Hind Siliguri', sans-serif; }
+        :root { 
+            --bn-font: 'Hind Siliguri', sans-serif; 
+            --signature-font: 'Jalliya', 'Dancing Script', cursive;
+        }
         body {
             font-family: var(--bn-font);
             background-color: #f8fafc;
@@ -32,6 +36,7 @@
             touch-action: pan-x pan-y;
         }
         .premium-text { font-family: 'Playfair Display', serif; }
+        .signature-text { font-family: var(--signature-font); }
         .bn-heavy { font-weight: 900; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #0d9488; border-radius: 10px; }
@@ -52,11 +57,11 @@
             display: none !important;
         }
 
-        .clip-path-id-top { clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%); }
-        .clip-path-id-accent-1 { clip-path: polygon(0 0, 40% 0, 0 80%); }
-        .clip-path-id-accent-2 { clip-path: polygon(60% 0, 100% 0, 100% 80%); }
-        .clip-path-id-bottom-left { clip-path: polygon(0 40%, 100% 100%, 0 100%); }
-        .clip-path-id-bottom-right { clip-path: polygon(0 100%, 100% 40%, 100% 100%); }
+        .clip-path-id-diamond { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+        .clip-path-id-diagonal-left { clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 80%); }
+        .clip-path-id-diagonal-right { clip-path: polygon(0 0, 100% 20%, 100% 80%, 0 100%); }
+        .clip-path-id-top-v { clip-path: polygon(0 0, 100% 0, 100% 40%, 50% 70%, 0 40%); }
+        .writing-mode-vertical { writing-mode: vertical-rl; text-orientation: mixed; }
     </style>
 
     <script type="importmap">
@@ -75,7 +80,6 @@
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

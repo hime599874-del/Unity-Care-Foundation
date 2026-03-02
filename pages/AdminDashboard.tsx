@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
@@ -32,10 +32,11 @@ const AdminDashboard: React.FC = () => {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [projects, setProjects] = useState<ProjectProgress[]>([]);
+  const [activities, setActivities] = useState<MemberActivity[]>(db.getActivities());
   const [stats, setStats] = useState(db.getStats());
   const [contactConfig, setContactConfig] = useState<ContactConfig>(db.getContactConfig());
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities'>('overview');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [qrSearchQuery, setQrSearchQuery] = useState('');
@@ -74,6 +75,7 @@ const AdminDashboard: React.FC = () => {
       setComplaints(db.getComplaints().sort((a,b) => b.timestamp - a.timestamp));
       setExpenses(db.getExpenses().sort((a,b) => b.timestamp - a.timestamp));
       setProjects(db.getProjects().sort((a,b) => b.timestamp - a.timestamp));
+      setActivities(db.getActivities().sort((a,b) => b.timestamp - a.timestamp));
       setStats(db.getStats());
       const latestConfig = db.getContactConfig();
       setContactConfig(latestConfig);
@@ -394,6 +396,73 @@ const AdminDashboard: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const downloadPermanentMembersMonthlyReport = () => {
+    const [year, month] = reportMonth.split('-').map(Number);
+    const monthName = new Date(year, month - 1).toLocaleString('bn-BD', { month: 'long', year: 'numeric' });
+    
+    const permanentUserIds = new Set(users.filter(u => u.isPermanentMember).map(u => u.id));
+    
+    // Filter transactions for the selected month and permanent members
+    const monthlyTxs = transactions.filter(t => {
+      const d = new Date(t.timestamp);
+      return d.getFullYear() === year && (d.getMonth() + 1) === month && t.status === TransactionStatus.APPROVED && permanentUserIds.has(t.userId);
+    });
+
+    const totalCollection = monthlyTxs.reduce((sum, t) => sum + t.amount, 0);
+    const donorIds = new Set(monthlyTxs.map(t => t.userId));
+    const donorCount = donorIds.size;
+
+    // Find permanent members who haven't paid this month
+    const permanentMembers = users.filter(u => u.isPermanentMember && u.status === UserStatus.APPROVED);
+    const unpaidPermanentMembers = permanentMembers.filter(u => !donorIds.has(u.id));
+
+    const csvRows = [
+      ['ইউনিটি কেয়ার ফাউন্ডেশন - স্থায়ী সদস্য মাসিক রিপোর্ট'],
+      ['মাসের নাম', monthName],
+      ['এই মাসে মোট আদায় (স্থায়ী সদস্য)', `৳${totalCollection}`],
+      ['মোট দাতা সংখ্যা (স্থায়ী সদস্য)', `${donorCount} জন`],
+      [],
+      ['স্থায়ী সদস্যদের আদায়ের তালিকা'],
+      ['SL', 'তারিখ (Date)', 'সদস্যের নাম (Name)', 'পরিচয় (ID)', 'পরিমাণ (Amount)', 'মাধ্যম (Method)'],
+    ];
+
+    monthlyTxs.forEach((t, index) => {
+      const user = db.getUser(t.userId);
+      csvRows.push([
+        index + 1,
+        t.date,
+        t.userName,
+        user?.phone?.slice(-4) || '0000',
+        t.amount,
+        t.method
+      ]);
+    });
+
+    csvRows.push([], ['বকেয়া স্থায়ী সদস্যদের তালিকা'], ['SL', 'নাম (Name)', 'পরিচয় (ID)', 'মোবাইল (Mobile)', 'ঠিকানা (Address)']);
+
+    unpaidPermanentMembers.forEach((m, index) => {
+      csvRows.push([
+        index + 1,
+        m.name,
+        m.phone.slice(-4),
+        m.phone,
+        `${m.address?.district || ''}, ${m.address?.upazila || ''}`
+      ]);
+    });
+
+    const csvString = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Permanent_Members_Report_${reportMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const filteredUsers = useMemo(() => users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone.includes(searchQuery)), [users, searchQuery]);
   const netBalance = stats.totalCollection - (expenses.length === 0 ? 0 : stats.totalExpense);
 
@@ -413,10 +482,17 @@ const AdminDashboard: React.FC = () => {
           { id: 'users', label: 'সদস্য তালিকা', icon: <Users className="w-4 h-4" /> },
           { id: 'assistance', label: 'আবেদন', icon: <HandHelping className="w-4 h-4" /> },
           { id: 'txs', label: 'লেনদেন', icon: <DollarSign className="w-4 h-4" /> },
-          { id: 'expense', label: 'ব্যয়', icon: <TrendingDown className="w-4 h-4" /> },
+          { id: 'expense', label: 'ব্যয়', icon: (
+            <div className="relative w-4 h-4 flex items-center justify-center">
+              <div className="absolute bottom-0 w-2.5 h-1.5 bg-blue-600 rounded-sm"></div>
+              <div className="absolute bottom-0.5 w-2 h-2 bg-amber-400 rounded-sm"></div>
+              <div className="absolute top-0 w-1.5 h-1.5 bg-pink-100 rounded-full"></div>
+            </div>
+          ) },
           { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-4 h-4" /> },
           { id: 'complaints', label: 'অভিযোগ', icon: <AlertCircle className="w-4 h-4" /> },
           { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" /> },
+          { id: 'activities', label: 'মেম্বার অ্যাক্টিভিটি', icon: <Clock className="w-4 h-4" /> },
           { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" /> },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" /> }
         ].map(tab => (
@@ -431,9 +507,17 @@ const AdminDashboard: React.FC = () => {
           <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
             <div className="grid grid-cols-2 gap-4">
               <StatCard label="মোট সদস্য" value={`${toBengaliNumber(stats.totalUsers)} জন`} icon={<Users className="w-6 h-6" />} color="bg-blue-50 text-blue-600" />
+              <StatCard label="স্থায়ী সদস্য" value={`${toBengaliNumber(users.filter(u => u.isPermanentMember).length)} জন`} icon={<Award className="w-6 h-6" />} color="bg-amber-50 text-amber-600" />
               <StatCard label="মোট আদায়" value={`৳${toBengaliNumber(stats.totalCollection.toLocaleString())}`} icon={<TrendingUp className="w-6 h-6" />} color="bg-emerald-50 text-emerald-600" />
-              <StatCard label="মোট ব্যয়" value={`৳${toBengaliNumber(stats.totalExpense.toLocaleString())}`} icon={<TrendingDown className="w-6 h-6" />} color="bg-rose-50 text-rose-600" />
-              <div className="bg-[#0D9488] p-5 rounded-[2.5rem] text-white shadow-xl flex flex-col justify-between h-28 border border-white/20">
+              <StatCard label="মোট ব্যয়" value={`৳${toBengaliNumber(stats.totalExpense.toLocaleString())}`} icon={
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                  <div className="absolute bottom-0.5 w-4 h-3 bg-blue-600 rounded-sm shadow-sm"></div>
+                  <div className="absolute bottom-1 w-3.5 h-4 bg-amber-400 rounded-md shadow-inner"></div>
+                  <div className="absolute top-0.5 w-2.5 h-2.5 bg-[#FFE4E1] rounded-full border border-pink-200"></div>
+                  <div className="absolute bottom-2 w-4.5 h-2.5 bg-slate-800 rounded-sm border border-slate-700"></div>
+                </div>
+              } color="bg-rose-50 text-rose-600" />
+              <div className="bg-[#0D9488] p-5 rounded-[2.5rem] text-white shadow-xl flex flex-col justify-between h-28 border border-white/20 col-span-2">
                 <p className="text-[9px] font-black uppercase opacity-80 leading-none tracking-widest">বর্তমান তহবিল</p>
                 <h3 className="text-2xl font-black leading-none italic">৳{toBengaliNumber(netBalance.toLocaleString())}</h3>
               </div>
@@ -587,19 +671,27 @@ const AdminDashboard: React.FC = () => {
                     <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-widest">মাসিক রিপোর্ট (Excel)</h3>
                     <FileSpreadsheet className="w-5 h-5 text-[#0D9488]" />
                  </div>
-                 <div className="flex gap-3">
+                 <div className="flex flex-col gap-3">
                     <input 
                       type="month" 
-                      className="flex-grow p-4 bg-slate-50 border rounded-2xl outline-none font-black text-sm" 
+                      className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-black text-sm" 
                       value={reportMonth} 
                       onChange={e => setReportMonth(e.target.value)} 
                     />
-                    <button 
-                      onClick={downloadMonthlyExcelReport}
-                      className="px-6 py-4 bg-[#0D9488] text-white rounded-2xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" /> ডাউনলোড
-                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button 
+                        onClick={downloadMonthlyExcelReport}
+                        className="w-full py-4 bg-[#0D9488] text-white rounded-2xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-4 h-4" /> সাধারণ রিপোর্ট
+                      </button>
+                      <button 
+                        onClick={downloadPermanentMembersMonthlyReport}
+                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Award className="w-4 h-4" /> স্থায়ী সদস্য রিপোর্ট
+                      </button>
+                    </div>
                  </div>
               </div>
 
@@ -875,6 +967,53 @@ const AdminDashboard: React.FC = () => {
                 ))}
                 {projects.length === 0 && <div className="text-center py-20 opacity-20"><AlertCircle className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন প্রজেক্ট নেই</p></div>}
              </div>
+          </div>
+        )}
+
+        {activeTab === 'activities' && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-4 max-w-lg mx-auto">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+              <div className="flex items-center gap-5 relative z-10">
+                <div className="p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-inner">
+                  <Clock className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">মেম্বার অ্যাক্টিভিটি</h2>
+                  <p className="text-xs font-bold text-slate-300 uppercase tracking-widest mt-1">সদস্যদের সাম্প্রতিক কার্যক্রম</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {activities.length === 0 ? (
+                <div className="bg-white p-12 rounded-[3rem] text-center border border-dashed border-slate-300">
+                  <p className="text-slate-400 font-bold">কোন অ্যাক্টিভিটি পাওয়া যায়নি</p>
+                </div>
+              ) : (
+                activities.map(act => (
+                  <div key={act.id} className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                      act.type === 'LOGIN' ? 'bg-emerald-50 text-emerald-600' : 
+                      act.type === 'PAGE_VIEW' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {act.type === 'LOGIN' ? <LogOut className="w-5 h-5 rotate-180" /> : 
+                       act.type === 'PAGE_VIEW' ? <Search className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
+                    </div>
+                    <div className="flex-grow overflow-hidden">
+                      <div className="flex justify-between items-start">
+                        <p className="text-sm font-black text-slate-800 truncate">{act.userName}</p>
+                        <p className="text-[9px] font-bold text-slate-400 whitespace-nowrap ml-2">
+                          {new Date(act.timestamp).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-500 truncate">{act.description}</p>
+                      {act.path && <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mt-0.5">{act.path}</p>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 

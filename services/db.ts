@@ -1,5 +1,5 @@
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "firebase/app";
 import { 
   initializeFirestore,
   collection, 
@@ -17,8 +17,8 @@ import {
   setDoc,
   getDocs,
   enableMultiTabIndexedDbPersistence
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress } from '../types';
+} from "firebase/firestore";
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
@@ -37,8 +37,7 @@ const app = initializeApp(firebaseConfig);
  * network restrictions that cause the "10 seconds timeout" error.
  */
 const firestore = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  useFetchStreams: false
+  experimentalForceLongPolling: true
 });
 
 // Enable Offline Persistence to ensure the app works even when connection is flaky
@@ -94,7 +93,8 @@ const toPlainObject = (data: any, visited = new WeakSet()): any => {
   
   // Aggressive check for Firestore internal objects or non-plain objects
   const constructorName = data.constructor?.name;
-  const isPlain = data.constructor === Object || Object.getPrototypeOf(data) === null;
+  const proto = Object.getPrototypeOf(data);
+  const isPlain = proto === Object.prototype || proto === null;
   
   const hasFirestoreMarkers = 
     data.firestore || 
@@ -102,7 +102,7 @@ const toPlainObject = (data: any, visited = new WeakSet()): any => {
     data.converter || 
     data._delegate || 
     data.src || 
-    data.i || // Common minified internal property
+    data.i || 
     (constructorName && (
       constructorName === 'Q$1' || 
       constructorName === 'Sa' || 
@@ -113,23 +113,32 @@ const toPlainObject = (data: any, visited = new WeakSet()): any => {
     ));
 
   if (!isPlain || hasFirestoreMarkers) {
-    if (data.id && typeof data.id === 'string') return data.id;
-    if (data.path && typeof data.path === 'string') return data.path;
+    // If it's a Firestore object, try to extract useful primitive info or return null
+    try {
+      if (data.id && typeof data.id === 'string') return data.id;
+      if (data.path && typeof data.path === 'string') return data.path;
+    } catch (e) {}
     return null;
   }
   
   // Plain Objects
   visited.add(data);
   const result: any = {};
+  
+  // Use Object.getOwnPropertyNames to catch non-enumerable properties if necessary,
+  // but for state we usually only care about enumerable ones.
   const keys = Object.keys(data);
   for (const key of keys) {
     // Exclude internal Firestore metadata/circular properties
     if (key.startsWith('_') || key === 'firestore' || key === 'converter' || key === 'src' || key === 'i') continue;
     
-    const val = data[key];
-    if (typeof val === 'function') continue;
-    
-    result[key] = toPlainObject(val, visited);
+    try {
+      const val = data[key];
+      if (typeof val === 'function') continue;
+      result[key] = toPlainObject(val, visited);
+    } catch (e) {
+      result[key] = null;
+    }
   }
   return result;
 };
@@ -150,7 +159,8 @@ const sanitizeForUpload = (data: any, visited = new WeakSet()): any => {
     }
 
     const constructorName = data.constructor?.name;
-    const isPlain = data.constructor === Object || Object.getPrototypeOf(data) === null;
+    const proto = Object.getPrototypeOf(data);
+    const isPlain = proto === Object.prototype || proto === null;
     
     const hasMarkers = 
       data.firestore || 
@@ -172,8 +182,10 @@ const sanitizeForUpload = (data: any, visited = new WeakSet()): any => {
     const keys = Object.keys(data);
     for (const key of keys) {
       if (key.startsWith('_') || key === 'src' || key === 'i' || key === 'firestore') continue;
-      const val = sanitizeForUpload(data[key], visited);
-      if (val !== null && val !== undefined) clean[key] = val;
+      try {
+        const val = sanitizeForUpload(data[key], visited);
+        if (val !== null && val !== undefined) clean[key] = val;
+      } catch (e) {}
     }
     return Object.keys(clean).length > 0 ? clean : null;
   }
@@ -188,6 +200,7 @@ class FirebaseDB {
   private projects: ProjectProgress[] = [];
   private suggestions: Suggestion[] = [];
   private complaints: Complaint[] = [];
+  private activities: MemberActivity[] = [];
   private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0 };
   private contactConfig: ContactConfig = {
     whatsapp: 'https://chat.whatsapp.com/C39euDOPaskI3KoeNZMW2H?mode=gi_t',
@@ -240,6 +253,11 @@ class FirebaseDB {
         this.notify();
       }, (error) => safeError("Firestore: Complaints sync error:", error));
 
+      onSnapshot(query(collection(firestore, "activities"), orderBy("timestamp", "desc"), limit(500)), (snapshot) => {
+        this.activities = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as MemberActivity[];
+        this.notify();
+      }, (error) => safeError("Firestore: Activities sync error:", error));
+
       onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
         if (snapshot.exists()) {
           const data = toPlainObject(snapshot.data());
@@ -285,6 +303,7 @@ class FirebaseDB {
   getProjects(): ProjectProgress[] { return this.projects; }
   getSuggestions(): Suggestion[] { return this.suggestions; }
   getComplaints(): Complaint[] { return this.complaints; }
+  getActivities(): MemberActivity[] { return this.activities; }
   getStats(): AppStats { return this.stats; }
   getContactConfig(): ContactConfig { return this.contactConfig; }
 
@@ -393,6 +412,22 @@ class FirebaseDB {
 
   async deleteProject(id: string) {
     await deleteDoc(doc(firestore, "projects", id));
+  }
+
+  async logActivity(userId: string, userName: string, type: ActivityType, description: string, path?: string) {
+    try {
+      const activity = sanitizeForUpload({
+        userId,
+        userName,
+        type,
+        description,
+        path,
+        timestamp: Date.now()
+      });
+      await addDoc(collection(firestore, "activities"), activity);
+    } catch (e) {
+      safeError("Firestore: Activity logging error:", e);
+    }
   }
 
   async updateLastActive(userId: string) { try { await updateDoc(doc(firestore, "users", userId), { lastActive: Date.now() }); } catch (e) {} }
