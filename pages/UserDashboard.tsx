@@ -151,14 +151,14 @@ const UserDashboard: React.FC = () => {
           <div>
             <h2 className="text-base font-black text-slate-800 tracking-tight leading-none mb-1">হ্যালো, {currentUser?.name?.split(' ')[0]}!</h2>
             <div className="flex items-center gap-1 opacity-80">
-               <ShieldCheck className="w-4 h-4 text-teal-600" />
+               <ShieldCheck className="w-4 h-4 text-teal-600 no-glow" />
                <p className="text-base font-black text-teal-600 uppercase tracking-tight">{currentUser?.designation || 'ভেরিফাইড সদস্য'}</p>
             </div>
           </div>
         </div>
         <button onClick={handleOpenNotifications} className="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 border border-white/50 rounded-2xl text-slate-600 relative active:scale-90 transition-all shadow-sm overflow-hidden">
           <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px]"></div>
-          <Bell className="w-7 h-7 relative z-10" />
+          <Bell className="w-7 h-7 relative z-10 no-glow" />
           {unreadCount > 0 && (
             <span className="absolute top-3 right-3 flex h-4 w-4 z-20">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -261,9 +261,12 @@ const UserDashboard: React.FC = () => {
 
         {/* Highlight Stats (Compact Design) */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-[#00F2FE] to-[#4FACFE] p-3.5 rounded-[2rem] shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95 transition-all border border-white/30 relative overflow-hidden group">
+          <div 
+            className="bg-gradient-to-br from-[#00F2FE] to-[#4FACFE] p-3.5 rounded-[2rem] flex items-center gap-3 active:scale-95 transition-all border border-white/30 relative overflow-hidden group glow-card"
+            style={{ '--glow-color': '#00F2FE' } as any}
+          >
              <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
-             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 shadow-lg text-white relative z-10 border border-white/40">
+             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/40">
                 <Users className="w-4 h-4" />
              </div>
              <div className="overflow-hidden relative z-10">
@@ -271,9 +274,13 @@ const UserDashboard: React.FC = () => {
                 <h3 className="text-xs font-black text-white truncate">{toBengaliNumber(appStats.totalUsers)} জন</h3>
              </div>
           </div>
-          <button onClick={() => navigate('/expenses')} className="bg-gradient-to-br from-[#F093FB] to-[#F5576C] p-3.5 rounded-[2rem] shadow-xl shadow-rose-500/20 flex items-center gap-3 active:scale-95 transition-all text-left border border-white/30 relative overflow-hidden group">
+          <button 
+            onClick={() => navigate('/expenses')} 
+            className="bg-gradient-to-br from-[#F093FB] to-[#F5576C] p-3.5 rounded-[2rem] flex items-center gap-3 active:scale-95 transition-all text-left border border-white/30 relative overflow-hidden group glow-card"
+            style={{ '--glow-color': '#F5576C' } as any}
+          >
              <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
-             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 shadow-lg text-white relative z-10 border border-white/40">
+             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/40">
                 <div className="relative w-5 h-5 flex items-center justify-center">
                   {/* Chair */}
                   <div className="absolute bottom-0.5 w-3 h-2 bg-blue-600 rounded-sm"></div>
@@ -294,16 +301,16 @@ const UserDashboard: React.FC = () => {
         {/* Action Grid */}
         <div className="grid grid-cols-4 gap-x-3 gap-y-6 px-1">
           {[
-            { icon: <CreditCard className="w-6 h-6" />, label: 'দান', color: 'from-indigo-500 to-blue-600', path: '/transaction' },
-            { icon: <HandHelping className="w-6 h-6" />, label: 'আবেদন', color: 'from-teal-400 to-emerald-600', path: '/assistance' },
-            { icon: <Award className="w-6 h-6" />, label: 'সেরা দাতা', color: 'from-amber-400 to-orange-500', path: '/leaderboard' },
-            { icon: <Users className="w-6 h-6" />, label: 'স্থায়ী সদস্য', color: 'from-blue-400 to-indigo-600', action: () => setShowPermanentMembersModal(true) },
-            { icon: <List className="w-6 h-6" />, label: 'হিসাব', color: 'from-violet-500 to-purple-600', path: '/history' },
-            { icon: <Lightbulb className="w-6 h-6" />, label: 'পরামর্শ', color: 'from-emerald-400 to-teal-500', action: () => setShowSuggestionModal(true) },
-            { icon: <ScrollText className="w-6 h-6" />, label: 'নীতিমালা', color: 'from-slate-600 to-slate-800', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
-            { icon: <AlertCircle className="w-6 h-6" />, label: 'অভিযোগ', color: 'from-rose-500 to-pink-600', action: () => setShowComplaintModal(true) },
-            { icon: <Info className="w-6 h-6" />, label: 'পেমেন্ট', color: 'from-blue-500 to-indigo-600', action: () => setShowPaymentModal(true) },
-            { icon: <MessageSquare className="w-6 h-6" />, label: 'যোগাযোগ', color: 'from-pink-500 to-rose-600', action: () => setShowContactModal(true) },
+            { icon: <CreditCard className="w-6 h-6" />, label: 'দান', color: 'from-indigo-500 to-blue-600', glowColor: '#6366F1', path: '/transaction' },
+            { icon: <HandHelping className="w-6 h-6" />, label: 'আবেদন', color: 'from-teal-400 to-emerald-600', glowColor: '#10B981', path: '/assistance' },
+            { icon: <Award className="w-6 h-6" />, label: 'সেরা দাতা', color: 'from-amber-400 to-orange-500', glowColor: '#F59E0B', path: '/leaderboard' },
+            { icon: <Users className="w-6 h-6" />, label: 'স্থায়ী সদস্য', color: 'from-blue-400 to-indigo-600', glowColor: '#3B82F6', action: () => setShowPermanentMembersModal(true) },
+            { icon: <List className="w-6 h-6" />, label: 'হিসাব', color: 'from-violet-500 to-purple-600', glowColor: '#8B5CF6', path: '/history' },
+            { icon: <Lightbulb className="w-6 h-6" />, label: 'পরামর্শ', color: 'from-emerald-400 to-teal-500', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },
+            { icon: <ScrollText className="w-6 h-6" />, label: 'নীতিমালা', color: 'from-slate-600 to-slate-800', glowColor: '#475569', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
+            { icon: <AlertCircle className="w-6 h-6" />, label: 'অভিযোগ', color: 'from-rose-500 to-pink-600', glowColor: '#F43F5E', action: () => setShowComplaintModal(true) },
+            { icon: <Info className="w-6 h-6" />, label: 'পেমেন্ট', color: 'from-blue-500 to-indigo-600', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
+            { icon: <MessageSquare className="w-6 h-6" />, label: 'যোগাযোগ', color: 'from-pink-500 to-rose-600', glowColor: '#EC4899', action: () => setShowContactModal(true) },
             { 
               icon: (
                 <div className="relative w-8 h-8 flex items-center justify-center">
@@ -339,6 +346,7 @@ const UserDashboard: React.FC = () => {
               ), 
               label: 'খরচ', 
               color: 'from-rose-500 to-rose-700', 
+              glowColor: '#E11D48',
               path: '/expenses' 
             },
             { 
@@ -369,16 +377,20 @@ const UserDashboard: React.FC = () => {
               ), 
               label: 'ভাউচার', 
               color: 'from-blue-500 to-indigo-700', 
+              glowColor: '#2563EB',
               path: '/vouchers' 
             },
-            { icon: <Activity className="w-6 h-6" />, label: 'অগ্রগতি', color: 'from-indigo-400 to-violet-600', path: '/progress' },
+            { icon: <Activity className="w-6 h-6" />, label: 'অগ্রগতি', color: 'from-indigo-400 to-violet-600', glowColor: '#6366F1', path: '/progress' },
           ].map((item, idx) => (
             <button 
               key={idx} 
               onClick={item.path ? () => navigate(item.path!) : item.action} 
               className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
             >
-              <div className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-[1.5rem] flex items-center justify-center shadow-lg text-white relative overflow-hidden transition-transform group-hover:rotate-6`}>
+              <div 
+                className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-[1.5rem] flex items-center justify-center text-white relative overflow-hidden transition-transform group-hover:rotate-6 glow-card`}
+                style={{ '--glow-color': item.glowColor } as any}
+              >
                 <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
                 <div className="absolute -top-4 -right-4 w-12 h-12 bg-white/20 rounded-full blur-xl"></div>
                 <div className="relative z-10 drop-shadow-md">
@@ -412,7 +424,7 @@ const UserDashboard: React.FC = () => {
                   <div 
                     key={tx.id} 
                     onClick={() => navigate('/vouchers', { state: { transactionId: tx.id } })}
-                    className={`cursor-pointer bg-gradient-to-r ${gradient} p-3.5 rounded-[2rem] shadow-lg shadow-slate-200/40 flex justify-between items-center hover:shadow-xl transition-all active:scale-[0.98] border border-white/30 relative overflow-hidden group`}
+                    className={`cursor-pointer bg-gradient-to-r ${gradient} p-3.5 rounded-[2rem] shadow-lg shadow-slate-200/40 flex justify-between items-center hover:shadow-xl transition-all active:scale-[0.98] border border-white/30 relative overflow-hidden group glow-card`}
                   >
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
                     <div className="flex items-center gap-3 relative z-10">

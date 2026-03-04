@@ -219,7 +219,7 @@ const VoucherPage: React.FC = () => {
 
       {selectedTx && (
         <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-300 overflow-y-auto no-scrollbar">
-          <div className="relative w-full max-w-xl bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col my-auto">
+          <div className="relative w-full max-w-xl bg-white rounded-3xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col my-auto">
             {/* Premium Invoice Header */}
             <div ref={invoiceRef} className="bg-white flex flex-col w-full">
               <div className="bg-[#0F172A] text-white relative shrink-0 overflow-hidden">
@@ -228,8 +228,8 @@ const VoucherPage: React.FC = () => {
                 
                 <div className="p-4 sm:p-5 flex justify-between items-center relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center shadow-xl shrink-0">
-                      <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-[#0F172A]" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center shrink-0">
+                      <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-[#0F172A] no-glow" />
                     </div>
                     <div className="min-w-0 pr-2">
                       <h3 className="text-sm sm:text-lg font-black uppercase tracking-tight leading-none truncate">UNITY CARE</h3>
@@ -255,10 +255,10 @@ const VoucherPage: React.FC = () => {
                       <p className="text-sm sm:text-base font-black text-slate-800 uppercase truncate">{selectedTx.userName}</p>
                       <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 truncate">Verified Member, UCF</p>
                       <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] text-slate-400 font-bold mt-1">
-                         <Phone className="w-2.5 h-2.5" /> +880 1777-599874
+                         <Phone className="w-2.5 h-2.5 no-glow" /> +880 1777-599874
                       </div>
                       <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] text-slate-400 font-bold">
-                         <Mail className="w-2.5 h-2.5" /> unitycarefoundation07@gmail.com
+                         <Mail className="w-2.5 h-2.5 no-glow" /> unitycarefoundation07@gmail.com
                       </div>
                     </div>
                   </div>
@@ -312,7 +312,7 @@ const VoucherPage: React.FC = () => {
                       <p>Subtotal:</p>
                       <p>৳{toBengaliNumber(selectedTx.amount)}</p>
                     </div>
-                    <div className="bg-rose-600 p-2 sm:p-3 rounded-xl text-white flex justify-between items-center shadow-lg shadow-rose-100">
+                    <div className="bg-rose-600 p-2 sm:p-3 rounded-xl text-white flex justify-between items-center">
                       <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest">Total:</p>
                       <p className="text-sm sm:text-lg font-black">৳{toBengaliNumber(selectedTx.amount)}</p>
                     </div>
@@ -320,7 +320,49 @@ const VoucherPage: React.FC = () => {
                 </div>
 
                 {/* Footer Section */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 relative">
+                  {/* Stamp SVG */}
+                  <div className="absolute -top-20 left-1/4 transform -translate-x-1/2 opacity-90 pointer-events-none select-none">
+                    <div className="relative w-28 h-28 sm:w-36 sm:h-36 rotate-[-15deg]">
+                      <svg viewBox="0 0 200 200" className="w-full h-full no-glow">
+                        {/* Outer Circles */}
+                        <circle cx="100" cy="100" r="95" fill="none" stroke="#E11D48" strokeWidth="2" strokeDasharray="4 2" />
+                        <circle cx="100" cy="100" r="90" fill="none" stroke="#E11D48" strokeWidth="4" />
+                        <circle cx="100" cy="100" r="65" fill="none" stroke="#E11D48" strokeWidth="2" />
+                        
+                        {/* Curved Text */}
+                        <path id="curveTop" d="M 30,100 A 70,70 0 0,1 170,100" fill="none" />
+                        <text className="text-[16px] font-black fill-rose-600 uppercase tracking-[0.15em]">
+                          <textPath href="#curveTop" startOffset="50%" textAnchor="middle">
+                            Donation Received
+                          </textPath>
+                        </text>
+                        
+                        <path id="curveBottom" d="M 170,100 A 70,70 0 0,1 30,100" fill="none" />
+                        <text className="text-[16px] font-black fill-rose-600 uppercase tracking-[0.15em]">
+                          <textPath href="#curveBottom" startOffset="50%" textAnchor="middle">
+                            Donation Received
+                          </textPath>
+                        </text>
+
+                        {/* Center Text */}
+                        <g transform="translate(100, 100)">
+                          <line x1="-75" y1="-22" x2="75" y2="-22" stroke="#E11D48" strokeWidth="2.5" />
+                          <text y="-2" textAnchor="middle" className="text-[16px] font-black fill-rose-600 uppercase tracking-tight">
+                            Unity Care
+                          </text>
+                          <text y="16" textAnchor="middle" className="text-[12px] font-bold fill-rose-600 uppercase tracking-[0.2em]">
+                            Foundation
+                          </text>
+                          <line x1="-75" y1="25" x2="75" y2="25" stroke="#E11D48" strokeWidth="2.5" />
+                        </g>
+
+                        {/* Stars */}
+                        <text x="35" y="105" className="text-[12px] fill-rose-600">★</text>
+                        <text x="165" y="105" className="text-[12px] fill-rose-600">★</text>
+                      </svg>
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <h4 className="text-[8px] sm:text-[9px] font-black text-slate-800 uppercase tracking-widest">Terms:</h4>
                     <p className="text-[7px] sm:text-[8px] text-slate-400 leading-relaxed italic">
@@ -343,19 +385,19 @@ const VoucherPage: React.FC = () => {
               <div className="bg-[#0F172A] p-3 sm:p-4 flex justify-between items-center shrink-0">
                  <div className="flex gap-2 sm:gap-4">
                    <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase">
-                     <Globe className="w-2.5 h-2.5 text-rose-500" /> unitycare.org
+                     <Globe className="w-2.5 h-2.5 text-rose-500 no-glow" /> unitycare.org
                    </div>
                    <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase">
-                     <MapPin className="w-2.5 h-2.5 text-rose-500" /> Bandharia.Telikhali
+                     <MapPin className="w-2.5 h-2.5 text-rose-500 no-glow" /> Bandharia.Telikhali
                    </div>
                  </div>
                  <div className="flex gap-2">
                    {!isDownloading && (
                      <button 
                        onClick={handleDownload}
-                       className="px-2 sm:px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[7px] sm:text-[8px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-lg shadow-rose-900/20 active:scale-95"
+                       className="px-2 sm:px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[7px] sm:text-[8px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 active:scale-95"
                      >
-                       <Download className="w-3 h-3" /> Download
+                       <Download className="w-3 h-3 no-glow" /> Download
                      </button>
                    )}
                  </div>
@@ -367,7 +409,7 @@ const VoucherPage: React.FC = () => {
               onClick={() => setSelectedTx(null)}
               className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-lg backdrop-blur-md flex items-center justify-center active:scale-90 transition-all z-50 print:hidden"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 no-glow" />
             </button>
           </div>
         </div>

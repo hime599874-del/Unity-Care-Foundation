@@ -11,7 +11,8 @@ import {
   Loader2, Phone, User as UserIcon, ShieldCheck,
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
-  Download, Smartphone, Landmark, Award, Activity, QrCode
+  Download, Smartphone, Landmark, Award, Activity, QrCode,
+  FileText, Printer, Heart, CreditCard, Mail
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { QRCodeSVG } from 'qrcode.react';
@@ -36,7 +37,7 @@ const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState(db.getStats());
   const [contactConfig, setContactConfig] = useState<ContactConfig>(db.getContactConfig());
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights'>('overview');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [qrSearchQuery, setQrSearchQuery] = useState('');
@@ -58,6 +59,7 @@ const AdminDashboard: React.FC = () => {
   
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [viewingAssistance, setViewingAssistance] = useState<AssistanceRequest | null>(null);
+  const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
   const [notifMessage, setNotifMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
   
@@ -323,7 +325,7 @@ const AdminDashboard: React.FC = () => {
 
   const downloadMonthlyExcelReport = () => {
     const [year, month] = reportMonth.split('-').map(Number);
-    const monthName = new Date(year, month - 1).toLocaleString('bn-BD', { month: 'long', year: 'numeric' });
+    const monthName = new Date(year, month - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
     
     // Filter transactions for the selected month
     const monthlyTxs = transactions.filter(t => {
@@ -398,7 +400,7 @@ const AdminDashboard: React.FC = () => {
 
   const downloadPermanentMembersMonthlyReport = () => {
     const [year, month] = reportMonth.split('-').map(Number);
-    const monthName = new Date(year, month - 1).toLocaleString('bn-BD', { month: 'long', year: 'numeric' });
+    const monthName = new Date(year, month - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
     
     const permanentUserIds = new Set(users.filter(u => u.isPermanentMember).map(u => u.id));
     
@@ -463,6 +465,32 @@ const AdminDashboard: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const monthlyInsights = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    
+    const newUsers = users.filter(u => u.registeredAt >= startOfMonth && u.status === UserStatus.APPROVED);
+    
+    const approvedTxsThisMonth = transactions.filter(t => 
+      t.status === TransactionStatus.APPROVED && 
+      t.timestamp >= startOfMonth
+    );
+    
+    const newUserIds = new Set(newUsers.map(u => u.id));
+    const uniqueNewUsersWhoPaid = new Set(
+      approvedTxsThisMonth
+        .filter(t => newUserIds.has(t.userId))
+        .map(t => t.userId)
+    );
+
+    return {
+      newMembersCount: newUsers.length,
+      newMembersPaidCount: uniqueNewUsersWhoPaid.size,
+      monthName: now.toLocaleString('en-US', { month: 'long', year: 'numeric' }),
+      newUsersList: newUsers.sort((a, b) => b.registeredAt - a.registeredAt).slice(0, 10)
+    };
+  }, [users, transactions]);
+
   const filteredUsers = useMemo(() => users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone.includes(searchQuery)), [users, searchQuery]);
   const netBalance = stats.totalCollection - (expenses.length === 0 ? 0 : stats.totalExpense);
 
@@ -493,6 +521,7 @@ const AdminDashboard: React.FC = () => {
           { id: 'complaints', label: 'অভিযোগ', icon: <AlertCircle className="w-4 h-4" /> },
           { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" /> },
           { id: 'activities', label: 'মেম্বার অ্যাক্টিভিটি', icon: <Clock className="w-4 h-4" /> },
+          { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" /> },
           { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" /> },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" /> }
         ].map(tab => (
@@ -702,58 +731,72 @@ const AdminDashboard: React.FC = () => {
                  </button>
               </div>
 
-              <div ref={reportRef} className="bg-[#F8FAFC] rounded-[3.5rem] shadow-2xl overflow-hidden border border-white max-w-[420px] mx-auto pb-10">
+              <div ref={reportRef} className="bg-[#F8FAFC] rounded-[3.5rem] shadow-2xl overflow-hidden border border-white max-w-2xl mx-auto pb-10">
                 <div className="bg-[#0D9488] pt-12 pb-10 px-8 text-center relative overflow-hidden rounded-b-[3.5rem]">
                    <h2 className="text-2xl font-black text-white italic tracking-tight">UNITY CARE FOUNDATION</h2>
                    <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-teal-100 mt-2 opacity-80 italic">লে ন দে ন  রি পো র্ট</p>
-                   <h1 className="text-6xl font-black text-white italic mt-6 leading-none drop-shadow-2xl">
+                   <h1 className="text-4xl sm:text-6xl font-black text-white italic mt-6 leading-none drop-shadow-2xl">
                      ৳{toBengaliNumber(stats.totalCollection.toLocaleString())}
                    </h1>
                 </div>
 
                 <div className="p-2 pt-4">
-                  <div className="bg-white rounded-[2.5rem] overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-50/80 border-b border-slate-100">
-                        <tr className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em]">
-                          <th className="px-5 py-3">তারিখ</th>
-                          <th className="px-2 py-3">সদস্যের তথ্য</th>
-                          <th className="px-5 py-3 text-right">পরিমাণ</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {transactions.filter(t => t.status === TransactionStatus.APPROVED).map(t => {
-                          const user = db.getUser(t.userId);
-                          return (
-                            <tr key={t.id} className="group hover:bg-slate-50/40 transition-colors">
-                              <td className="px-5 py-2.5 align-middle">
-                                <p className="text-[9px] font-bold text-slate-400">
-                                  {toBengaliNumber(t.date)}
-                                </p>
-                              </td>
-                              <td className="px-2 py-2.5 align-middle">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
-                                    {user?.profilePic ? (
-                                      <img src={user.profilePic} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <UserIcon className="w-4 h-4 m-2.5 text-slate-300" />
-                                    )}
+                  <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-inner">
+                    <div className="overflow-x-auto no-scrollbar">
+                      <table className="w-full text-left border-collapse min-w-[400px]">
+                        <thead className="bg-slate-50/80 border-b border-slate-100">
+                          <tr className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em]">
+                            <th className="px-5 py-3">তারিখ</th>
+                            <th className="px-2 py-3">সদস্যের তথ্য</th>
+                            <th className="px-5 py-3 text-center">স্ট্যাটাস</th>
+                            <th className="px-5 py-3 text-right">পরিমাণ</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {transactions.map(t => {
+                            const user = db.getUser(t.userId);
+                            return (
+                              <tr key={t.id} onClick={() => setViewingTransaction(t)} className="group hover:bg-slate-50/40 transition-colors cursor-pointer">
+                                <td className="px-5 py-2.5 align-middle">
+                                  <p className="text-[9px] font-bold text-slate-400">
+                                    {toBengaliNumber(t.date)}
+                                  </p>
+                                </td>
+                                <td className="px-2 py-2.5 align-middle">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                      {user?.profilePic ? (
+                                        <img src={user.profilePic} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <UserIcon className="w-4 h-4 m-2.5 text-slate-300" />
+                                      )}
+                                    </div>
+                                    <div className="overflow-hidden leading-none">
+                                      <p className="text-[12px] font-black text-slate-800 uppercase italic truncate">{t.userName}</p>
+                                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {toBengaliNumber(user?.phone?.slice(-4) || '0000')}</p>
+                                    </div>
                                   </div>
-                                  <div className="overflow-hidden leading-none">
-                                    <p className="text-[12px] font-black text-slate-800 uppercase italic truncate">{t.userName}</p>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {toBengaliNumber(user?.phone?.slice(-4) || '0000')}</p>
+                                </td>
+                                <td className="px-5 py-2.5 text-center align-middle">
+                                  <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${
+                                    t.status === TransactionStatus.APPROVED ? 'bg-emerald-50 text-emerald-600' : 
+                                    t.status === TransactionStatus.REJECTED ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
+                                  }`}>
+                                    {t.status}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-2.5 text-right align-middle">
+                                  <div className="flex flex-col items-end">
+                                    <p className="text-[17px] font-black text-[#0D9488] italic">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
+                                    <p className="text-[7px] font-bold text-slate-300 uppercase tracking-tighter group-hover:text-[#0D9488] transition-colors">View Details</p>
                                   </div>
-                                </div>
-                              </td>
-                              <td className="px-5 py-2.5 text-right align-middle">
-                                <p className="text-[17px] font-black text-[#0D9488] italic">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1004,7 +1047,7 @@ const AdminDashboard: React.FC = () => {
                       <div className="flex justify-between items-start">
                         <p className="text-sm font-black text-slate-800 truncate">{act.userName}</p>
                         <p className="text-[9px] font-bold text-slate-400 whitespace-nowrap ml-2">
-                          {new Date(act.timestamp).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(act.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                       <p className="text-[11px] font-bold text-slate-500 truncate">{act.description}</p>
@@ -1013,6 +1056,81 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'insights' && (
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
+            <div className="bg-gradient-to-br from-teal-600 to-emerald-700 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+              <div className="flex items-center gap-5 relative z-10">
+                <div className="p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-inner">
+                  <TrendingUp className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">মাসিক ইনসাইট</h2>
+                  <p className="text-xs font-bold text-teal-100 uppercase tracking-widest mt-1">{monthlyInsights.monthName}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col justify-between h-32">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">নতুন সদস্য</p>
+                  <h3 className="text-2xl font-black text-slate-800">{toBengaliNumber(monthlyInsights.newMembersCount)} জন</h3>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col justify-between h-32">
+                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">পেমেন্ট দিয়েছেন</p>
+                  <h3 className="text-2xl font-black text-slate-800">{toBengaliNumber(monthlyInsights.newMembersPaidCount)} জন</h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-widest">সাম্প্রতিক যোগদান</h3>
+                <span className="px-3 py-1 bg-slate-100 text-slate-400 rounded-full text-[9px] font-bold">এই মাসে</span>
+              </div>
+              
+              <div className="space-y-4">
+                {monthlyInsights.newUsersList.length === 0 ? (
+                  <p className="text-center py-10 text-slate-400 font-bold">এই মাসে এখনো কেউ জয়েন করেনি</p>
+                ) : (
+                  monthlyInsights.newUsersList.map(u => (
+                    <div key={u.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white border shadow-sm overflow-hidden">
+                          {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-5 h-5 m-2.5 text-slate-300" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-800">{u.name}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{toBengaliNumber(u.phone)}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest">
+                          {new Date(u.registeredAt).toLocaleDateString('en-US')}
+                        </p>
+                        {transactions.some(t => t.userId === u.id && t.status === TransactionStatus.APPROVED) ? (
+                          <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase mt-1 inline-block">Paid</span>
+                        ) : (
+                          <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase mt-1 inline-block">Unpaid</span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1109,6 +1227,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-inner">
                       <QRCodeSVG 
                         id={`qr-${u.id}`}
+                        className="no-glow"
                         value={`নাম: ${u.name}\nমোবাইল: ${u.phone}\nরক্তের গ্রুপ: ${u.bloodGroup}\n\nলাইভ প্রোফাইল ও হিস্ট্রি দেখতে নিচের লিঙ্কে ক্লিক করুন:\n${window.location.origin}/#/u/${u.id}`} 
                         size={220}
                         level="M"
@@ -1218,7 +1337,7 @@ const AdminDashboard: React.FC = () => {
                        <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Calendar className="w-4 h-4" /></div>
                        <div>
                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">যোগদান</p>
-                         <p className="text-[11px] font-black text-slate-800">{new Date(viewingUser.registeredAt).toLocaleDateString('bn-BD')}</p>
+                         <p className="text-[11px] font-black text-slate-800">{new Date(viewingUser.registeredAt).toLocaleDateString('en-US')}</p>
                        </div>
                     </div>
                  </div>
@@ -1331,16 +1450,274 @@ const AdminDashboard: React.FC = () => {
            </div>
         </div>
       )}
+
+      {viewingTransaction && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl min-h-screen sm:min-h-0 sm:rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            {/* Modal Header - Non-printable */}
+            <div className="p-6 bg-white border-b flex justify-between items-center sticky top-0 z-20 no-print">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-teal-50 rounded-2xl flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="font-black uppercase text-xs tracking-widest text-slate-400">Transaction Details</h3>
+                  <p className="text-sm font-black text-slate-800 italic">#{viewingTransaction.transactionId}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    const printContent = document.getElementById('transaction-a4-report');
+                    if (printContent) {
+                      const printWindow = window.open('', '_blank');
+                      if (printWindow) {
+                        printWindow.document.write(`
+                          <html>
+                            <head>
+                              <title>Receipt - ${viewingTransaction.transactionId}</title>
+                              <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                              <style>
+                                @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+                                body { font-family: 'Hind Siliguri', sans-serif; background: white; }
+                                .receipt-container { width: 210mm; min-height: 297mm; padding: 20mm; margin: auto; }
+                                @media print {
+                                  .no-print { display: none; }
+                                  body { margin: 0; padding: 0; }
+                                  .receipt-container { width: 100%; padding: 10mm; box-shadow: none; border: none; }
+                                }
+                              </style>
+                            </head>
+                            <body>
+                              <div class="receipt-container">
+                                ${printContent.innerHTML}
+                              </div>
+                              <script>
+                                window.onload = () => {
+                                  setTimeout(() => {
+                                    window.print();
+                                    window.close();
+                                  }, 500);
+                                };
+                              </script>
+                            </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                      }
+                    }
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-700 transition-all active:scale-95 shadow-lg shadow-teal-200"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print
+                </button>
+                <button onClick={() => setViewingTransaction(null)} className="p-2.5 bg-slate-100 text-slate-400 rounded-2xl hover:bg-slate-200 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            {/* The Receipt Content */}
+            <div id="transaction-a4-report" className="p-6 sm:p-16 bg-white relative overflow-hidden">
+              {/* Decorative Background Elements */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full -mr-32 -mt-32 opacity-50"></div>
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-50 rounded-full -ml-48 -mb-48 opacity-50"></div>
+              
+              {/* Watermark */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none select-none overflow-hidden">
+                <h1 className="text-[12vw] font-black rotate-[-35deg] whitespace-nowrap uppercase tracking-tighter">UNITY CARE FOUNDATION</h1>
+              </div>
+
+              <div className="relative z-10">
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b-2 border-slate-100 pb-10">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-teal-600 rounded-3xl flex items-center justify-center shadow-xl shadow-teal-100">
+                        <Heart className="w-8 h-8 text-white fill-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-black text-slate-900 italic leading-none tracking-tight">UNITY CARE</h2>
+                        <h2 className="text-3xl font-black text-teal-600 italic leading-none tracking-tight">FOUNDATION</h2>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-teal-50 rounded-full w-fit">
+                      <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse"></div>
+                      <p className="text-[10px] font-black text-teal-700 uppercase tracking-[0.3em]">Unity for Humanity</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-left md:text-right space-y-2">
+                    <div className="inline-block px-4 py-1.5 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">
+                      Official Receipt
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date: <span className="text-slate-900">{toBengaliNumber(viewingTransaction.date)}</span></p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Receipt No: <span className="text-slate-900">#{viewingTransaction.id.slice(-8).toUpperCase()}</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Content Area */}
+                <div className="mt-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
+                  {/* Left Column: Details */}
+                  <div className="lg:col-span-7 space-y-10">
+                    {/* Donor Info */}
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black text-teal-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                        <UserIcon className="w-3 h-3" /> Donor Information
+                      </h4>
+                      <div className="bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 flex items-center gap-5">
+                        <div className="w-20 h-20 rounded-3xl bg-white border-4 border-white shadow-xl overflow-hidden shrink-0">
+                          {db.getUser(viewingTransaction.userId)?.profilePic ? (
+                            <img src={db.getUser(viewingTransaction.userId)?.profilePic} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                               <UserIcon className="w-8 h-8 text-slate-300" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className="text-2xl font-black text-slate-900 truncate italic leading-tight">{viewingTransaction.userName}</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">ID: <span className="text-slate-900 font-black">{toBengaliNumber(db.getUser(viewingTransaction.userId)?.phone?.slice(-4) || '0000')}</span></p>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Phone: <span className="text-slate-900 font-black">{toBengaliNumber(db.getUser(viewingTransaction.userId)?.phone || 'N/A')}</span></p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Info */}
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black text-teal-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                        <CreditCard className="w-3 h-3" /> Payment Details
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { label: 'Method', value: viewingTransaction.method },
+                          { label: 'Transaction ID', value: viewingTransaction.transactionId },
+                          { label: 'Fund Type', value: viewingTransaction.fundType },
+                          { label: 'Status', value: viewingTransaction.status, isStatus: true }
+                        ].map((item, idx) => (
+                          <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
+                            <p className={`text-xs font-black uppercase italic ${item.isStatus ? (item.value === TransactionStatus.APPROVED ? 'text-emerald-600' : 'text-amber-600') : 'text-slate-800'}`}>
+                              {item.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Amount Card */}
+                  <div className="lg:col-span-5">
+                    <div className="bg-slate-900 rounded-[3rem] p-8 sm:p-10 text-center relative overflow-hidden shadow-2xl shadow-slate-200 h-full flex flex-col justify-center min-h-[250px]">
+                      {/* Decorative background for amount card */}
+                      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                        <div className="absolute top-10 left-10 w-20 h-20 border-2 border-white rounded-full"></div>
+                        <div className="absolute bottom-10 right-10 w-32 h-32 border-2 border-white rounded-full"></div>
+                      </div>
+                      
+                      <div className="relative z-10 space-y-4 sm:space-y-6">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-teal-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-teal-500/20">
+                          <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-[9px] sm:text-[10px] font-black text-teal-400 uppercase tracking-[0.4em] mb-2 sm:mb-4">Total Received</p>
+                          <div className="flex items-center justify-center gap-1 sm:gap-2">
+                            <span className="text-3xl sm:text-4xl font-black text-white italic">৳</span>
+                            <h3 className="text-5xl sm:text-6xl font-black text-white italic tracking-tighter leading-none">
+                              {toBengaliNumber(viewingTransaction.amount.toLocaleString())}
+                            </h3>
+                          </div>
+                        </div>
+                        <div className="pt-4 sm:pt-6">
+                           <p className="text-[10px] sm:text-[11px] font-medium text-slate-400 italic leading-relaxed px-4">
+                             "আপনার এই মহৎ দান আমাদের মানবিক কার্যক্রমকে আরও শক্তিশালী করবে। ধন্যবাদ।"
+                           </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Section */}
+                <div className="mt-16 pt-10 border-t-2 border-slate-50">
+                  <div className="flex flex-col md:flex-row justify-between items-end gap-10">
+                    <div className="space-y-6 w-full md:w-auto">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                          <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Verified Transaction</p>
+                          <p className="text-[9px] font-bold text-slate-400">Digitally signed and verified by UCF</p>
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-400 space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <p className="flex items-center gap-2"><MapPin className="w-3 h-3 text-teal-500" /> Bandharia, Telikhali, Pirojpur, Bangladesh</p>
+                        <p className="flex items-center gap-2"><Phone className="w-3 h-3 text-teal-500" /> {toBengaliNumber(contactConfig.phone)}</p>
+                        <p className="flex items-center gap-2"><Mail className="w-3 h-3 text-teal-500" /> {contactConfig.email}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center space-y-4 w-full md:w-64">
+                      <div className="h-px bg-slate-200 w-full mb-6"></div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-slate-900 uppercase tracking-widest italic">Authorized Signature</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Unity Care Foundation Admin</p>
+                      </div>
+                      <div className="pt-2">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=UCF-TXN-${viewingTransaction.transactionId}" className="w-12 h-12 mx-auto opacity-30 mix-blend-multiply" alt="QR" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer - Non-printable */}
+            <div className="p-6 bg-slate-50 border-t flex justify-center no-print">
+              <button 
+                onClick={() => setViewingTransaction(null)}
+                className="px-10 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-100 active:scale-95 transition-all shadow-sm"
+              >
+                Close Window
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const StatCard = ({ label, value, icon, color }: { label: string, value: string, icon: any, color: string }) => (
-  <div className="bg-white p-5 rounded-[2.5rem] border h-28 flex flex-col justify-between shadow-sm">
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm ${color}`}>{icon}</div>
-    <div className="mt-1"><p className="text-[9px] font-black text-slate-400 uppercase leading-none">{label}</p><h3 className="text-sm font-black text-slate-900 leading-none mt-2">{value}</h3></div>
-  </div>
-);
+const StatCard = ({ label, value, icon, color }: { label: string, value: string, icon: any, color: string }) => {
+  const getGlowColor = (colorStr: string) => {
+    if (colorStr.includes('blue')) return '#2563EB';
+    if (colorStr.includes('emerald')) return '#059669';
+    if (colorStr.includes('amber')) return '#D97706';
+    if (colorStr.includes('rose')) return '#E11D48';
+    return 'currentColor';
+  };
+
+  return (
+    <div className="bg-white p-5 rounded-[2.5rem] border h-28 flex flex-col justify-between shadow-sm">
+      <div 
+        className={`w-10 h-10 rounded-xl flex items-center justify-center glow-card ${color}`}
+        style={{ '--glow-color': getGlowColor(color) } as any}
+      >
+        {icon}
+      </div>
+      <div className="mt-1">
+        <p className="text-[9px] font-black text-slate-400 uppercase leading-none">{label}</p>
+        <h3 className="text-sm font-black text-slate-900 leading-none mt-2">{value}</h3>
+      </div>
+    </div>
+  );
+};
 
 const SectionBox = ({ title, count, children, color }: { title: string, count: number, children?: React.ReactNode, color: string }) => (
   <div className="bg-white rounded-[3rem] border overflow-hidden shadow-sm flex flex-col">

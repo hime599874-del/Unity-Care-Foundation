@@ -334,6 +334,7 @@ const ProfilePage: React.FC = () => {
                   {/* The QR Code itself */}
                   <div className="p-2 bg-white rounded-2xl shadow-2xl border-2 border-slate-100 relative z-10 transform hover:scale-105 transition-transform duration-300">
                     <QRCodeSVG 
+                      className="no-glow"
                       value={`${window.location.origin}/#/u/${currentUser.id}`}
                       size={90}
                       level="H"
