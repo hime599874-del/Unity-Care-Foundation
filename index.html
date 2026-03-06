@@ -1,6 +1,26 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <script>
+        // Force unregister all service workers and clear caches immediately
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>মানবিক সংগঠন | Unity Care Foundation</title>
@@ -300,25 +320,6 @@
       // Standard Vite entry
     </script>
 <link rel="stylesheet" href="/index.css">
-    <script>
-        // Force unregister all service workers and clear caches to fix "App is outdated" issues in AI Studio preview
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                    registration.unregister();
-                    console.log('Service Worker unregistered');
-                }
-            });
-        }
-        if ('caches' in window) {
-            caches.keys().then(function(names) {
-                for (let name of names) {
-                    caches.delete(name);
-                    console.log('Cache cleared:', name);
-                }
-            });
-        }
-    </script>
 </head>
 <body>
     <div class="app-bg"></div>
