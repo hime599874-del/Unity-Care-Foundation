@@ -495,10 +495,22 @@ class FirebaseDB {
       });
 
       // Send notification to user
+      const getStatusBengali = (s: AssistanceStatus) => {
+        switch (s) {
+          case AssistanceStatus.PENDING: return 'অপেক্ষমান';
+          case AssistanceStatus.REVIEWING: return 'যাচাই চলছে';
+          case AssistanceStatus.APPROVED: return 'গৃহীত';
+          case AssistanceStatus.PROCESSING: return 'প্রক্রিয়াধীন';
+          case AssistanceStatus.REJECTED: return 'বাতিল';
+          case AssistanceStatus.DISBURSED: return 'প্রদান করা হয়েছে';
+          default: return s;
+        }
+      };
+
       const notifRef = doc(collection(firestore, "notifications"));
       transaction.set(notifRef, sanitizeForUpload({ 
         userId: data.userId, 
-        message: `আপনার সাহায্যের আবেদনের অবস্থা পরিবর্তন হয়েছে: ${status}`, 
+        message: `আপনার সাহায্যের আবেদনের অবস্থা পরিবর্তন হয়েছে: ${getStatusBengali(status)}`, 
         timestamp: Date.now(), 
         isRead: false 
       }));

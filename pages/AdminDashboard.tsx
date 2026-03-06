@@ -21,6 +21,18 @@ const toBengaliNumber = (num: number | string) => {
   return num.toString();
 };
 
+const getAssistanceStatusLabel = (status: AssistanceStatus) => {
+  switch (status) {
+    case AssistanceStatus.PENDING: return 'অপেক্ষমান';
+    case AssistanceStatus.REVIEWING: return 'যাচাই চলছে';
+    case AssistanceStatus.APPROVED: return 'অনুমোদিত';
+    case AssistanceStatus.PROCESSING: return 'প্রক্রিয়াধীন';
+    case AssistanceStatus.REJECTED: return 'বাতিল';
+    case AssistanceStatus.DISBURSED: return 'প্রদান সম্পন্ন';
+    default: return status;
+  }
+};
+
 const AdminDashboard: React.FC = () => {
   const { setIsAdmin } = useAuth();
   const navigate = useNavigate();
@@ -691,7 +703,7 @@ const AdminDashboard: React.FC = () => {
                           req.status === AssistanceStatus.REVIEWING ? 'bg-amber-50 text-amber-600' :
                           'bg-slate-50 text-slate-600'
                         }`}>
-                           {req.status}
+                           {getAssistanceStatusLabel(req.status)}
                         </div>
                      </div>
                      <p className="text-[11px] font-bold text-slate-600 line-clamp-2">{req.reason}</p>
@@ -1537,7 +1549,7 @@ const AdminDashboard: React.FC = () => {
                  <h3 className="font-black uppercase text-sm tracking-widest">আবেদন বিস্তারিত</h3>
                  <button onClick={() => setViewingAssistance(null)}><X className="w-6 h-6" /></button>
               </div>
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
                  <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">আবেদনকারীর নাম</p>
                     <p className="text-lg font-black text-slate-800">{viewingAssistance.userName}</p>
@@ -1546,22 +1558,69 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">আবেদনের কারণ</p>
                     <p className="text-[13px] font-bold text-slate-700 leading-relaxed italic">"{viewingAssistance.reason}"</p>
                  </div>
-                 {viewingAssistance.amount > 0 && (
+                 {viewingAssistance.amount && viewingAssistance.amount > 0 && (
                    <div className="flex justify-between items-center px-4">
                       <p className="text-xs font-black text-slate-400 uppercase">প্রার্থিত অর্থ</p>
                       <p className="text-2xl font-black text-rose-600">৳{toBengaliNumber(viewingAssistance.amount.toLocaleString())}</p>
                    </div>
                  )}
+
+                 {viewingAssistance.timeline && viewingAssistance.timeline.length > 0 && (
+                   <div className="space-y-3">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">টাইমলাইন</p>
+                     <div className="space-y-3 border-l-2 border-slate-100 ml-2 pl-4">
+                       {viewingAssistance.timeline.map((event, idx) => (
+                         <div key={idx} className="relative">
+                           <div className="absolute -left-[21px] top-1 w-3 h-3 bg-white border-2 border-teal-500 rounded-full"></div>
+                           <p className="text-[10px] font-black text-teal-600 uppercase">{getAssistanceStatusLabel(event.status)}</p>
+                           <p className="text-[9px] text-slate-400 font-bold">{new Date(event.timestamp).toLocaleString()}</p>
+                           {event.note && <p className="text-[10px] text-slate-600 font-medium mt-0.5">{event.note}</p>}
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
                  <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">এডমিন নোট</p>
                     <textarea className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold text-xs" placeholder="মতামত লিখুন..." value={adminNote} onChange={e => setAdminNote(e.target.value)} />
                  </div>
                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REVIEWING)} className="py-4 bg-amber-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">যাচাই চলছে</button>
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.APPROVED)} className="py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">অনুমোদিত</button>
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.PROCESSING)} className="py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">প্রক্রিয়াধীন</button>
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.DISBURSED)} className="py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">প্রদান সম্পন্ন</button>
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REJECTED)} className="col-span-2 py-4 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">বাতিল করুন</button>
+                    <button 
+                       onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REVIEWING)} 
+                       className={`py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition-all ${viewingAssistance.status === AssistanceStatus.REVIEWING ? 'bg-amber-600 ring-4 ring-amber-100' : 'bg-amber-500 text-white'}`}
+                       disabled={isSubmitting}
+                     >
+                       যাচাই চলছে
+                     </button>
+                    <button 
+                       onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.APPROVED)} 
+                       className={`py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition-all ${viewingAssistance.status === AssistanceStatus.APPROVED ? 'bg-emerald-700 ring-4 ring-emerald-100' : 'bg-emerald-600 text-white'}`}
+                       disabled={isSubmitting}
+                     >
+                       অনুমোদিত
+                     </button>
+                    <button 
+                       onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.PROCESSING)} 
+                       className={`py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition-all ${viewingAssistance.status === AssistanceStatus.PROCESSING ? 'bg-indigo-700 ring-4 ring-indigo-100' : 'bg-indigo-600 text-white'}`}
+                       disabled={isSubmitting}
+                     >
+                       প্রক্রিয়াধীন
+                     </button>
+                    <button 
+                       onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.DISBURSED)} 
+                       className={`py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition-all ${viewingAssistance.status === AssistanceStatus.DISBURSED ? 'bg-blue-700 ring-4 ring-blue-100' : 'bg-blue-600 text-white'}`}
+                       disabled={isSubmitting}
+                     >
+                       প্রদান সম্পন্ন
+                     </button>
+                    <button 
+                       onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REJECTED)} 
+                       className={`col-span-2 py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition-all ${viewingAssistance.status === AssistanceStatus.REJECTED ? 'bg-rose-700 ring-4 ring-rose-100' : 'bg-rose-600 text-white'}`}
+                       disabled={isSubmitting}
+                     >
+                       বাতিল করুন
+                     </button>
                  </div>
               </div>
            </div>
