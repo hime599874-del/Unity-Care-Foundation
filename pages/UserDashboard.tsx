@@ -140,9 +140,9 @@ const UserDashboard: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-32 font-['Hind_Siliguri']">
+    <div className="bg-transparent min-h-screen pb-32 font-['Hind_Siliguri']">
       {/* Top Profile Header */}
-      <div className="px-6 pt-10 pb-4 flex justify-between items-center bg-white/50 backdrop-blur-md sticky top-0 z-50">
+      <div className="px-6 pt-10 pb-4 flex justify-between items-center glass-nav sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl border-4 border-white shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 relative">
             <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
@@ -170,7 +170,10 @@ const UserDashboard: React.FC = () => {
 
       <div className="p-6 space-y-8">
         {/* Main Collection Card - Rotating Credit Card Design */}
-        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2rem] shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden transition-all duration-1000 h-56 flex flex-col justify-between group`}>
+        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2rem] text-white relative overflow-hidden transition-all duration-1000 h-56 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/20`}>
+          {/* Glossy Overlay */}
+          <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none z-20"></div>
+          
           {/* World Map Pattern Overlay */}
           <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay">
             <svg viewBox="0 0 1000 500" className="w-full h-full object-cover">
@@ -262,38 +265,34 @@ const UserDashboard: React.FC = () => {
         {/* Highlight Stats (Compact Design) */}
         <div className="grid grid-cols-2 gap-3">
           <div 
-            className="bg-gradient-to-br from-[#00F2FE] to-[#4FACFE] p-3.5 rounded-[2rem] flex items-center gap-3 active:scale-95 transition-all border border-white/30 relative overflow-hidden group glow-card"
-            style={{ '--glow-color': '#00F2FE' } as any}
+            className="p-3.5 flex items-center gap-3 active:scale-95 transition-all glossy-pill glossy-blue"
           >
-             <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
-             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/40">
-                <Users className="w-4 h-4" />
+             <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/30 backdrop-blur-sm shadow-inner">
+                <Users className="w-5 h-5" />
              </div>
              <div className="overflow-hidden relative z-10">
-                <p className="text-[7px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট সদস্য</p>
-                <h3 className="text-xs font-black text-white truncate">{toBengaliNumber(appStats.totalUsers)} জন</h3>
+                <p className="text-[8px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট সদস্য</p>
+                <h3 className="text-sm font-black text-white truncate drop-shadow-md">{toBengaliNumber(appStats.totalUsers)} জন</h3>
              </div>
           </div>
           <button 
             onClick={() => navigate('/expenses')} 
-            className="bg-gradient-to-br from-[#F093FB] to-[#F5576C] p-3.5 rounded-[2rem] flex items-center gap-3 active:scale-95 transition-all text-left border border-white/30 relative overflow-hidden group glow-card"
-            style={{ '--glow-color': '#F5576C' } as any}
+            className="p-3.5 flex items-center gap-3 active:scale-95 transition-all text-left glossy-pill glossy-pink"
           >
-             <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
-             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/40">
-                <div className="relative w-5 h-5 flex items-center justify-center">
+             <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/30 backdrop-blur-sm shadow-inner">
+                <div className="relative w-6 h-6 flex items-center justify-center">
                   {/* Chair */}
-                  <div className="absolute bottom-0.5 w-3 h-2 bg-blue-600 rounded-sm"></div>
+                  <div className="absolute bottom-0.5 w-4 h-2.5 bg-blue-600 rounded-sm"></div>
                   {/* Person */}
-                  <div className="absolute bottom-1 w-2.5 h-3 bg-amber-400 rounded-md"></div>
-                  <div className="absolute top-0.5 w-2 h-2 bg-pink-100 rounded-full"></div>
+                  <div className="absolute bottom-1.5 w-3 h-4 bg-amber-400 rounded-md"></div>
+                  <div className="absolute top-0.5 w-2.5 h-2.5 bg-pink-100 rounded-full"></div>
                   {/* Laptop */}
-                  <div className="absolute bottom-2 w-3.5 h-2 bg-slate-800 rounded-sm border border-slate-700"></div>
+                  <div className="absolute bottom-2.5 w-4.5 h-2.5 bg-slate-800 rounded-sm border border-slate-700"></div>
                 </div>
              </div>
              <div className="overflow-hidden relative z-10">
-                <p className="text-[7px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট খরচ</p>
-                <h3 className="text-xs font-black text-white truncate">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString())}</h3>
+                <p className="text-[8px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট খরচ</p>
+                <h3 className="text-sm font-black text-white truncate drop-shadow-md">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString())}</h3>
              </div>
           </button>
         </div>
@@ -388,12 +387,10 @@ const UserDashboard: React.FC = () => {
               className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
             >
               <div 
-                className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-[1.5rem] flex items-center justify-center text-white relative overflow-hidden transition-transform group-hover:rotate-6 glow-card`}
-                style={{ '--glow-color': item.glowColor } as any}
+                className="w-14 h-14 glossy-icon flex items-center justify-center text-white"
+                style={{ '--icon-bg': `linear-gradient(to bottom, ${item.glowColor}, ${item.glowColor}cc)` } as any}
               >
-                <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
-                <div className="absolute -top-4 -right-4 w-12 h-12 bg-white/20 rounded-full blur-xl"></div>
-                <div className="relative z-10 drop-shadow-md">
+                <div className="relative z-10 drop-shadow-lg">
                   {item.icon}
                 </div>
               </div>
@@ -412,38 +409,32 @@ const UserDashboard: React.FC = () => {
            </div>
            <div className="space-y-3">
               {allTransactions.filter(t => t.userId === currentUser?.id).slice(0, 3).map((tx, idx) => {
-                const gradients = [
-                  "from-[#4FACFE] to-[#00F2FE]", // Cyan/Blue
-                  "from-[#667EEA] to-[#764BA2]", // Blue/Purple
-                  "from-[#F093FB] to-[#F5576C]", // Pink/Rose
-                  "from-[#FA709A] to-[#FEE140]"  // Pink/Yellow
-                ];
-                const gradient = gradients[idx % gradients.length];
+                const glossyColors = ["glossy-pink", "glossy-purple", "glossy-blue"];
+                const glossyClass = glossyColors[idx % glossyColors.length];
                 
                 return (
                   <div 
                     key={tx.id} 
                     onClick={() => navigate('/vouchers', { state: { transactionId: tx.id } })}
-                    className={`cursor-pointer bg-gradient-to-r ${gradient} p-3.5 rounded-[2rem] shadow-lg shadow-slate-200/40 flex justify-between items-center hover:shadow-xl transition-all active:scale-[0.98] border border-white/30 relative overflow-hidden group glow-card`}
+                    className={`cursor-pointer p-4 flex justify-between items-center transition-all active:scale-[0.98] glossy-pill ${glossyClass}`}
                   >
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
                     <div className="flex items-center gap-3 relative z-10">
-                      <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-white shadow-md border border-white/40">
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner border border-white/30 backdrop-blur-sm">
                         <ArrowUpRight className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="font-black text-white text-[11px] tracking-tight leading-none">{tx.method}</p>
-                        <p className="text-[7px] text-white/80 font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
-                          <Clock className="w-2.5 h-2.5" /> {toBengaliNumber(tx.date)}
+                        <p className="font-black text-white text-xs tracking-tight leading-none drop-shadow-md">{tx.method === 'Admin Manual' ? 'Manual' : tx.method}</p>
+                        <p className="text-[8px] text-white/90 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {toBengaliNumber(tx.date)}
                         </p>
                       </div>
                     </div>
                     <div className="text-right relative z-10">
-                      <p className="font-black text-white text-sm italic leading-none">৳{toBengaliNumber(tx.amount)}</p>
-                      <span className={`text-[6px] font-black uppercase px-2 py-0.5 rounded-full mt-1.5 inline-block border border-white/30 ${
-                        tx.status === TransactionStatus.APPROVED ? 'bg-emerald-400/40 text-white' : 
-                        tx.status === TransactionStatus.REJECTED ? 'bg-rose-400/40 text-white' : 
-                        'bg-amber-400/40 text-white'
+                      <p className="font-black text-white text-base italic leading-none drop-shadow-lg">৳{toBengaliNumber(tx.amount)}</p>
+                      <span className={`text-[7px] font-black uppercase px-2.5 py-1 rounded-full mt-2 inline-block border border-white/40 shadow-sm ${
+                        tx.status === TransactionStatus.APPROVED ? 'bg-emerald-500/50 text-white' : 
+                        tx.status === TransactionStatus.REJECTED ? 'bg-rose-500/50 text-white' : 
+                        'bg-amber-500/50 text-white'
                       }`}>
                         {tx.status === TransactionStatus.APPROVED ? 'সফল' : 
                          tx.status === TransactionStatus.REJECTED ? 'বাতিল' : 

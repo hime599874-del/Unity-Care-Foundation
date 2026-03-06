@@ -63,11 +63,11 @@ const TransactionPage: React.FC = () => {
     return num.toString();
   };
 
-  const inputClass = "w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold text-sm text-slate-800 transition-all";
+  const inputClass = "w-full p-4 bg-white/40 backdrop-blur-md border-2 border-white/50 rounded-2xl outline-none focus:border-teal-500 font-bold text-sm text-slate-800 transition-all";
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
-      <div className="px-6 pt-8 pb-4 flex items-center gap-4 sticky top-0 bg-white border-b border-slate-100 z-10">
+    <div className="bg-transparent min-h-screen pb-20 font-['Hind_Siliguri']">
+      <div className="px-6 pt-8 pb-4 flex items-center gap-4 sticky top-0 glass-nav z-10">
         <button onClick={() => navigate('/dashboard')} disabled={isSubmitting} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-slate-600 active:scale-90 transition-all">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -76,12 +76,12 @@ const TransactionPage: React.FC = () => {
 
       <div className="p-6 max-w-lg mx-auto space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
+          <div className="glass-card p-6 rounded-[2.5rem]">
              <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl"><DollarSign className="w-6 h-6" /></div>
                 <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest">টাকার পরিমাণ</h3>
              </div>
-             <input type="number" disabled={isSubmitting} className="w-full p-6 text-4xl font-black text-center bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none focus:border-teal-500 transition-all text-teal-600 mb-6" placeholder="৳ 0" value={amount} onChange={e => setAmount(e.target.value)} />
+             <input type="number" disabled={isSubmitting} className="w-full p-6 text-4xl font-black text-center bg-white/40 backdrop-blur-md border-2 border-white/50 rounded-3xl outline-none focus:border-teal-500 transition-all text-teal-600 mb-6" placeholder="৳ 0" value={amount} onChange={e => setAmount(e.target.value)} />
              <div className="grid grid-cols-3 gap-3">
                 {quickAmounts.map(amt => (
                   <button 
@@ -97,7 +97,7 @@ const TransactionPage: React.FC = () => {
              </div>
           </div>
 
-          <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
+          <div className="glass-card p-6 rounded-[2.5rem] space-y-6">
              <div className="flex items-center gap-3">
                 <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl"><Wallet className="w-6 h-6" /></div>
                 <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest">পেমেন্ট মেথড</h3>

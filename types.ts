@@ -15,6 +15,7 @@ export enum AssistanceStatus {
   PENDING = 'PENDING',
   REVIEWING = 'REVIEWING',
   APPROVED = 'APPROVED',
+  PROCESSING = 'PROCESSING',
   REJECTED = 'REJECTED',
   DISBURSED = 'DISBURSED'
 }
@@ -101,6 +102,12 @@ export interface ContactConfig {
   policyUrl?: string;
 }
 
+export interface TimelineEvent {
+  status: AssistanceStatus;
+  timestamp: number;
+  note?: string;
+}
+
 export interface AssistanceRequest {
   id: string;
   userId: string;
@@ -112,6 +119,7 @@ export interface AssistanceRequest {
   status: AssistanceStatus;
   timestamp: number;
   adminNote?: string;
+  timeline?: TimelineEvent[];
 }
 
 export interface Expense {

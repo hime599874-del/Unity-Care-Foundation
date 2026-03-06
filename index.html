@@ -27,7 +27,7 @@
         }
         body {
             font-family: var(--bn-font);
-            background-color: #f8fafc;
+            background-color: transparent;
             color: #0f172a;
             -webkit-font-smoothing: antialiased;
             overscroll-behavior-y: none;
@@ -35,6 +35,64 @@
             overflow-x: hidden;
             touch-action: pan-x pan-y;
         }
+
+        /* Atmospheric Background */
+        .app-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -20;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        .app-bg::before {
+            content: '';
+            position: absolute;
+            inset: -50%;
+            background: 
+                radial-gradient(circle at 20% 20%, #fef08a 0%, transparent 45%),
+                radial-gradient(circle at 80% 15%, #86efac 0%, transparent 45%),
+                radial-gradient(circle at 75% 85%, #f0abfc 0%, transparent 45%),
+                radial-gradient(circle at 15% 95%, #fbcfe8 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, #67e8f9 0%, transparent 55%);
+            filter: blur(100px);
+            opacity: 0.85;
+            animation: bg-float 25s ease-in-out infinite alternate;
+        }
+
+        .app-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.04;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+
+        @keyframes bg-float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(5%, 5%) rotate(5deg); }
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.6) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+        }
+
         .premium-text { font-family: 'Playfair Display', serif; }
         .signature-text { font-family: var(--signature-font); }
         .bn-heavy { font-weight: 900; }
@@ -138,6 +196,104 @@
             position: relative;
             z-index: 1;
         }
+
+        /* Static Neon Glow Effects */
+        .neon-glow {
+            position: relative;
+            z-index: 1;
+            border: 2.5px solid var(--neon-color, #fff) !important;
+            box-shadow: 
+                0 0 15px var(--neon-color, #fff),
+                inset 0 0 10px var(--neon-color, #fff),
+                0 0 35px var(--neon-color, #fff);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .neon-glow:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 
+                0 0 25px var(--neon-color, #fff),
+                inset 0 0 15px var(--neon-color, #fff),
+                0 0 50px var(--neon-color, #fff);
+        }
+
+        .neon-pink { --neon-color: #ff007f; }
+        .neon-purple { --neon-color: #a020f0; }
+        .neon-blue { --neon-color: #00f2ff; }
+
+        /* Glossy Pill Effect */
+        .glossy-pill {
+            position: relative;
+            z-index: 1;
+            border-radius: 9999px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-image: var(--pill-color);
+            background-color: #94a3b8;
+            box-shadow: 
+                0 4px 10px rgba(0,0,0,0.1),
+                inset 0 1px 1px rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .glossy-pill::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 35%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .glossy-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 
+                0 6px 15px rgba(0,0,0,0.15),
+                inset 0 1px 1px rgba(255,255,255,0.5);
+        }
+
+        .glossy-pink { --pill-color: linear-gradient(to bottom, #ff007f, #8b0040); }
+        .glossy-purple { --pill-color: linear-gradient(to bottom, #a020f0, #4b0082); }
+        .glossy-blue { --pill-color: linear-gradient(to bottom, #00f2ff, #005f6b); }
+        .glossy-emerald { --pill-color: linear-gradient(to bottom, #10b981, #064e3b); }
+        .glossy-amber { --pill-color: linear-gradient(to bottom, #f59e0b, #78350f); }
+        .glossy-slate { --pill-color: linear-gradient(to bottom, #1e293b, #020617); }
+
+        .glossy-icon {
+            position: relative;
+            z-index: 1;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-image: var(--icon-bg);
+            background-color: #94a3b8;
+            box-shadow: 
+                0 4px 10px rgba(0,0,0,0.1),
+                inset 0 1px 1px rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .glossy-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .glossy-icon:hover {
+            transform: translateY(-1px) rotate(2deg);
+            box-shadow: 
+                0 6px 15px rgba(0,0,0,0.15),
+                inset 0 1px 1px rgba(255,255,255,0.5);
+        }
     </style>
 
     <script type="importmap">
@@ -155,6 +311,7 @@
 <link rel="stylesheet" href="/index.css">
 </head>
 <body>
+    <div class="app-bg"></div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

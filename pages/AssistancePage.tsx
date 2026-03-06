@@ -62,6 +62,7 @@ const AssistancePage: React.FC = () => {
       case AssistanceStatus.REJECTED: return 'bg-rose-50 text-rose-700 border-rose-100';
       case AssistanceStatus.DISBURSED: return 'bg-blue-50 text-blue-700 border-blue-100';
       case AssistanceStatus.REVIEWING: return 'bg-amber-50 text-amber-700 border-amber-100';
+      case AssistanceStatus.PROCESSING: return 'bg-indigo-50 text-indigo-700 border-indigo-100';
       default: return 'bg-slate-50 text-slate-600 border-slate-100';
     }
   };
@@ -72,6 +73,7 @@ const AssistancePage: React.FC = () => {
       case AssistanceStatus.REJECTED: return 'বাতিল';
       case AssistanceStatus.DISBURSED: return 'প্রদান করা হয়েছে';
       case AssistanceStatus.REVIEWING: return 'যাচাই চলছে';
+      case AssistanceStatus.PROCESSING: return 'প্রক্রিয়াধীন';
       default: return 'পেন্ডিং';
     }
   };
@@ -82,6 +84,19 @@ const AssistancePage: React.FC = () => {
     { id: 'Education', label: 'শিক্ষা', icon: <GraduationCap className="w-6 h-6" />, color: 'bg-blue-50 text-blue-600', active: 'bg-blue-600 text-white' },
     { id: 'Food', label: 'খাদ্য সাহায্য', icon: <Utensils className="w-6 h-6" />, color: 'bg-emerald-50 text-emerald-600', active: 'bg-emerald-600 text-white' }
   ];
+
+  const [trackingRequest, setTrackingRequest] = useState<AssistanceRequest | null>(null);
+
+  const getTimelineIcon = (status: AssistanceStatus) => {
+    switch (status) {
+      case AssistanceStatus.APPROVED: return <CheckCircle2 className="w-4 h-4" />;
+      case AssistanceStatus.REJECTED: return <XCircle className="w-4 h-4" />;
+      case AssistanceStatus.DISBURSED: return <Zap className="w-4 h-4" />;
+      case AssistanceStatus.REVIEWING: return <Loader2 className="w-4 h-4 animate-spin" />;
+      case AssistanceStatus.PROCESSING: return <Clock className="w-4 h-4" />;
+      default: return <Clock className="w-4 h-4" />;
+    }
+  };
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
@@ -169,12 +184,21 @@ const AssistancePage: React.FC = () => {
                    </div>
                    <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4">{req.reason}</p>
                    
-                   {req.adminNote && (
-                     <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex gap-3 items-start">
-                        <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
-                        <p className="text-[11px] font-black text-blue-800 italic leading-snug">এডমিন নোট: {req.adminNote}</p>
-                     </div>
-                   )}
+                   <div className="flex flex-col gap-3">
+                     {req.adminNote && (
+                       <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex gap-3 items-start">
+                          <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                          <p className="text-[11px] font-black text-blue-800 italic leading-snug">এডমিন নোট: {req.adminNote}</p>
+                       </div>
+                     )}
+                     
+                     <button 
+                       onClick={() => setTrackingRequest(req)}
+                       className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border border-slate-100"
+                     >
+                        <Clock className="w-4 h-4" /> ট্র্যাক করুন
+                     </button>
+                   </div>
                 </div>
               ))}
               {userRequests.length === 0 && (
@@ -186,6 +210,45 @@ const AssistancePage: React.FC = () => {
            </div>
         </div>
       </div>
+
+      {trackingRequest && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[80vh] flex flex-col">
+              <div className="p-6 bg-teal-600 text-white flex justify-between items-center shrink-0">
+                 <h3 className="font-black uppercase text-xs tracking-widest">আবেদন ট্র্যাকিং</h3>
+                 <button onClick={() => setTrackingRequest(null)} className="p-2 bg-white/20 rounded-xl"><XCircle className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 overflow-y-auto no-scrollbar space-y-6">
+                 <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-100"></div>
+                    <div className="space-y-8 relative">
+                       {[...(trackingRequest.timeline || [])].reverse().map((event, idx) => (
+                         <div key={idx} className="flex gap-4 items-start">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${idx === 0 ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' : 'bg-white border-2 border-slate-100 text-slate-400'}`}>
+                               {getTimelineIcon(event.status)}
+                            </div>
+                            <div className="flex-1 pt-1">
+                               <div className="flex justify-between items-center mb-1">
+                                  <p className={`text-[11px] font-black uppercase tracking-wider ${idx === 0 ? 'text-teal-600' : 'text-slate-500'}`}>
+                                     {getStatusText(event.status)}
+                                  </p>
+                                  <p className="text-[8px] font-bold text-slate-400 uppercase">
+                                     {new Date(event.timestamp).toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true, day: 'numeric', month: 'short' })}
+                                  </p>
+                               </div>
+                               {event.note && <p className="text-[10px] font-bold text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 italic">"{event.note}"</p>}
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+              <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+                 <button onClick={() => setTrackingRequest(null)} className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-sm active:scale-95 transition-all">বন্ধ করুন</button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

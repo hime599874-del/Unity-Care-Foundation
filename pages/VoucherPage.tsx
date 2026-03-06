@@ -82,8 +82,8 @@ const VoucherPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
-      <div className="px-5 pt-8 pb-6 bg-white rounded-b-[3rem] shadow-sm border-b border-slate-100 flex items-center gap-4 sticky top-0 z-30">
+    <div className="bg-transparent min-h-screen pb-20 font-['Hind_Siliguri']">
+      <div className="px-5 pt-8 pb-6 glass-nav rounded-b-[3rem] flex items-center gap-4 sticky top-0 z-30">
         <button onClick={() => navigate('/dashboard')} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-slate-600 active:scale-90 transition-all">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -94,7 +94,7 @@ const VoucherPage: React.FC = () => {
       </div>
 
       <div className="p-5 space-y-6">
-        <div className="bg-gradient-to-br from-teal-600 to-teal-700 p-5 rounded-[2rem] shadow-xl shadow-teal-100 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-teal-600/90 to-teal-700/90 p-5 rounded-[2rem] text-white relative overflow-hidden border border-white/20 backdrop-blur-md">
            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
            <div className="relative z-10 flex justify-between items-center">
               <div>
@@ -135,7 +135,7 @@ const VoucherPage: React.FC = () => {
           </div>
 
           {transactions.map((tx) => (
-            <div key={tx.id} className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm flex flex-col gap-3">
+            <div key={tx.id} className="glass-card p-4 rounded-[1.5rem] flex flex-col gap-3">
               <div className="flex justify-between items-start">
                 <div className="flex gap-3">
                   <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
@@ -147,7 +147,7 @@ const VoucherPage: React.FC = () => {
                       <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold uppercase">
                         <Clock className="w-3 h-3" /> {toBengaliNumber(tx.date)}
                       </div>
-                      <span className="text-[8px] font-black text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">{tx.method}</span>
+                      <span className="text-[8px] font-black text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">{tx.method === 'Admin Manual' ? 'Manual' : tx.method}</span>
                     </div>
                   </div>
                 </div>
@@ -267,7 +267,7 @@ const VoucherPage: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex justify-between items-center">
                         <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase">Method:</p>
-                        <p className="text-[9px] sm:text-[10px] font-black text-slate-800 uppercase">{selectedTx.method}</p>
+                        <p className="text-[9px] sm:text-[10px] font-black text-slate-800 uppercase">{selectedTx.method === 'Admin Manual' ? 'Manual' : selectedTx.method}</p>
                       </div>
                       <div className="flex justify-between items-center">
                         <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase">TX ID:</p>

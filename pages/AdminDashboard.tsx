@@ -37,7 +37,7 @@ const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState(db.getStats());
   const [contactConfig, setContactConfig] = useState<ContactConfig>(db.getContactConfig());
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights' | 'txManagement'>('overview');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [qrSearchQuery, setQrSearchQuery] = useState('');
@@ -58,8 +58,10 @@ const AdminDashboard: React.FC = () => {
   const [projectDeadline, setProjectDeadline] = useState('');
   
   const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [viewingAssistance, setViewingAssistance] = useState<AssistanceRequest | null>(null);
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
+  const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
   const [notifMessage, setNotifMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
   
@@ -277,7 +279,7 @@ const AdminDashboard: React.FC = () => {
   const handleAddManualFunds = async () => {
     if (!viewingUser || !manualAmount) return;
     try {
-      await db.addManualTransaction(viewingUser.id, viewingUser.name, parseFloat(manualAmount), 'Admin Manual', manualDate);
+      await db.addManualTransaction(viewingUser.id, viewingUser.name, parseFloat(manualAmount), 'Manual', manualDate);
       setManualAmount('');
       alert('সফলভাবে যোগ হয়েছে।');
     } catch (e) { alert('ব্যর্থ হয়েছে।'); }
@@ -495,8 +497,8 @@ const AdminDashboard: React.FC = () => {
   const netBalance = stats.totalCollection - (expenses.length === 0 ? 0 : stats.totalExpense);
 
   return (
-    <div className="bg-[#F1F5F9] min-h-screen font-['Hind_Siliguri'] pb-20">
-      <header className="px-6 py-5 bg-white border-b sticky top-0 z-50 flex justify-between items-center shadow-sm">
+    <div className="bg-transparent min-h-screen font-['Hind_Siliguri'] pb-20">
+      <header className="px-6 py-5 glass-nav sticky top-0 z-50 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-[#0D9488] rounded-xl text-white shadow-lg"><LayoutDashboard className="w-5 h-5" /></div>
           <div><h1 className="text-base font-black uppercase leading-none">এডমিন প্যানেল</h1><p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">Unity Care Foundation</p></div>
@@ -504,7 +506,7 @@ const AdminDashboard: React.FC = () => {
         <button onClick={handleLogout} className="p-3 bg-rose-50 text-rose-600 rounded-2xl active:scale-95 transition-all"><LogOut className="w-6 h-6" /></button>
       </header>
 
-      <div className="bg-white border-b px-6 overflow-x-auto flex gap-6 sticky top-[73px] z-40 no-scrollbar shadow-sm">
+      <div className="glass-nav px-6 overflow-x-auto flex gap-6 sticky top-[73px] z-40 no-scrollbar shadow-sm">
         {[
           { id: 'overview', label: 'ওভারভিউ', icon: <TrendingUp className="w-4 h-4" /> },
           { id: 'users', label: 'সদস্য তালিকা', icon: <Users className="w-4 h-4" /> },
@@ -522,6 +524,7 @@ const AdminDashboard: React.FC = () => {
           { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" /> },
           { id: 'activities', label: 'মেম্বার অ্যাক্টিভিটি', icon: <Clock className="w-4 h-4" /> },
           { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" /> },
+          { id: 'txManagement', label: 'লেনদেন ম্যানেজমেন্ট', icon: <Wallet className="w-4 h-4" /> },
           { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" /> },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" /> }
         ].map(tab => (
@@ -555,7 +558,7 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SectionBox title="মেম্বার রিকোয়েস্ট" count={users.filter(u=>u.status===UserStatus.PENDING).length} color="bg-indigo-600">
                 {users.filter(u=>u.status===UserStatus.PENDING).map(u => (
-                  <div key={u.id} className="p-4 bg-white border rounded-[1.8rem] flex items-center justify-between shadow-sm hover:border-indigo-200 transition-colors">
+                  <div key={u.id} className="p-4 glass-card rounded-[1.8rem] flex items-center justify-between hover:border-indigo-200 transition-colors">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
                         <UserIcon className="w-5 h-5" />
@@ -567,7 +570,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                        <button onClick={() => handleUpdateStatus(u.id, 'user', UserStatus.APPROVED)} className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><Check className="w-5 h-5" /></button>
-                       <button onClick={() => { if(confirm("এই মেম্বার রিকোয়েস্টটি বাতিল করবেন?")) db.deleteUser(u.id); }} className="p-2.5 bg-rose-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><X className="w-5 h-5" /></button>
+                       <button onClick={() => setUserToDelete(u)} className="p-2.5 bg-rose-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><X className="w-5 h-5" /></button>
                     </div>
                   </div>
                 ))}
@@ -578,7 +581,7 @@ const AdminDashboard: React.FC = () => {
 
               <SectionBox title="লেনদেন রিকোয়েস্ট" count={transactions.filter(t=>t.status===TransactionStatus.PENDING).length} color="bg-amber-500">
                 {transactions.filter(t=>t.status===TransactionStatus.PENDING).map(t => (
-                  <div key={t.id} className="p-4 bg-white border rounded-[1.8rem] flex items-center justify-between shadow-sm hover:border-amber-200 transition-colors">
+                  <div key={t.id} className="p-4 glass-card rounded-[1.8rem] flex items-center justify-between hover:border-amber-200 transition-colors">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
                         <Smartphone className="w-5 h-5" />
@@ -652,7 +655,7 @@ const AdminDashboard: React.FC = () => {
                                     <button onClick={() => setViewingUser(u)} className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm">
                                        <MessageCircle className="w-4 h-4" />
                                     </button>
-                                    <button onClick={() => { if(confirm("মুছে ফেলবেন?")) db.deleteUser(u.id); }} className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors shadow-sm">
+                                    <button onClick={() => setUserToDelete(u)} className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors shadow-sm">
                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                  </div>
@@ -680,7 +683,14 @@ const AdminDashboard: React.FC = () => {
                            <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center"><HandHelping className="w-6 h-6" /></div>
                            <div><p className="text-xs font-black">{req.userName}</p><p className="text-[9px] text-slate-400 font-bold uppercase">{req.category}</p></div>
                         </div>
-                        <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${req.status === AssistanceStatus.APPROVED ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                        <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${
+                          req.status === AssistanceStatus.APPROVED ? 'bg-emerald-50 text-emerald-600' : 
+                          req.status === AssistanceStatus.REJECTED ? 'bg-rose-50 text-rose-600' :
+                          req.status === AssistanceStatus.DISBURSED ? 'bg-blue-50 text-blue-600' :
+                          req.status === AssistanceStatus.PROCESSING ? 'bg-indigo-50 text-indigo-600' :
+                          req.status === AssistanceStatus.REVIEWING ? 'bg-amber-50 text-amber-600' :
+                          'bg-slate-50 text-slate-600'
+                        }`}>
                            {req.status}
                         </div>
                      </div>
@@ -750,19 +760,20 @@ const AdminDashboard: React.FC = () => {
                             <th className="px-2 py-3">সদস্যের তথ্য</th>
                             <th className="px-5 py-3 text-center">স্ট্যাটাস</th>
                             <th className="px-5 py-3 text-right">পরিমাণ</th>
+                            <th className="px-5 py-3 text-center">অ্যাকশন</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                           {transactions.map(t => {
                             const user = db.getUser(t.userId);
                             return (
-                              <tr key={t.id} onClick={() => setViewingTransaction(t)} className="group hover:bg-slate-50/40 transition-colors cursor-pointer">
-                                <td className="px-5 py-2.5 align-middle">
+                              <tr key={t.id} className="group hover:bg-slate-50/40 transition-colors">
+                                <td onClick={() => setViewingTransaction(t)} className="px-5 py-2.5 align-middle cursor-pointer">
                                   <p className="text-[9px] font-bold text-slate-400">
                                     {toBengaliNumber(t.date)}
                                   </p>
                                 </td>
-                                <td className="px-2 py-2.5 align-middle">
+                                <td onClick={() => setViewingTransaction(t)} className="px-2 py-2.5 align-middle cursor-pointer">
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
                                       {user?.profilePic ? (
@@ -777,7 +788,7 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="px-5 py-2.5 text-center align-middle">
+                                <td onClick={() => setViewingTransaction(t)} className="px-5 py-2.5 text-center align-middle cursor-pointer">
                                   <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${
                                     t.status === TransactionStatus.APPROVED ? 'bg-emerald-50 text-emerald-600' : 
                                     t.status === TransactionStatus.REJECTED ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
@@ -785,11 +796,23 @@ const AdminDashboard: React.FC = () => {
                                     {t.status}
                                   </span>
                                 </td>
-                                <td className="px-5 py-2.5 text-right align-middle">
+                                <td onClick={() => setViewingTransaction(t)} className="px-5 py-2.5 text-right align-middle cursor-pointer">
                                   <div className="flex flex-col items-end">
                                     <p className="text-[17px] font-black text-[#0D9488] italic">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
                                     <p className="text-[7px] font-bold text-slate-300 uppercase tracking-tighter group-hover:text-[#0D9488] transition-colors">View Details</p>
                                   </div>
+                                </td>
+                                <td className="px-5 py-2.5 text-center align-middle">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setTxToDelete(t);
+                                    }}
+                                    disabled={isSubmitting}
+                                    className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors disabled:opacity-50"
+                                  >
+                                    {isSubmitting && txToDelete?.id === t.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                  </button>
                                 </td>
                               </tr>
                             );
@@ -1135,6 +1158,98 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'txManagement' && (
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto md:max-w-4xl">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="সদস্যের নাম বা ফোন দিয়ে খুঁজুন..." 
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border rounded-2xl outline-none font-bold text-sm"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="w-full sm:w-48">
+                  <input 
+                    type="month" 
+                    className="w-full p-3.5 bg-slate-50 border rounded-2xl outline-none font-black text-sm" 
+                    value={reportMonth} 
+                    onChange={e => setReportMonth(e.target.value)} 
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
+                {reportMonth}-এর লেনদেনসমূহ দেখাচ্ছে
+              </p>
+            </div>
+
+            <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-50 border-b">
+                    <tr className="text-[9px] font-black uppercase text-slate-400 tracking-widest">
+                      <th className="px-6 py-4">তারিখ</th>
+                      <th className="px-6 py-4">সদস্য</th>
+                      <th className="px-6 py-4">পরিমাণ</th>
+                      <th className="px-6 py-4">স্ট্যাটাস</th>
+                      <th className="px-6 py-4 text-center">অ্যাকশন</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {transactions
+                      .filter(t => {
+                        const matchesSearch = t.userName.toLowerCase().includes(searchQuery.toLowerCase());
+                        const matchesMonth = t.date.startsWith(reportMonth);
+                        return matchesSearch && matchesMonth;
+                      })
+                      .map(t => (
+                        <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="text-[10px] font-bold text-slate-500">{toBengaliNumber(t.date)}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-xs font-black text-slate-800 uppercase">{t.userName}</p>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{t.method} • {t.fundType}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-black text-[#0D9488]">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${
+                              t.status === TransactionStatus.APPROVED ? 'bg-emerald-50 text-emerald-600' : 
+                              t.status === TransactionStatus.REJECTED ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
+                            }`}>
+                              {t.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <button 
+                              onClick={() => setTxToDelete(t)}
+                              disabled={isSubmitting}
+                              className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90 disabled:opacity-50"
+                            >
+                              {isSubmitting && txToDelete?.id === t.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {transactions.filter(t => t.date.startsWith(reportMonth)).length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center">
+                          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">এই মাসে কোন লেনদেন পাওয়া যায়নি</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'qr' && (
           <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
             <div className="bg-white p-4 rounded-3xl border shadow-sm flex items-center gap-3">
@@ -1407,7 +1522,7 @@ const AdminDashboard: React.FC = () => {
                     <button onClick={handleAddManualFunds} className="w-full py-4 bg-[#0D9488] text-white rounded-2xl font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all">টাকা যোগ করুন</button>
                  </div>
 
-                 <button onClick={() => { if(confirm("মুছে ফেলবেন?")) { db.deleteUser(viewingUser.id); setViewingUser(null); } }} className="w-full py-4 bg-rose-50 text-rose-600 rounded-[2rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 border border-rose-100 active:scale-95 transition-all">
+                 <button onClick={() => setUserToDelete(viewingUser)} className="w-full py-4 bg-rose-50 text-rose-600 rounded-[2rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 border border-rose-100 active:scale-95 transition-all">
                     <Trash2 className="w-4 h-4" /> ডিলিট মেম্বার
                  </button>
               </div>
@@ -1442,12 +1557,96 @@ const AdminDashboard: React.FC = () => {
                     <textarea className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold text-xs" placeholder="মতামত লিখুন..." value={adminNote} onChange={e => setAdminNote(e.target.value)} />
                  </div>
                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.APPROVED)} className="py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg">অ্যাপ্রুভ</button>
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REJECTED)} className="py-4 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg">রিজেক্ট</button>
-                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.DISBURSED)} className="col-span-2 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg">পেমেন্ট কমপ্লিট</button>
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REVIEWING)} className="py-4 bg-amber-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">যাচাই চলছে</button>
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.APPROVED)} className="py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">অনুমোদিত</button>
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.PROCESSING)} className="py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">প্রক্রিয়াধীন</button>
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.DISBURSED)} className="py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">প্রদান সম্পন্ন</button>
+                    <button onClick={() => handleUpdateStatus(viewingAssistance.id, 'assistance', AssistanceStatus.REJECTED)} className="col-span-2 py-4 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">বাতিল করুন</button>
                  </div>
               </div>
            </div>
+        </div>
+      )}
+
+      {userToDelete && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Trash2 className="w-8 h-8 text-rose-500" />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 text-center mb-2 italic">সদস্য ডিলিট করুন</h3>
+            <p className="text-sm text-slate-500 text-center mb-8 font-medium">
+              আপনি কি নিশ্চিত যে আপনি <span className="text-rose-600 font-black">{userToDelete.name}</span>-কে ডিলিট করতে চান? এটি করলে তার সকল তথ্য মুছে যাবে।
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => setUserToDelete(null)}
+                className="py-4 bg-slate-100 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                বাতিল
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    setIsSubmitting(true);
+                    await db.deleteUser(userToDelete.id);
+                    setUserToDelete(null);
+                    setViewingUser(null);
+                    alert("সদস্যকে সফলভাবে ডিলিট করা হয়েছে।");
+                  } catch (error: any) {
+                    alert("ডিলিট করতে সমস্যা হয়েছে।");
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+                disabled={isSubmitting}
+                className="py-4 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "ডিলিট করুন"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {txToDelete && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Trash2 className="w-8 h-8 text-rose-500" />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 text-center mb-2 italic">ডিলিট নিশ্চিত করুন</h3>
+            <p className="text-sm text-slate-500 text-center mb-8 font-medium">
+              আপনি কি নিশ্চিত যে এই লেনদেনটি ডিলিট করতে চান? এটি ডিলিট করলে গ্রাহকের ব্যালেন্স থেকে <span className="text-rose-600 font-black">৳{toBengaliNumber(txToDelete.amount)}</span> কমে যাবে।
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => setTxToDelete(null)}
+                className="py-4 bg-slate-100 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                বাতিল
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    setIsSubmitting(true);
+                    await db.deleteTransaction(txToDelete.id);
+                    setTxToDelete(null);
+                    setViewingTransaction(null);
+                    alert("সফলভাবে ডিলিট করা হয়েছে।");
+                  } catch (error: any) {
+                    alert("ডিলিট করতে সমস্যা হয়েছে: " + (error?.message || "অজানা সমস্যা"));
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+                disabled={isSubmitting}
+                className="py-4 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "ডিলিট করুন"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1511,6 +1710,14 @@ const AdminDashboard: React.FC = () => {
                 >
                   <Printer className="w-4 h-4" />
                   Print
+                </button>
+                <button 
+                  onClick={() => setTxToDelete(viewingTransaction)}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-700 transition-all active:scale-95 shadow-lg shadow-rose-200 disabled:opacity-50"
+                >
+                  {isSubmitting && txToDelete?.id === viewingTransaction.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Delete
                 </button>
                 <button onClick={() => setViewingTransaction(null)} className="p-2.5 bg-slate-100 text-slate-400 rounded-2xl hover:bg-slate-200 transition-colors">
                   <X className="w-5 h-5" />
@@ -1595,7 +1802,7 @@ const AdminDashboard: React.FC = () => {
                       </h4>
                       <div className="grid grid-cols-2 gap-4">
                         {[
-                          { label: 'Method', value: viewingTransaction.method },
+                          { label: 'Method', value: viewingTransaction.method === 'Admin Manual' ? 'Manual' : viewingTransaction.method },
                           { label: 'Transaction ID', value: viewingTransaction.transactionId },
                           { label: 'Fund Type', value: viewingTransaction.fundType },
                           { label: 'Status', value: viewingTransaction.status, isStatus: true }
@@ -1704,7 +1911,7 @@ const StatCard = ({ label, value, icon, color }: { label: string, value: string,
   };
 
   return (
-    <div className="bg-white p-5 rounded-[2.5rem] border h-28 flex flex-col justify-between shadow-sm">
+    <div className="glass-card p-5 rounded-[2.5rem] h-28 flex flex-col justify-between">
       <div 
         className={`w-10 h-10 rounded-xl flex items-center justify-center glow-card ${color}`}
         style={{ '--glow-color': getGlowColor(color) } as any}
@@ -1720,9 +1927,9 @@ const StatCard = ({ label, value, icon, color }: { label: string, value: string,
 };
 
 const SectionBox = ({ title, count, children, color }: { title: string, count: number, children?: React.ReactNode, color: string }) => (
-  <div className="bg-white rounded-[3rem] border overflow-hidden shadow-sm flex flex-col">
+  <div className="glass-card rounded-[3rem] overflow-hidden flex flex-col">
     <div className={`p-5 ${color} text-white flex justify-between items-center shadow-inner`}><h4 className="text-[10px] font-black uppercase tracking-widest">{title}</h4><span className="text-[10px] font-black bg-black/20 px-3 py-1 rounded-full">{toBengaliNumber(count)}</span></div>
-    <div className="p-4 space-y-4 bg-slate-50/10">{children}</div>
+    <div className="p-4 space-y-4 bg-white/10">{children}</div>
   </div>
 );
 

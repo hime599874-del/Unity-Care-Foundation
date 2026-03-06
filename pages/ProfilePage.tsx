@@ -97,11 +97,11 @@ const ProfilePage: React.FC = () => {
     return num.toString();
   };
 
-  const inputClass = "w-full pl-12 p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-bold text-black transition-all";
+  const inputClass = "w-full pl-12 p-4 bg-white/40 backdrop-blur-md border border-white/50 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-bold text-black transition-all";
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
-      <div className="bg-teal-600 text-white p-7 flex items-center justify-between rounded-b-[2.5rem] shadow-xl">
+    <div className="bg-transparent min-h-screen pb-20 font-['Hind_Siliguri']">
+      <div className="bg-teal-600/90 backdrop-blur-xl text-white p-7 flex items-center justify-between rounded-b-[2.5rem] shadow-xl sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/dashboard')} className="p-2 bg-white/20 rounded-xl backdrop-blur-md active:scale-90 transition-all">
             <ArrowLeft className="w-6 h-6" />
@@ -120,7 +120,7 @@ const ProfilePage: React.FC = () => {
 
       <div className="p-6 flex flex-col items-center">
         <div className="relative mb-6 mt-4">
-          <div className="w-36 h-36 rounded-[2.5rem] bg-white shadow-2xl border-4 border-white overflow-hidden flex items-center justify-center relative">
+          <div className="w-36 h-36 rounded-[2.5rem] bg-white/40 backdrop-blur-md shadow-2xl border-4 border-white/50 overflow-hidden flex items-center justify-center relative">
             {currentUser?.profilePic ? (
               <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
             ) : (
@@ -138,7 +138,7 @@ const ProfilePage: React.FC = () => {
           </label>
         </div>
 
-        <div className="mb-8 flex items-center gap-2 bg-white px-5 py-2.5 rounded-full shadow-sm border border-slate-200">
+        <div className="mb-8 flex items-center gap-2 glass-card px-5 py-2.5 rounded-full">
            <Hash className="w-4 h-4 text-teal-600" />
            <p className="text-xs font-black text-slate-500 uppercase tracking-widest text-center">
              সদস্য আইডি: <span className="text-teal-700 text-sm">{toBengaliNumber(memberId)}</span>
@@ -152,7 +152,7 @@ const ProfilePage: React.FC = () => {
         )}
 
         <div className="w-full max-w-md space-y-6">
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-6">
+          <div className="glass-card p-8 rounded-[2.5rem] space-y-6">
             <div>
               <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">পূর্ণ নাম</label>
               <div className="relative">

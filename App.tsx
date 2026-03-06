@@ -42,7 +42,7 @@ const BottomNav: React.FC = () => {
   if (!currentUser || isAdmin || location.pathname !== '/dashboard') return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3 flex justify-around items-center z-[100] shadow-[0_-4px_20px_rgba(0,0,0,0.03)] rounded-t-[2.5rem] print:hidden bottom-nav">
+    <div className="fixed bottom-0 left-0 right-0 glass-nav px-6 py-3 flex justify-around items-center z-[100] rounded-t-[2.5rem] print:hidden bottom-nav">
       <Link to="/dashboard" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
         <Home className="w-6 h-6 no-glow" />
         <span className="text-[9px] font-black uppercase tracking-widest">হোম</span>

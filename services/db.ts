@@ -349,7 +349,7 @@ class FirebaseDB {
     await addDoc(collection(firestore, "complaints"), cleanData);
   }
 
-  async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Admin Manual', customDate?: string) {
+  async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Manual', customDate?: string) {
     const txData = { userId, userName, amount, method, status: TransactionStatus.APPROVED, transactionId: `ADM-${Date.now().toString().slice(-6)}`, date: customDate || new Date().toISOString().split('T')[0], timestamp: customDate ? new Date(customDate).getTime() : Date.now(), fundType: 'General' };
     await runTransaction(firestore, async (transaction) => {
       const userRef = doc(firestore, "users", userId);
@@ -378,6 +378,51 @@ class FirebaseDB {
 
   async rejectTransaction(txId: string) { await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED }); }
   
+  async deleteTransaction(txId: string) {
+    console.log("Attempting to delete transaction:", txId);
+    const txDocRef = doc(firestore, "transactions", txId);
+    try {
+      await runTransaction(firestore, async (transaction) => {
+        const txSnap = await transaction.get(txDocRef);
+        if (!txSnap.exists()) {
+          console.error("Transaction document does not exist:", txId);
+          return;
+        }
+        const txData = txSnap.data();
+        console.log("Transaction data found:", txData);
+        
+        if (txData.status === TransactionStatus.APPROVED) {
+          console.log("Transaction was approved, reverting funds...");
+          const userRef = doc(firestore, "users", txData.userId);
+          const userSnap = await transaction.get(userRef);
+          const statsRef = doc(firestore, "metadata", "stats");
+          
+          if (userSnap.exists()) {
+            console.log("Updating user balance for user:", txData.userId);
+            transaction.update(userRef, { 
+              totalDonation: increment(-txData.amount), 
+              transactionCount: increment(-1) 
+            });
+          } else {
+            console.warn("User document not found for transaction reversal:", txData.userId);
+          }
+          
+          console.log("Updating global stats...");
+          transaction.set(statsRef, { 
+            totalCollection: increment(-txData.amount) 
+          }, { merge: true });
+        }
+        
+        console.log("Deleting transaction document...");
+        transaction.delete(txDocRef);
+      });
+      console.log("Transaction deletion successful");
+    } catch (error) {
+      console.error("Error in deleteTransaction transaction:", error);
+      throw error;
+    }
+  }
+
   async addDetailedExpense(amount: number, reason: string, proofImage?: string) {
     await runTransaction(firestore, async (transaction) => {
       const statsRef = doc(firestore, "metadata", "stats");
@@ -435,8 +480,29 @@ class FirebaseDB {
   async updateUser(id: string, updates: any) { await updateDoc(doc(firestore, "users", id), sanitizeForUpload(updates)); }
   async sendNotification(userId: string, message: string) { await addDoc(collection(firestore, "notifications"), sanitizeForUpload({ userId, message, timestamp: Date.now(), isRead: false })); }
   async updateAssistanceStatus(reqId: string, status: AssistanceStatus, adminNote?: string) {
-    const updates: any = { status }; if (adminNote) updates.adminNote = adminNote;
-    await updateDoc(doc(firestore, "assistance_requests", reqId), updates);
+    const reqRef = doc(firestore, "assistance_requests", reqId);
+    await runTransaction(firestore, async (transaction) => {
+      const snap = await transaction.get(reqRef);
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      const timeline = data.timeline || [];
+      const newEvent = { status, timestamp: Date.now(), note: adminNote };
+      
+      transaction.update(reqRef, { 
+        status, 
+        adminNote: adminNote || data.adminNote || '',
+        timeline: [...timeline, newEvent]
+      });
+
+      // Send notification to user
+      const notifRef = doc(collection(firestore, "notifications"));
+      transaction.set(notifRef, sanitizeForUpload({ 
+        userId: data.userId, 
+        message: `আপনার সাহায্যের আবেদনের অবস্থা পরিবর্তন হয়েছে: ${status}`, 
+        timestamp: Date.now(), 
+        isRead: false 
+      }));
+    });
   }
 
   subscribeToNotifications(userId: string, callback: (notifs: Notification[]) => void) {
@@ -448,7 +514,16 @@ class FirebaseDB {
   }
   async markNotificationAsRead(notifId: string) { await updateDoc(doc(firestore, "notifications", notifId), { isRead: true }); }
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
-  async submitAssistanceRequest(reqData: any) { await addDoc(collection(firestore, "assistance_requests"), sanitizeForUpload({ ...reqData, status: AssistanceStatus.PENDING, timestamp: Date.now() })); }
+  async submitAssistanceRequest(reqData: any) { 
+    const timestamp = Date.now();
+    const initialEvent = { status: AssistanceStatus.PENDING, timestamp, note: 'আবেদন জমা দেওয়া হয়েছে' };
+    await addDoc(collection(firestore, "assistance_requests"), sanitizeForUpload({ 
+      ...reqData, 
+      status: AssistanceStatus.PENDING, 
+      timestamp,
+      timeline: [initialEvent]
+    })); 
+  }
 }
 
 export const db = new FirebaseDB();
