@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
+import { useLanguage } from '../services/LanguageContext';
 import { db } from '../services/db';
 import { Notification, TransactionStatus, Expense, Transaction } from '../types';
 import { 
@@ -14,6 +15,7 @@ import {
 
 const UserDashboard: React.FC = () => {
   const { currentUser } = useAuth();
+  const { t, language } = useLanguage();
   const [appStats, setAppStats] = useState(db.getStats());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
@@ -27,6 +29,7 @@ const UserDashboard: React.FC = () => {
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [showPermanentMembersModal, setShowPermanentMembersModal] = useState(false);
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [suggestionText, setSuggestionText] = useState('');
   const [complaintText, setComplaintText] = useState('');
   const [isSendingSuggestion, setIsSendingSuggestion] = useState(false);
@@ -104,9 +107,9 @@ const UserDashboard: React.FC = () => {
       await db.submitComplaint(currentUser.id, currentUser.name, complaintText.trim());
       setComplaintText('');
       setShowComplaintModal(false);
-      alert('আপনার অভিযোগ জমা দেওয়া হয়েছে। আমরা দ্রুত ব্যবস্থা নেব।');
+      alert(t('complaint_sent'));
     } catch (e) {
-      alert('ব্যর্থ হয়েছে।');
+      alert(t('error_occurred'));
     } finally {
       setIsSendingComplaint(false);
     }
@@ -129,8 +132,8 @@ const UserDashboard: React.FC = () => {
       await db.submitSuggestion(currentUser.id, currentUser.name, suggestionText.trim());
       setSuggestionText('');
       setShowSuggestionModal(false);
-      alert('আপনার পরামর্শ এডমিন প্যানেলে পাঠানো হয়েছে। ধন্যবাদ!');
-    } catch (e) { alert('সমস্যা হয়েছে।'); } finally { setIsSendingSuggestion(false); }
+      alert(t('suggestion_sent'));
+    } catch (e) { alert(t('error_occurred')); } finally { setIsSendingSuggestion(false); }
   };
 
   const copyToClipboard = (text: string, field: string) => {
@@ -142,23 +145,23 @@ const UserDashboard: React.FC = () => {
   return (
     <div className="bg-transparent min-h-screen pb-32 font-['Hind_Siliguri']">
       {/* Top Profile Header */}
-      <div className="px-6 pt-10 pb-4 flex justify-between items-center glass-nav sticky top-0 z-50">
+      <div className="px-6 pt-8 pb-4 flex justify-between items-center glass-nav sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl border-4 border-white shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 relative">
             <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
             {currentUser?.profilePic ? <img src={currentUser.profilePic} className="w-full h-full object-cover relative z-10" alt="Profile" /> : <UserIcon className="w-6 h-6 text-white relative z-10" />}
           </div>
           <div>
-            <h2 className="text-base font-black text-slate-800 tracking-tight leading-none mb-1">হ্যালো, {currentUser?.name?.split(' ')[0]}!</h2>
+            <h2 className="text-base font-black text-slate-800 tracking-tight leading-none mb-1">{t('hello')}, {currentUser?.name?.split(' ')[0]}!</h2>
             <div className="flex items-center gap-1 opacity-80">
                <ShieldCheck className="w-4 h-4 text-teal-600 no-glow" />
-               <p className="text-base font-black text-teal-600 uppercase tracking-tight">{currentUser?.designation || 'ভেরিফাইড সদস্য'}</p>
+               <p className="text-base font-black text-teal-600 uppercase tracking-tight">{currentUser?.designation || t('verified_member')}</p>
             </div>
           </div>
         </div>
         <button onClick={handleOpenNotifications} className="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 border border-white/50 rounded-2xl text-slate-600 relative active:scale-90 transition-all shadow-sm overflow-hidden">
           <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px]"></div>
-          <Bell className="w-7 h-7 relative z-10 no-glow" />
+          <img src="https://img.icons8.com/fluency/96/appointment-reminders.png" className="w-9 h-9 relative z-10 object-contain" alt="Notification" />
           {unreadCount > 0 && (
             <span className="absolute top-3 right-3 flex h-4 w-4 z-20">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -168,9 +171,9 @@ const UserDashboard: React.FC = () => {
         </button>
       </div>
 
-      <div className="p-6 space-y-8">
+      <div className="p-6 space-y-5">
         {/* Main Collection Card - Rotating Credit Card Design */}
-        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2rem] text-white relative overflow-hidden transition-all duration-1000 h-56 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/20`}>
+        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2rem] text-white relative overflow-hidden transition-all duration-1000 h-52 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/20`}>
           {/* Glossy Overlay */}
           <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none z-20"></div>
           
@@ -213,7 +216,7 @@ const UserDashboard: React.FC = () => {
 
             {/* Middle Row: Balance */}
             <div className="flex flex-col">
-               <p className="text-[7px] font-black text-white/50 uppercase tracking-[0.3em] mb-1">Current Balance</p>
+               <p className="text-[7px] font-black text-white/50 uppercase tracking-[0.3em] mb-1">{t('current_balance')}</p>
                <div className="flex items-baseline gap-2">
                   <span className="text-xl font-black text-white/40">৳</span>
                   <h1 className="text-3xl font-black tracking-[0.15em] drop-shadow-lg">
@@ -244,11 +247,11 @@ const UserDashboard: React.FC = () => {
                 <div className="flex gap-2">
                   <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <p className="text-[10px] font-black text-white uppercase tracking-wider">দান: ৳{toBengaliNumber(currentUser?.totalDonation?.toLocaleString() || 0)}</p>
+                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{t('donate')}: ৳{toBengaliNumber(currentUser?.totalDonation?.toLocaleString() || 0)}</p>
                   </div>
                   <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
-                    <p className="text-[10px] font-black text-white uppercase tracking-wider">লেনদেন: {toBengaliNumber(currentUser?.transactionCount || 0)} টি</p>
+                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{t('transaction_count')}: {toBengaliNumber(currentUser?.transactionCount || 0)} {language === 'bn' ? 'টি' : ''}</p>
                   </div>
                 </div>
               </div>
@@ -263,138 +266,70 @@ const UserDashboard: React.FC = () => {
         </div>
 
         {/* Highlight Stats (Compact Design) */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           <div 
-            className="p-3.5 flex items-center gap-3 active:scale-95 transition-all glossy-pill glossy-blue"
+            className="p-3 flex items-center gap-3 active:scale-95 transition-all glossy-pill glossy-blue"
           >
-             <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/30 backdrop-blur-sm shadow-inner">
+             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/30 backdrop-blur-sm shadow-inner">
                 <Users className="w-5 h-5" />
              </div>
              <div className="overflow-hidden relative z-10">
-                <p className="text-[8px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট সদস্য</p>
-                <h3 className="text-sm font-black text-white truncate drop-shadow-md">{toBengaliNumber(appStats.totalUsers)} জন</h3>
+                <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-0.5 font-['Baloo_Da_2']">{t('total_members')}</p>
+                <h3 className="text-sm font-black text-white truncate drop-shadow-md">{toBengaliNumber(appStats.totalUsers)} {language === 'bn' ? 'জন' : ''}</h3>
              </div>
           </div>
           <button 
             onClick={() => navigate('/expenses')} 
-            className="p-3.5 flex items-center gap-3 active:scale-95 transition-all text-left glossy-pill glossy-pink"
+            className="p-3 flex items-center gap-3 active:scale-95 transition-all text-left glossy-pill glossy-pink"
           >
-             <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/30 backdrop-blur-sm shadow-inner">
-                <div className="relative w-6 h-6 flex items-center justify-center">
-                  {/* Chair */}
-                  <div className="absolute bottom-0.5 w-4 h-2.5 bg-blue-600 rounded-sm"></div>
-                  {/* Person */}
-                  <div className="absolute bottom-1.5 w-3 h-4 bg-amber-400 rounded-md"></div>
-                  <div className="absolute top-0.5 w-2.5 h-2.5 bg-pink-100 rounded-full"></div>
-                  {/* Laptop */}
-                  <div className="absolute bottom-2.5 w-4.5 h-2.5 bg-slate-800 rounded-sm border border-slate-700"></div>
-                </div>
+             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-white relative z-10 border border-white/30 backdrop-blur-sm shadow-inner">
+                <img src="https://img.icons8.com/fluency/96/receipt.png" className="w-7 h-7 object-contain" alt="Expenses" />
              </div>
              <div className="overflow-hidden relative z-10">
-                <p className="text-[8px] font-black text-white/80 uppercase tracking-widest mb-0.5">মোট খরচ</p>
+                <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-0.5 font-['Baloo_Da_2']">{t('expenses')}</p>
                 <h3 className="text-sm font-black text-white truncate drop-shadow-md">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString())}</h3>
              </div>
           </button>
         </div>
 
         {/* Action Grid */}
-        <div className="grid grid-cols-4 gap-x-3 gap-y-6 px-1">
+        <div className="grid grid-cols-4 gap-x-3 gap-y-3 px-1">
           {[
-            { icon: <CreditCard className="w-6 h-6" />, label: 'দান', color: 'from-indigo-500 to-blue-600', glowColor: '#6366F1', path: '/transaction' },
-            { icon: <HandHelping className="w-6 h-6" />, label: 'আবেদন', color: 'from-teal-400 to-emerald-600', glowColor: '#10B981', path: '/assistance' },
-            { icon: <Award className="w-6 h-6" />, label: 'সেরা দাতা', color: 'from-amber-400 to-orange-500', glowColor: '#F59E0B', path: '/leaderboard' },
-            { icon: <Users className="w-6 h-6" />, label: 'স্থায়ী সদস্য', color: 'from-blue-400 to-indigo-600', glowColor: '#3B82F6', action: () => setShowPermanentMembersModal(true) },
-            { icon: <List className="w-6 h-6" />, label: 'হিসাব', color: 'from-violet-500 to-purple-600', glowColor: '#8B5CF6', path: '/history' },
-            { icon: <Lightbulb className="w-6 h-6" />, label: 'পরামর্শ', color: 'from-emerald-400 to-teal-500', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },
-            { icon: <ScrollText className="w-6 h-6" />, label: 'নীতিমালা', color: 'from-slate-600 to-slate-800', glowColor: '#475569', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
-            { icon: <AlertCircle className="w-6 h-6" />, label: 'অভিযোগ', color: 'from-rose-500 to-pink-600', glowColor: '#F43F5E', action: () => setShowComplaintModal(true) },
-            { icon: <Info className="w-6 h-6" />, label: 'পেমেন্ট', color: 'from-blue-500 to-indigo-600', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
-            { icon: <MessageSquare className="w-6 h-6" />, label: 'যোগাযোগ', color: 'from-pink-500 to-rose-600', glowColor: '#EC4899', action: () => setShowContactModal(true) },
-            { 
-              icon: (
-                <div className="relative w-8 h-8 flex items-center justify-center">
-                  {/* 3D Character Background Elements */}
-                  <div className="absolute -top-1 -left-1 w-3 h-3 bg-amber-200/40 rounded-full blur-sm"></div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-200/40 rounded-full blur-sm"></div>
-                  
-                  {/* Chair */}
-                  <div className="absolute bottom-1 w-4 h-3 bg-blue-600 rounded-sm shadow-sm"></div>
-                  <div className="absolute bottom-0 w-1 h-2 bg-blue-700 left-1/2 -translate-x-1/2"></div>
-                  
-                  {/* Person Legs */}
-                  <div className="absolute bottom-2 w-3 h-2 bg-slate-900 rounded-full"></div>
-                  
-                  {/* Torso (Yellow) */}
-                  <div className="absolute bottom-3 w-4 h-4 bg-amber-400 rounded-lg shadow-inner border border-amber-500/20"></div>
-                  
-                  {/* Head */}
-                  <div className="absolute top-1 w-2.5 h-2.5 bg-[#FFE4E1] rounded-full border border-pink-200 shadow-sm"></div>
-                  {/* Hair */}
-                  <div className="absolute top-1 w-2.5 h-1 bg-slate-800 rounded-t-full"></div>
-                  
-                  {/* Laptop (Dark) */}
-                  <div className="absolute bottom-4 w-5 h-3 bg-slate-800 rounded-sm transform -rotate-6 border border-slate-700 shadow-md flex items-center justify-center">
-                    <div className="w-1 h-1 bg-white/20 rounded-full"></div>
-                  </div>
-                  
-                  {/* Floating Notification Dot */}
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full shadow-sm border border-rose-400 flex items-center justify-center">
-                    <div className="w-1 h-1 bg-white rounded-full"></div>
-                  </div>
-                </div>
-              ), 
-              label: 'খরচ', 
-              color: 'from-rose-500 to-rose-700', 
-              glowColor: '#E11D48',
-              path: '/expenses' 
-            },
-            { 
-              icon: (
-                <div className="relative w-8 h-8 flex items-center justify-center">
-                  {/* 3D Scroll Background */}
-                  <div className="absolute inset-0 bg-blue-500 rounded-sm transform -rotate-3 shadow-lg"></div>
-                  <div className="absolute inset-0 bg-blue-600 rounded-sm transform rotate-2 shadow-md"></div>
-                  <div className="absolute inset-0 bg-blue-500 rounded-sm flex flex-col items-center pt-1 px-1 gap-0.5 border border-blue-400/30">
-                    {/* Invoice Label */}
-                    <div className="w-full bg-white rounded-[1px] py-0.5 flex items-center justify-center mb-0.5 shadow-sm">
-                      <span className="text-[4px] font-black text-blue-700 leading-none tracking-tighter">INVOICE</span>
-                    </div>
-                    {/* Lines and Dollar Sign */}
-                    <div className="w-full flex justify-between items-end px-0.5 pb-0.5">
-                      <div className="flex flex-col gap-0.5 w-3">
-                        <div className="h-[1.5px] w-full bg-white/60 rounded-full"></div>
-                        <div className="h-[1.5px] w-full bg-white/60 rounded-full"></div>
-                        <div className="h-[1.5px] w-3/4 bg-white/60 rounded-full"></div>
-                      </div>
-                      <div className="text-amber-400 font-black text-[10px] leading-none drop-shadow-sm">$</div>
-                    </div>
-                  </div>
-                  {/* Roll Effects */}
-                  <div className="absolute -top-1 left-0 right-0 h-1.5 bg-blue-700 rounded-full shadow-inner"></div>
-                  <div className="absolute -bottom-1 left-0 right-0 h-1.5 bg-blue-700 rounded-full shadow-inner"></div>
-                </div>
-              ), 
-              label: 'ভাউচার', 
-              color: 'from-blue-500 to-indigo-700', 
-              glowColor: '#2563EB',
-              path: '/vouchers' 
-            },
-            { icon: <Activity className="w-6 h-6" />, label: 'অগ্রগতি', color: 'from-indigo-400 to-violet-600', glowColor: '#6366F1', path: '/progress' },
+            { icon: <img src="https://img.icons8.com/fluency/96/charity.png" className="w-9 h-9 object-contain" alt="Donate" />, label: t('donate_now'), color: 'from-indigo-500 via-blue-500 to-cyan-400', glowColor: '#6366F1', path: '/transaction' },
+            { icon: <img src="https://img.icons8.com/fluency/96/handshake.png" className="w-9 h-9 object-contain" alt="Apply" />, label: t('apply'), color: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: '#10B981', path: '/assistance' },
+            { icon: <img src="https://img.icons8.com/fluency/96/trophy.png" className="w-9 h-9 object-contain" alt="Top Donors" />, label: t('top_donors'), color: 'from-amber-400 via-orange-500 to-rose-500', glowColor: '#F59E0B', path: '/leaderboard' },
+            { icon: <img src="https://img.icons8.com/fluency/96/groups.png" className="w-9 h-9 object-contain" alt="Members" />, label: t('permanent_members'), color: 'from-blue-400 via-indigo-500 to-purple-600', glowColor: '#3B82F6', action: () => setShowPermanentMembersModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/heart-with-pulse.png" className="w-9 h-9 object-contain" alt="Recipients" />, label: 'গৃহীতার তথ্য', color: 'from-rose-400 via-pink-500 to-purple-500', glowColor: '#F43F5E', path: '/recipients' },
+            ...(currentUser?.canManageRecipients ? [{ 
+              icon: <img src="https://img.icons8.com/fluency/96/edit-user-female.png" className="w-9 h-9 object-contain" alt="Manage Recipients" />, 
+              label: 'গৃহীতা ম্যানেজমেন্ট', 
+              color: 'from-teal-400 via-emerald-500 to-green-600', 
+              glowColor: '#10B981', 
+              path: '/admin-dashboard?tab=recipients' 
+            }] : []),
+            { icon: <img src="https://img.icons8.com/fluency/96/clipboard.png" className="w-9 h-9 object-contain" alt="History" />, label: t('history'), color: 'from-violet-500 via-purple-600 to-fuchsia-600', glowColor: '#8B5CF6', path: '/history' },
+            { icon: <img src="https://img.icons8.com/fluency/96/idea.png" className="w-9 h-9 object-contain" alt="Suggestion" />, label: t('suggestion'), color: 'from-lime-400 via-emerald-500 to-teal-600', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/scales.png" className="w-9 h-9 object-contain" alt="Policy" />, label: t('policy'), color: 'from-slate-600 via-slate-700 to-slate-900', glowColor: '#475569', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
+            { icon: <img src="https://img.icons8.com/fluency/96/megaphone.png" className="w-9 h-9 object-contain" alt="Complaint" />, label: t('complaint'), color: 'from-rose-500 via-pink-600 to-purple-700', glowColor: '#F43F5E', action: () => setShowComplaintModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/pos-terminal.png" className="w-10 h-10 object-contain" alt="Payment" />, label: t('payment'), color: 'from-blue-500 via-indigo-600 to-violet-700', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/receipt.png" className="w-10 h-10 object-contain" alt="Expenses" />, label: t('expenses'), color: 'from-rose-500 via-rose-700 to-purple-900', glowColor: '#E11D48', path: '/expenses' },
+            { icon: <img src="https://img.icons8.com/fluency/96/customer-support.png" className="w-9 h-9 object-contain" alt="Contact" />, label: t('contact'), color: 'from-pink-500 via-rose-600 to-orange-600', glowColor: '#EC4899', action: () => setShowContactModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/bill.png" className="w-10 h-10 object-contain" alt="Vouchers" />, label: t('vouchers'), color: 'from-blue-500 via-indigo-700 to-purple-800', glowColor: '#2563EB', path: '/vouchers' },
+            { icon: <img src="https://img.icons8.com/fluency/96/combo-chart.png" className="w-9 h-9 object-contain" alt="Progress" />, label: t('progress'), color: 'from-indigo-400 via-violet-600 to-purple-700', glowColor: '#6366F1', path: '/progress' },
           ].map((item, idx) => (
             <button 
               key={idx} 
               onClick={item.path ? () => navigate(item.path!) : item.action} 
-              className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
+              className="flex flex-col items-center gap-1.5 active:scale-90 transition-all group"
             >
               <div 
-                className="w-14 h-14 glossy-icon flex items-center justify-center text-white"
-                style={{ '--icon-bg': `linear-gradient(to bottom, ${item.glowColor}, ${item.glowColor}cc)` } as any}
+                className={`w-14 h-14 glossy-icon flex items-center justify-center text-white bg-gradient-to-br ${item.color} rounded-2xl`}
               >
                 <div className="relative z-10 drop-shadow-lg">
                   {item.icon}
                 </div>
               </div>
-              <span className="text-[9px] font-black text-slate-800 uppercase tracking-tighter text-center leading-none">
+              <span className="text-[11px] font-bold text-slate-700 text-center leading-tight h-6 flex items-center justify-center px-0.5 font-['Baloo_Da_2']">
                 {item.label}
               </span>
             </button>
@@ -404,8 +339,8 @@ const UserDashboard: React.FC = () => {
         {/* Recent Transactions */}
         <div className="space-y-4">
            <div className="flex justify-between items-center px-2">
-              <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">সাম্প্রতিক লেনদেন</h3>
-              <button onClick={() => navigate('/history')} className="text-[9px] font-black text-teal-600 uppercase tracking-widest">সব দেখুন</button>
+              <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">{t('recent_activity')}</h3>
+              <button onClick={() => navigate('/history')} className="text-[9px] font-black text-teal-600 uppercase tracking-widest">{t('view_all')}</button>
            </div>
            <div className="space-y-3">
               {allTransactions.filter(t => t.userId === currentUser?.id).slice(0, 3).map((tx, idx) => {
@@ -419,7 +354,7 @@ const UserDashboard: React.FC = () => {
                     className={`cursor-pointer p-4 flex justify-between items-center transition-all active:scale-[0.98] glossy-pill ${glossyClass}`}
                   >
                     <div className="flex items-center gap-3 relative z-10">
-                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner border border-white/30 backdrop-blur-sm">
+                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white shadow-inner border border-white/30 backdrop-blur-sm">
                         <ArrowUpRight className="w-5 h-5" />
                       </div>
                       <div>
@@ -436,9 +371,9 @@ const UserDashboard: React.FC = () => {
                         tx.status === TransactionStatus.REJECTED ? 'bg-rose-500/50 text-white' : 
                         'bg-amber-500/50 text-white'
                       }`}>
-                        {tx.status === TransactionStatus.APPROVED ? 'সফল' : 
-                         tx.status === TransactionStatus.REJECTED ? 'বাতিল' : 
-                         'পেন্ডিং'}
+                        {tx.status === TransactionStatus.APPROVED ? t('status_success') : 
+                         tx.status === TransactionStatus.REJECTED ? t('status_cancelled') : 
+                         t('status_pending')}
                       </span>
                     </div>
                   </div>
@@ -446,7 +381,7 @@ const UserDashboard: React.FC = () => {
               })}
               {allTransactions.filter(t => t.userId === currentUser?.id).length === 0 && (
                 <div className="bg-white p-10 rounded-[2.5rem] text-center border border-dashed border-slate-200">
-                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">কোন লেনদেন পাওয়া যায়নি</p>
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t('no_transactions')}</p>
                 </div>
               )}
            </div>
@@ -460,9 +395,9 @@ const UserDashboard: React.FC = () => {
               <div className="absolute top-[-20px] left-[-20px] w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
               <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shadow-xl border border-white/30 relative overflow-hidden shrink-0">
                  <div className="absolute inset-0 bg-white/10"></div>
-                 <Bell className="w-9 h-9 relative z-10" />
+                 <img src="https://img.icons8.com/fluency/96/appointment-reminders.png" className="w-12 h-12 relative z-10 object-contain" alt="Notification" />
               </div>
-              <h3 className="text-2xl font-black text-white tracking-tight">নোটিফিকেশন</h3>
+              <h3 className="text-2xl font-black text-white tracking-tight">{t('notifications')}</h3>
               <button onClick={() => setShowNotifs(false)} className="ml-auto w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:scale-90 transition-all">
                 <X className="w-7 h-7" />
               </button>
@@ -472,14 +407,14 @@ const UserDashboard: React.FC = () => {
                 notifications.map((n) => (
                   <div key={n.id} className={`bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border flex flex-col gap-3 transition-all ${!n.isRead ? 'border-teal-100 ring-2 ring-teal-500/5' : 'border-slate-50 opacity-80'}`}>
                      <div className="flex justify-between items-center">
-                        <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">অ্যাডমিন বার্তা</p>
+                        <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">{t('admin_message')}</p>
                         <div className="flex items-center gap-1.5 opacity-30"><Clock className="w-3 h-3" /><p className="text-[9px] font-black">{formatTime(n.timestamp)}</p></div>
                      </div>
                      <p className="text-[15px] font-bold text-slate-800 leading-relaxed">{n.message}</p>
                   </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center py-32 opacity-20"><Bell className="w-16 h-16 mb-4" /><p className="text-sm font-black uppercase tracking-widest">কোন নোটিফিকেশন নেই</p></div>
+                <div className="flex flex-col items-center justify-center py-32 opacity-20"><img src="https://img.icons8.com/fluency/96/appointment-reminders.png" className="w-20 h-20 mb-4 object-contain" alt="No Notifications" /><p className="text-sm font-black uppercase tracking-widest">{t('no_notifications')}</p></div>
               )}
            </div>
         </div>
@@ -495,14 +430,14 @@ const UserDashboard: React.FC = () => {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/30">
                        <Lightbulb className="w-6 h-6" />
                     </div>
-                    <h3 className="font-black uppercase text-sm tracking-widest">পরামর্শ পাঠান</h3>
+                    <h3 className="font-black uppercase text-sm tracking-widest">{t('send_suggestion')}</h3>
                  </div>
                  <button onClick={() => setShowSuggestionModal(false)} className="relative z-10 w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center active:scale-90"><X className="w-6 h-6" /></button>
               </div>
               <div className="p-8 space-y-6">
-                 <textarea className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none font-bold text-xs min-h-[150px]" placeholder="আপনার পরামর্শ লিখুন..." value={suggestionText} onChange={e => setSuggestionText(e.target.value)} />
+                 <textarea className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none font-bold text-xs min-h-[150px]" placeholder={t('suggestion_placeholder')} value={suggestionText} onChange={e => setSuggestionText(e.target.value)} />
                  <button onClick={handleSendSuggestion} disabled={!suggestionText.trim() || isSendingSuggestion} className="w-full py-5 bg-emerald-600 text-white rounded-3xl font-black uppercase text-xs">
-                  {isSendingSuggestion ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'জমা দিন'}
+                  {isSendingSuggestion ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('submit')}
                  </button>
               </div>
            </div>
@@ -520,7 +455,7 @@ const UserDashboard: React.FC = () => {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/30">
                        <MessageSquare className="w-6 h-6" />
                     </div>
-                    <h3 className="font-black text-lg tracking-tight">যোগাযোগ করুন</h3>
+                    <h3 className="font-black text-lg tracking-tight">{t('contact_us')}</h3>
                  </div>
                  <button 
                   onClick={() => setShowContactModal(false)} 
@@ -539,8 +474,8 @@ const UserDashboard: React.FC = () => {
                        <Smartphone className="w-6 h-6 relative z-10" />
                     </div>
                     <div>
-                       <p className="text-[13px] font-black text-[#00695C]">WhatsApp Group</p>
-                       <p className="text-[10px] font-bold text-teal-600/70">আমাদের গ্রুপে জয়েন করুন</p>
+                       <p className="text-[13px] font-black text-[#00695C]">{t('whatsapp_group')}</p>
+                       <p className="text-[10px] font-bold text-teal-600/70">{t('join_our_group')}</p>
                     </div>
                  </a>
 
@@ -551,8 +486,8 @@ const UserDashboard: React.FC = () => {
                        <Facebook className="w-6 h-6 relative z-10" />
                     </div>
                     <div>
-                       <p className="text-[13px] font-black text-[#1A365D]">Facebook Page</p>
-                       <p className="text-[10px] font-bold text-blue-600/70">আমাদের পেজ ভিজিট করুন</p>
+                       <p className="text-[13px] font-black text-[#1A365D]">{t('facebook_page')}</p>
+                       <p className="text-[10px] font-bold text-blue-600/70">{t('visit_our_page')}</p>
                     </div>
                  </a>
 
@@ -563,8 +498,8 @@ const UserDashboard: React.FC = () => {
                        <MessageCircle className="w-6 h-6 relative z-10" />
                     </div>
                     <div>
-                       <p className="text-[13px] font-black text-[#004A8F]">Messenger</p>
-                       <p className="text-[10px] font-bold text-indigo-600/70">আমাদের মেসেঞ্জারে যুক্ত হোন</p>
+                       <p className="text-[13px] font-black text-[#004A8F]">{t('messenger_title')}</p>
+                       <p className="text-[10px] font-bold text-indigo-600/70">{t('connect_on_messenger')}</p>
                     </div>
                  </a>
 
@@ -575,14 +510,14 @@ const UserDashboard: React.FC = () => {
                        <Mail className="w-6 h-6 relative z-10" />
                     </div>
                     <div className="overflow-hidden">
-                       <p className="text-[13px] font-black text-slate-800">Official Email</p>
+                       <p className="text-[13px] font-black text-slate-800">{t('official_email')}</p>
                        <p className="text-[10px] font-bold text-slate-400 truncate">{contactConfig.email}</p>
                     </div>
                  </div>
 
                  {/* Emergency Call Button */}
                  <div className="pt-6 border-t border-slate-100 space-y-4">
-                    <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">জরুরি যোগাযোগ</p>
+                    <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('emergency_contact')}</p>
                     <a href={`tel:${contactConfig.phone}`} className="w-full py-5 bg-gradient-to-br from-[#0D9488] to-[#00695C] text-white rounded-3xl font-black text-xl flex items-center justify-center gap-4 shadow-xl shadow-teal-100 active:scale-95 transition-all relative overflow-hidden">
                        <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
                        <PhoneCall className="w-6 h-6 relative z-10" /> <span className="relative z-10">{contactConfig.phone}</span>
@@ -603,19 +538,19 @@ const UserDashboard: React.FC = () => {
                     <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/20">
                        <ScrollText className="w-6 h-6 text-teal-400" />
                     </div>
-                    <h3 className="font-black uppercase text-sm tracking-widest">আমাদের নীতিমালা</h3>
+                    <h3 className="font-black uppercase text-sm tracking-widest">{t('our_policy')}</h3>
                  </div>
                  <button onClick={() => setShowPolicyModal(false)} className="relative z-10 w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center active:scale-90"><X className="w-6 h-6" /></button>
               </div>
               <div className="p-8 space-y-4 overflow-y-auto no-scrollbar">
                  {[
-                   "সংগঠনের সকল কার্যক্রমে পূর্ণ স্বচ্ছতা ও সততা বজায় রাখা আপনার প্রধান নৈতিক দায়িত্ব।",
-                   "আপনার ব্যক্তিগত তথ্য সংগঠনের কাজের বাইরে অন্য কোথাও প্রকাশ বা ব্যবহার করা হবে না।",
-                   "জমাকৃত প্রতিটি অর্থ শুধুমাত্র আর্তমানবতার সেবা, দুর্যোগ মোকাবিলা ও সমাজকল্যাণে ব্যয় হবে।",
-                   "সংগঠনের পরিচয় ব্যবহার করে কোনো ব্যক্তিগত ফায়দা বা রাজনৈতিক কাজ করা সম্পূর্ণ নিষিদ্ধ।",
-                   "বিশেষ দুর্যোগে স্বেচ্ছাসেবী হিসেবে সশরীরে কাজ করার মানসিক প্রস্তুতি থাকতে হবে।",
-                   "সদস্যপদ সক্রিয় রাখতে মাসিক ফি বা অনুদান নিয়মিত প্রদান করে তহবিলে সহযোগিতা করতে হবে।",
-                   "সংগঠনের আদর্শ পরিপন্থী কোনো কাজের প্রমাণ পাওয়া গেলে সদস্যপদ বাতিল হতে পারে।"
+                   t('policy_1'),
+                   t('policy_2'),
+                   t('policy_3'),
+                   t('policy_4'),
+                   t('policy_5'),
+                   t('policy_6'),
+                   t('policy_7')
                  ].map((p, i) => (
                    <div key={i} className="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center text-teal-600 font-black text-[10px] shrink-0 border shadow-sm">{i+1}</div>
@@ -624,7 +559,7 @@ const UserDashboard: React.FC = () => {
                  ))}
               </div>
               <div className="p-6 bg-slate-50 border-t shrink-0">
-                 <button onClick={() => setShowPolicyModal(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest">বন্ধ করুন</button>
+                 <button onClick={() => setShowPolicyModal(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest">{t('close')}</button>
               </div>
            </div>
         </div>
@@ -640,14 +575,14 @@ const UserDashboard: React.FC = () => {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/30">
                        <AlertCircle className="w-6 h-6" />
                     </div>
-                    <h3 className="font-black uppercase text-sm tracking-widest">অভিযোগ জানান</h3>
+                    <h3 className="font-black uppercase text-sm tracking-widest">{t('send_complaint')}</h3>
                  </div>
                  <button onClick={() => setShowComplaintModal(false)} className="relative z-10 w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center active:scale-90"><X className="w-6 h-6" /></button>
               </div>
               <div className="p-8 space-y-6">
                  <textarea 
                    className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none font-bold text-xs min-h-[150px] focus:border-rose-200 transition-all" 
-                   placeholder="আপনার অভিযোগ বিস্তারিত লিখুন..." 
+                   placeholder={t('complaint_placeholder')} 
                    value={complaintText} 
                    onChange={e => setComplaintText(e.target.value)} 
                  />
@@ -656,7 +591,7 @@ const UserDashboard: React.FC = () => {
                    disabled={!complaintText.trim() || isSendingComplaint} 
                    className="w-full py-5 bg-rose-600 text-white rounded-3xl font-black uppercase text-xs shadow-lg shadow-rose-100 active:scale-95 transition-all disabled:opacity-50"
                  >
-                  {isSendingComplaint ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'জমা দিন'}
+                  {isSendingComplaint ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('submit')}
                  </button>
               </div>
            </div>
@@ -674,10 +609,13 @@ const UserDashboard: React.FC = () => {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/30">
                        <Landmark className="w-6 h-6" />
                     </div>
-                    <h3 className="font-black text-lg tracking-tight">পেমেন্ট তথ্য</h3>
+                    <h3 className="font-black text-lg tracking-tight">{t('payment_info')}</h3>
                  </div>
                  <button 
-                  onClick={() => setShowPaymentModal(false)} 
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setSelectedBank(null);
+                  }} 
                   className="relative z-10 w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center active:scale-90 transition-all"
                  >
                     <X className="w-6 h-6" />
@@ -685,64 +623,168 @@ const UserDashboard: React.FC = () => {
               </div>
 
               {/* Body Content */}
-              <div className="p-8 space-y-6 bg-white">
-                 {/* Al Rajhi Bank Card */}
-                 <div className="w-full p-6 bg-[#F1F8FF] border border-blue-100 rounded-[2.5rem] relative overflow-hidden group shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                       <div className="w-10 h-10 bg-gradient-to-br from-[#2563EB] to-[#1E40AF] text-white rounded-xl flex items-center justify-center shadow-md relative overflow-hidden">
-                          <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
-                          <Building2 className="w-5 h-5 relative z-10" />
-                       </div>
-                       <h4 className="text-[10px] font-black text-[#2563EB] uppercase tracking-widest">ALRAJHI BANK INFORMATION</h4>
-                    </div>
-                    <div className="space-y-5">
-                       <div className="border-b border-blue-50 pb-3">
-                          <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">ACCOUNT NAME</p>
-                          <p className="text-sm font-black text-slate-800">MD JAHIDUL ISLAM</p>
-                       </div>
-                       <div className="border-b border-blue-50 pb-3 flex items-center justify-between">
-                          <div>
-                             <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">ACCOUNT NUMBER</p>
-                             <p className="text-sm font-black text-slate-800 tracking-wider">077040010006087859970</p>
+              <div className="p-8 space-y-6 bg-white overflow-y-auto no-scrollbar max-h-[60vh]">
+                 {/* Selected Bank Card - Moved to Top */}
+                 {selectedBank ? (
+                    <div className={`w-full p-6 rounded-[2.5rem] relative overflow-hidden group shadow-sm animate-in zoom-in-95 duration-300 ${
+                       selectedBank === 'alrajhi' ? 'bg-[#F1F8FF] border-blue-100' : 
+                       selectedBank === 'dbbl' ? 'bg-[#F0FFF4] border-green-100' : 
+                       selectedBank === 'midland' ? 'bg-[#FFF1F1] border-red-100' :
+                       selectedBank === 'bkash' ? 'bg-[#FFF0F3] border-pink-100' :
+                       selectedBank === 'nagad' ? 'bg-[#FFF9F0] border-orange-100' :
+                       selectedBank === 'rocket' ? 'bg-[#F9F0FF] border-purple-100' :
+                       'bg-[#F0FFF0] border-green-50'
+                    } border`}>
+                       <div className="flex items-center gap-3 mb-6">
+                          <div className={`w-10 h-10 bg-gradient-to-br text-white rounded-xl flex items-center justify-center shadow-md relative overflow-hidden ${
+                             selectedBank === 'alrajhi' ? 'from-[#2563EB] to-[#1E40AF]' : 
+                             selectedBank === 'dbbl' ? 'from-[#007A33] to-[#004B1C]' : 
+                             selectedBank === 'midland' ? 'from-[#E31E24] to-[#A31519]' :
+                             selectedBank === 'bkash' ? 'from-[#D12053] to-[#A01840]' :
+                             selectedBank === 'nagad' ? 'from-[#F7941D] to-[#C67617]' :
+                             selectedBank === 'rocket' ? 'from-[#8C3494] to-[#6A2770]' :
+                             'from-[#008000] to-[#004d00]'
+                          }`}>
+                             <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
+                             <Building2 className="w-5 h-5 relative z-10" />
                           </div>
-                          <button onClick={() => copyToClipboard('077040010006087859970', 'acc')} className="p-2 text-blue-300 hover:text-blue-600 transition-colors">
-                             {copiedField === 'acc' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                          </button>
+                          <h4 className={`text-[10px] font-black uppercase tracking-widest ${
+                             selectedBank === 'alrajhi' ? 'text-[#2563EB]' : 
+                             selectedBank === 'dbbl' ? 'text-[#007A33]' : 
+                             selectedBank === 'midland' ? 'text-[#E31E24]' :
+                             selectedBank === 'bkash' ? 'text-[#D12053]' :
+                             selectedBank === 'nagad' ? 'text-[#F7941D]' :
+                             selectedBank === 'rocket' ? 'text-[#8C3494]' :
+                             'text-[#008000]'
+                          }`}>
+                             {selectedBank === 'alrajhi' ? t('alrajhi_bank_info') : 
+                              selectedBank === 'dbbl' ? t('dutch_bangla_bank') : 
+                              selectedBank === 'midland' ? t('midland_bank') :
+                              selectedBank === 'bkash' ? 'bKash' :
+                              selectedBank === 'nagad' ? 'Nagad' :
+                              selectedBank === 'rocket' ? 'Rocket' :
+                              t('islami_bank')}
+                          </h4>
                        </div>
-                       <div className="flex items-center justify-between">
-                          <div>
-                             <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">IBAN</p>
-                             <p className="text-[11px] font-black text-slate-800 tracking-tight">SA17 8000 0859 6080 1785 9970</p>
+                       <div className="space-y-5">
+                          <div className="border-b border-black/5 pb-3">
+                             <p className="text-[9px] font-bold opacity-40 uppercase mb-1">
+                                {selectedBank === 'dbbl' ? t('beneficiary_name') : t('account_name')}
+                             </p>
+                             <p className="text-sm font-black text-slate-800">
+                                {selectedBank === 'islami' ? 'MD.JAHIDUL ISLAM' : 
+                                 selectedBank === 'dbbl' ? 'SHAPIA BEGUM' : 
+                                 'MD JAHIDUL ISLAM'}
+                             </p>
                           </div>
-                          <button onClick={() => copyToClipboard('SA1780000859608017859970', 'iban')} className="p-2 text-blue-300 hover:text-blue-600 transition-colors">
-                             {copiedField === 'iban' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                          </button>
+                          {(selectedBank === 'islami' || selectedBank === 'midland') && (
+                             <div className="border-b border-black/5 pb-3">
+                                <p className="text-[9px] font-bold opacity-40 uppercase mb-1">{t('branch_name')}</p>
+                                <p className="text-sm font-black text-slate-800">
+                                   {selectedBank === 'islami' ? 'Savar ashulia dhaka' : 'Zirabo Branch. Savar.Ashulia. Dhaka'}
+                                </p>
+                             </div>
+                          )}
+                          {selectedBank === 'dbbl' && (
+                             <>
+                                <div className="border-b border-black/5 pb-3 flex items-center justify-between">
+                                   <div>
+                                      <p className="text-[9px] font-bold opacity-40 uppercase mb-1">{t('swift_code')}</p>
+                                      <p className="text-sm font-black text-slate-800 tracking-wider">DBBLBDDH</p>
+                                   </div>
+                                   <button onClick={() => copyToClipboard('DBBLBDDH', 'swift')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+                                      {copiedField === 'swift' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                   </button>
+                                </div>
+                                <div className="border-b border-black/5 pb-3 flex items-center justify-between">
+                                   <div>
+                                      <p className="text-[9px] font-bold opacity-40 uppercase mb-1">{t('routing_number')}</p>
+                                      <p className="text-sm font-black text-slate-800 tracking-wider">090270608</p>
+                                   </div>
+                                   <button onClick={() => copyToClipboard('090270608', 'routing')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+                                      {copiedField === 'routing' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                   </button>
+                                </div>
+                             </>
+                          )}
+                          <div className="border-b border-black/5 pb-3 flex items-center justify-between">
+                             <div>
+                                <p className="text-[9px] font-bold opacity-40 uppercase mb-1">{t('account_number')}</p>
+                                <p className="text-sm font-black text-slate-800 tracking-wider">
+                                   {selectedBank === 'alrajhi' ? '077040010006087859970' : 
+                                    selectedBank === 'dbbl' ? '2647348821808' : 
+                                    selectedBank === 'midland' ? '0010-1680000249' :
+                                    (selectedBank === 'bkash' || selectedBank === 'nagad' || selectedBank === 'rocket') ? '01777599874' :
+                                    '20504436700011315'}
+                                </p>
+                             </div>
+                             <button 
+                               onClick={() => copyToClipboard(
+                                  selectedBank === 'alrajhi' ? '077040010006087859970' : 
+                                  selectedBank === 'dbbl' ? '2647348821808' : 
+                                  selectedBank === 'midland' ? '0010-1680000249' :
+                                  (selectedBank === 'bkash' || selectedBank === 'nagad' || selectedBank === 'rocket') ? '01777599874' :
+                                  '20504436700011315', 
+                                  'acc'
+                               )} 
+                               className="p-2 text-slate-300 hover:text-slate-600 transition-colors"
+                             >
+                                {copiedField === 'acc' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                             </button>
+                          </div>
+                          {selectedBank === 'alrajhi' && (
+                             <div className="flex items-center justify-between">
+                                <div>
+                                   <p className="text-[9px] font-bold opacity-40 uppercase mb-1">IBAN</p>
+                                   <p className="text-[11px] font-black text-slate-800 tracking-tight">SA17 8000 0859 6080 1785 9970</p>
+                                </div>
+                                <button onClick={() => copyToClipboard('SA1780000859608017859970', 'iban')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+                                   {copiedField === 'iban' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                             </div>
+                          )}
                        </div>
                     </div>
-                 </div>
+                 ) : (
+                    <div className="w-full py-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-400 gap-3">
+                       <Building2 className="w-10 h-10 opacity-20" />
+                       <p className="text-[10px] font-bold uppercase tracking-widest">{t('select_bank')}</p>
+                    </div>
+                 )}
 
-                 {/* Mobile Banking Section */}
-                 <div className="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 space-y-4 text-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">অফিসিয়াল মোবাইল ব্যাংকিং</p>
-                    <div className="flex items-center justify-center gap-3">
-                       <h3 className="text-2xl font-black text-slate-800 tracking-widest">01777599874</h3>
-                       <button onClick={() => copyToClipboard('01777599874', 'mobile')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
-                          {copiedField === 'mobile' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-                       </button>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-2">
-                       {['বিকাশ', 'নগদ', 'রকেট', 'উপায়'].map(tag => (
-                          <span key={tag} className="px-3 py-1 bg-white border border-slate-200 rounded-full text-[9px] font-black text-slate-500 uppercase">{tag}</span>
+                 {/* Bank Selection */}
+                 <div className="space-y-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">{t('select_bank')}</p>
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                       {[
+                          { id: 'alrajhi', name: 'Al Rajhi', color: 'bg-blue-600' },
+                          { id: 'bkash', name: 'bKash', color: 'bg-[#D12053]' },
+                          { id: 'nagad', name: 'Nagad', color: 'bg-[#F7941D]' },
+                          { id: 'rocket', name: 'Rocket', color: 'bg-[#8C3494]' },
+                          { id: 'dbbl', name: 'DBBL', color: 'bg-[#007A33]' },
+                          { id: 'islami', name: 'Islami', color: 'bg-[#008000]' },
+                          { id: 'midland', name: 'Midland', color: 'bg-[#E31E24]' }
+                       ].map(bank => (
+                          <button 
+                            key={bank.id}
+                            onClick={() => setSelectedBank(bank.id)}
+                            className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-wider whitespace-nowrap transition-all border-2 ${selectedBank === bank.id ? `border-slate-900 ${bank.color} text-white shadow-lg` : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                          >
+                             {bank.name}
+                          </button>
                        ))}
                     </div>
                  </div>
 
                  {/* Footer Button */}
                  <button 
-                  onClick={() => setShowPaymentModal(false)} 
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setSelectedBank(null);
+                  }} 
                   className="w-full py-5 bg-[#0F172A] text-white rounded-3xl font-black text-sm uppercase shadow-xl active:scale-95 transition-all"
                  >
-                    ঠিক আছে
+                    {t('ok')}
                  </button>
               </div>
            </div>
@@ -759,8 +801,8 @@ const UserDashboard: React.FC = () => {
                   <Award className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-black uppercase text-sm tracking-widest">স্থায়ী সদস্য ({toBengaliNumber(db.getUsers().filter(u => u.isPermanentMember).length)})</h3>
-                  <p className="text-[9px] font-bold text-blue-100 uppercase tracking-widest mt-0.5">আমাদের গর্বিত সদস্যবৃন্দ</p>
+                  <h3 className="font-black uppercase text-sm tracking-widest">{t('permanent_members_title')} ({toBengaliNumber(db.getUsers().filter(u => u.isPermanentMember).length)})</h3>
+                  <p className="text-[9px] font-bold text-blue-100 uppercase tracking-widest mt-0.5">{t('our_proud_members')}</p>
                 </div>
               </div>
               <button 
@@ -787,14 +829,14 @@ const UserDashboard: React.FC = () => {
                         </div>
                       </div>
                       <h4 className="text-[12px] font-black text-slate-800 uppercase leading-tight line-clamp-1">{member.name}</h4>
-                      <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-1">{member.designation || 'স্থায়ী সদস্য'}</p>
+                      <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-1">{member.designation || (language === 'bn' ? 'স্থায়ী সদস্য' : 'Permanent Member')}</p>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="py-20 text-center opacity-30">
                   <Award className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-                  <p className="font-black uppercase tracking-widest text-xs">কোন স্থায়ী সদস্য পাওয়া যায়নি</p>
+                  <p className="font-black uppercase tracking-widest text-xs">{t('no_permanent_members')}</p>
                 </div>
               )}
             </div>

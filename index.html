@@ -1,25 +1,33 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, proxy-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <meta name="build-version" content="1.0.2-march-10" />
     <script>
-        // Force unregister all service workers and clear caches immediately
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                    registration.unregister();
-                }
-            });
-        }
-        if ('caches' in window) {
-            caches.keys().then(function(names) {
-                for (let name of names) {
-                    caches.delete(name);
-                }
-            });
-        }
+        // Immediate and aggressive cache/service worker clearing
+        (function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+            }
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            // Clear local storage if it's a version mismatch (optional, but safer)
+            const currentVersion = "1.0.2";
+            if (localStorage.getItem('app_version') !== currentVersion) {
+                localStorage.setItem('app_version', currentVersion);
+            }
+        })();
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -32,18 +40,17 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=192&h=192&auto=format&fit=crop">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/index.css">
     
     <!-- Google Fonts with crossorigin attribute to prevent CORS issues with html-to-image -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700;900&family=Dancing+Script:wght@600&display=swap" rel="stylesheet" crossorigin="anonymous">
-    <link href="https://fonts.cdnfonts.com/css/jalliya" rel="stylesheet">
     
     <style>
         :root { 
             --bn-font: 'Hind Siliguri', sans-serif; 
-            --signature-font: 'Jalliya', 'Dancing Script', cursive;
+            --signature-font: 'Dancing Script', cursive;
         }
         body {
             font-family: var(--bn-font);
@@ -56,7 +63,7 @@
             touch-action: pan-x pan-y;
         }
 
-        /* Atmospheric Background */
+        /* Clean White Background */
         .app-bg {
             position: fixed;
             top: 0;
@@ -68,49 +75,28 @@
             overflow: hidden;
         }
 
-        .app-bg::before {
-            content: '';
-            position: absolute;
-            inset: -50%;
-            background: 
-                radial-gradient(circle at 20% 20%, #fef08a 0%, transparent 45%),
-                radial-gradient(circle at 80% 15%, #86efac 0%, transparent 45%),
-                radial-gradient(circle at 75% 85%, #f0abfc 0%, transparent 45%),
-                radial-gradient(circle at 15% 95%, #fbcfe8 0%, transparent 45%),
-                radial-gradient(circle at 50% 50%, #67e8f9 0%, transparent 55%);
-            filter: blur(100px);
-            opacity: 0.85;
-            animation: bg-float 25s ease-in-out infinite alternate;
-        }
-
         .app-bg::after {
             content: '';
             position: absolute;
             inset: 0;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.04;
+            opacity: 0.02;
             mix-blend-mode: overlay;
             pointer-events: none;
         }
 
-        @keyframes bg-float {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(5%, 5%) rotate(5deg); }
-        }
-
-        /* Glassmorphism Utilities */
+        /* Glassmorphism Utilities - Simplified */
         .glass-card {
-            background: rgba(255, 255, 255, 0.4) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            background: #ffffff !important;
+            border: 1px solid #f1f5f9 !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05) !important;
         }
 
         .glass-nav {
-            background: rgba(255, 255, 255, 0.6) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border-top: 1px solid #f1f5f9 !important;
         }
 
         .premium-text { font-family: 'Playfair Display', serif; }
@@ -140,186 +126,11 @@
         .clip-path-id-diagonal-right { clip-path: polygon(0 0, 100% 20%, 100% 80%, 0 100%); }
         .clip-path-id-top-v { clip-path: polygon(0 0, 100% 0, 100% 40%, 50% 70%, 0 40%); }
         .writing-mode-vertical { writing-mode: vertical-rl; text-orientation: mixed; }
-
-        /* Vibrant Colorful Under-glow Effect */
-        .glow-card {
-            position: relative;
-            z-index: 1;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: none !important;
-            box-shadow: none !important;
-        }
-
-        .glow-card::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            background: linear-gradient(45deg, var(--glow-color, currentColor), #ffffff, var(--glow-color, currentColor));
-            filter: blur(15px);
-            opacity: 0.6;
-            z-index: -1;
-            border-radius: inherit;
-            transition: all 0.4s ease;
-        }
-
-        .glow-card::after {
-            content: '';
-            position: absolute;
-            bottom: -12px;
-            left: 10%;
-            right: 10%;
-            height: 40%;
-            background: var(--glow-color, currentColor);
-            filter: blur(20px);
-            opacity: 0.7;
-            z-index: -2;
-            border-radius: 50%;
-            transition: all 0.4s ease;
-        }
-
-        .glow-card:hover {
-            transform: translateY(-4px) scale(1.05);
-        }
-
-        .glow-card:hover::before {
-            opacity: 0.9;
-            filter: blur(20px);
-        }
-
-        .glow-card:hover::after {
-            opacity: 0.9;
-            bottom: -15px;
-            filter: blur(25px);
-        }
-
-        /* Remove standard black shadows from glow elements */
-        .glow-card, .glow-card * {
-            text-shadow: none !important;
-        }
-
-        svg:not(.no-glow) {
-            filter: drop-shadow(0 0 8px var(--glow-color, currentColor));
-        }
-
-        button:hover:has(svg:not(.no-glow))::before,
-        .icon-box:hover:has(svg:not(.no-glow))::before,
-        .glow-card:hover::before {
-            opacity: 0.45;
-            filter: blur(25px);
-            bottom: -8px;
-            left: 5%;
-            right: 5%;
-        }
-
-        /* Ensure SVG stays above the glow */
-        svg:not(.no-glow) {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Static Neon Glow Effects */
-        .neon-glow {
-            position: relative;
-            z-index: 1;
-            border: 2.5px solid var(--neon-color, #fff) !important;
-            box-shadow: 
-                0 0 15px var(--neon-color, #fff),
-                inset 0 0 10px var(--neon-color, #fff),
-                0 0 35px var(--neon-color, #fff);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .neon-glow:hover {
-            transform: translateY(-2px) scale(1.01);
-            box-shadow: 
-                0 0 25px var(--neon-color, #fff),
-                inset 0 0 15px var(--neon-color, #fff),
-                0 0 50px var(--neon-color, #fff);
-        }
-
-        .neon-pink { --neon-color: #ff007f; }
-        .neon-purple { --neon-color: #a020f0; }
-        .neon-blue { --neon-color: #00f2ff; }
-
-        /* Glossy Pill Effect */
-        .glossy-pill {
-            position: relative;
-            z-index: 1;
-            border-radius: 9999px;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background-image: var(--pill-color);
-            background-color: #94a3b8;
-            box-shadow: 
-                0 4px 10px rgba(0,0,0,0.1),
-                inset 0 1px 1px rgba(255,255,255,0.4);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .glossy-pill::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 35%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 100%);
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .glossy-pill:hover {
-            transform: translateY(-1px);
-            box-shadow: 
-                0 6px 15px rgba(0,0,0,0.15),
-                inset 0 1px 1px rgba(255,255,255,0.5);
-        }
-
-        .glossy-pink { --pill-color: linear-gradient(to bottom, #ff007f, #8b0040); }
-        .glossy-purple { --pill-color: linear-gradient(to bottom, #a020f0, #4b0082); }
-        .glossy-blue { --pill-color: linear-gradient(to bottom, #00f2ff, #005f6b); }
-        .glossy-emerald { --pill-color: linear-gradient(to bottom, #10b981, #064e3b); }
-        .glossy-amber { --pill-color: linear-gradient(to bottom, #f59e0b, #78350f); }
-        .glossy-slate { --pill-color: linear-gradient(to bottom, #1e293b, #020617); }
-
-        .glossy-icon {
-            position: relative;
-            z-index: 1;
-            border-radius: 1.25rem;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background-image: var(--icon-bg);
-            background-color: #94a3b8;
-            box-shadow: 
-                0 4px 10px rgba(0,0,0,0.1),
-                inset 0 1px 1px rgba(255,255,255,0.4);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .glossy-icon::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 40%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .glossy-icon:hover {
-            transform: translateY(-1px) rotate(2deg);
-            box-shadow: 
-                0 6px 15px rgba(0,0,0,0.15),
-                inset 0 1px 1px rgba(255,255,255,0.5);
-        }
     </style>
 
     <script type="module">
       // Standard Vite entry
     </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div class="app-bg"></div>

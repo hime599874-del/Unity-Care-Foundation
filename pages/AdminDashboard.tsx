@@ -2,22 +2,23 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
-  LogOut, Plus, 
+  LogOut, Plus, Home,
   MessageCircle, Send, Wallet,
   Loader2, Phone, User as UserIcon, ShieldCheck,
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
-  Download, Smartphone, Landmark, Award, Activity, QrCode,
-  FileText, Printer, Heart, CreditCard, Mail
+  Download, Smartphone, Landmark, Award, Activity, QrCode, Edit,
+  FileText, Printer, Heart, CreditCard, Mail, Building2, Globe
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { QRCodeSVG } from 'qrcode.react';
 
-const toBengaliNumber = (num: number | string) => {
+const toBengaliNumber = (num: number | string | undefined | null) => {
+  if (num === undefined || num === null) return '';
   return num.toString();
 };
 
@@ -34,9 +35,10 @@ const getAssistanceStatusLabel = (status: AssistanceStatus) => {
 };
 
 const AdminDashboard: React.FC = () => {
-  const { setIsAdmin } = useAuth();
+  const { currentUser, setIsAdmin, isAdmin } = useAuth();
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
+  const invoiceRef = useRef<HTMLDivElement>(null);
   
   const [users, setUsers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -46,10 +48,11 @@ const AdminDashboard: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [projects, setProjects] = useState<ProjectProgress[]>([]);
   const [activities, setActivities] = useState<MemberActivity[]>(db.getActivities());
+  const [recipients, setRecipients] = useState<RecipientInfo[]>([]);
   const [stats, setStats] = useState(db.getStats());
   const [contactConfig, setContactConfig] = useState<ContactConfig>(db.getContactConfig());
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights' | 'txManagement'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights' | 'txManagement' | 'recipients'>(isAdmin ? 'overview' : 'recipients');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [qrSearchQuery, setQrSearchQuery] = useState('');
@@ -69,10 +72,31 @@ const AdminDashboard: React.FC = () => {
   const [projectStatus, setProjectStatus] = useState<'Ongoing' | 'Completed' | 'Pending'>('Ongoing');
   const [projectDeadline, setProjectDeadline] = useState('');
   
+  // Recipient form states
+  const [recipientDonationNo, setRecipientDonationNo] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [recipientVillage, setRecipientVillage] = useState('');
+  const [recipientWardNo, setRecipientWardNo] = useState('');
+  const [recipientHoldingNo, setRecipientHoldingNo] = useState('');
+  const [recipientFamilyMembers, setRecipientFamilyMembers] = useState('');
+  const [recipientEarningMembers, setRecipientEarningMembers] = useState('');
+  const [recipientReceivedBefore, setRecipientReceivedBefore] = useState(false);
+  const [recipientWitness1Name, setRecipientWitness1Name] = useState('');
+  const [recipientWitness1Phone, setRecipientWitness1Phone] = useState('');
+  const [recipientWitness2Name, setRecipientWitness2Name] = useState('');
+  const [recipientWitness2Phone, setRecipientWitness2Phone] = useState('');
+  const [recipientAmount, setRecipientAmount] = useState('');
+  const [recipientDate, setRecipientDate] = useState(new Date().toISOString().split('T')[0]);
+  const [recipientReason, setRecipientReason] = useState('');
+  const [recipientNote, setRecipientNote] = useState('');
+  const [editingRecipient, setEditingRecipient] = useState<RecipientInfo | null>(null);
+  
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [viewingAssistance, setViewingAssistance] = useState<AssistanceRequest | null>(null);
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
+  const [selectedTxForInvoice, setSelectedTxForInvoice] = useState<Transaction | null>(null);
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
   const [notifMessage, setNotifMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
@@ -81,6 +105,24 @@ const AdminDashboard: React.FC = () => {
   const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [userDesignation, setUserDesignation] = useState('');
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const editId = params.get('edit');
+
+    if (tab && ['users', 'donations', 'expenses', 'projects', 'complaints', 'progress', 'activities', 'insights', 'recipients', 'txManagement', 'qr', 'settings'].includes(tab)) {
+      setActiveTab(tab as any);
+    }
+
+    if (editId && tab === 'recipients' && recipients.length > 0) {
+      const recipient = recipients.find(r => r.id === editId);
+      if (recipient) {
+        handleEditRecipient(recipient);
+      }
+    }
+  }, [recipients.length]);
 
   useEffect(() => {
     const refreshData = () => {
@@ -92,13 +134,18 @@ const AdminDashboard: React.FC = () => {
       setExpenses(db.getExpenses().sort((a,b) => b.timestamp - a.timestamp));
       setProjects(db.getProjects().sort((a,b) => b.timestamp - a.timestamp));
       setActivities(db.getActivities().sort((a,b) => b.timestamp - a.timestamp));
+      setRecipients(db.getRecipients().sort((a,b) => b.timestamp - a.timestamp));
       setStats(db.getStats());
       const latestConfig = db.getContactConfig();
       setContactConfig(latestConfig);
-      // Only update settings form if the user isn't currently editing it
-      // or if they just switched to the settings tab
     };
-    refreshData();
+
+    const init = async () => {
+      await db.whenReady();
+      refreshData();
+    };
+    
+    init();
     return db.subscribe(refreshData);
   }, []);
 
@@ -133,6 +180,103 @@ const AdminDashboard: React.FC = () => {
     } catch (e: any) { alert(e.message); } finally { setIsSubmitting(false); }
   };
 
+  const handleAddRecipient = async () => {
+    if (!recipientName || !recipientAmount || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const amount = parseFloat(recipientAmount);
+      const data = {
+        donationNo: recipientDonationNo,
+        name: recipientName,
+        phone: recipientPhone,
+        village: recipientVillage,
+        wardNo: recipientWardNo,
+        holdingNo: recipientHoldingNo,
+        familyMembers: parseInt(recipientFamilyMembers) || 0,
+        earningMembers: parseInt(recipientEarningMembers) || 0,
+        date: recipientDate,
+        receivedBefore: recipientReceivedBefore,
+        witness1: {
+          name: recipientWitness1Name,
+          phone: recipientWitness1Phone
+        },
+        witness2: {
+          name: recipientWitness2Name,
+          phone: recipientWitness2Phone
+        },
+        amount: amount,
+        reason: recipientReason,
+        note: recipientNote,
+        addedBy: currentUser?.name || 'Admin'
+      };
+
+      if (editingRecipient) {
+        await db.updateRecipient(editingRecipient.id, data);
+        alert('তথ্য সফলভাবে আপডেট করা হয়েছে।');
+      } else {
+        await db.addRecipient(data);
+        alert('তথ্য সফলভাবে যোগ করা হয়েছে।');
+      }
+
+      setRecipientDonationNo('');
+      setRecipientName('');
+      setRecipientPhone('');
+      setRecipientVillage('');
+      setRecipientWardNo('');
+      setRecipientHoldingNo('');
+      setRecipientFamilyMembers('');
+      setRecipientEarningMembers('');
+      setRecipientReceivedBefore(false);
+      setRecipientWitness1Name('');
+      setRecipientWitness1Phone('');
+      setRecipientWitness2Name('');
+      setRecipientWitness2Phone('');
+      setRecipientAmount('');
+      setRecipientDate(new Date().toISOString().split('T')[0]);
+      setRecipientReason('');
+      setRecipientNote('');
+      setEditingRecipient(null);
+    } catch (e) {
+      alert('তথ্য সংরক্ষণ করতে সমস্যা হয়েছে।');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditRecipient = (r: RecipientInfo) => {
+    setEditingRecipient(r);
+    setRecipientDonationNo(r.donationNo || '');
+    setRecipientName(r.name);
+    setRecipientPhone(r.phone);
+    setRecipientVillage(r.village || '');
+    setRecipientWardNo(r.wardNo || '');
+    setRecipientHoldingNo(r.holdingNo || '');
+    setRecipientFamilyMembers(r.familyMembers?.toString() || '');
+    setRecipientEarningMembers(r.earningMembers?.toString() || '');
+    setRecipientReceivedBefore(r.receivedBefore || false);
+    setRecipientWitness1Name(r.witness1?.name || '');
+    setRecipientWitness1Phone(r.witness1?.phone || '');
+    setRecipientWitness2Name(r.witness2?.name || '');
+    setRecipientWitness2Phone(r.witness2?.phone || '');
+    setRecipientAmount(r.amount.toString());
+    setRecipientDate(r.date);
+    setRecipientReason(r.reason);
+    setRecipientNote(r.note || '');
+    setActiveTab('recipients');
+    // Scroll to top of form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteRecipient = async (id: string) => {
+    if (!confirm('আপনি কি নিশ্চিত যে এই তথ্যটি মুছে ফেলতে চান?')) return;
+    try {
+      await db.deleteRecipient(id);
+      alert('তথ্যটি সফলভাবে মুছে ফেলা হয়েছে।');
+    } catch (e) {
+      alert('মুছে ফেলতে সমস্যা হয়েছে।');
+    }
+  };
+
   const handleUpdateDesignation = async () => {
     if (!viewingUser || !userDesignation.trim()) return;
     setIsSubmitting(true);
@@ -154,6 +298,20 @@ const AdminDashboard: React.FC = () => {
       const newStatus = !viewingUser.isPermanentMember;
       await db.updateUser(viewingUser.id, { isPermanentMember: newStatus });
       setViewingUser({ ...viewingUser, isPermanentMember: newStatus });
+    } catch (e) {
+      alert('আপডেট ব্যর্থ হয়েছে।');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleRecipientPermission = async () => {
+    if (!viewingUser) return;
+    setIsSubmitting(true);
+    try {
+      const newValue = !viewingUser.canManageRecipients;
+      await db.updateUser(viewingUser.id, { canManageRecipients: newValue });
+      setViewingUser({ ...viewingUser, canManageRecipients: newValue });
     } catch (e) {
       alert('আপডেট ব্যর্থ হয়েছে।');
     } finally {
@@ -227,7 +385,14 @@ const AdminDashboard: React.FC = () => {
     img.src = "data:image/svg+xml;base64," + btoa(svgData);
   };
 
-  const handleLogout = () => { setIsAdmin(false); navigate('/'); };
+  const handleLogout = () => { 
+    if (isAdmin) {
+      setIsAdmin(false); 
+      navigate('/'); 
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   const handleUpdateStatus = async (id: string, type: 'user' | 'tx' | 'assistance', status: any) => {
     try {
@@ -295,6 +460,43 @@ const AdminDashboard: React.FC = () => {
       setManualAmount('');
       alert('সফলভাবে যোগ হয়েছে।');
     } catch (e) { alert('ব্যর্থ হয়েছে।'); }
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!invoiceRef.current || !selectedTxForInvoice) return;
+    
+    try {
+      setIsDownloadingInvoice(true);
+      // Small delay to ensure rendering
+      await new Promise(r => setTimeout(r, 100));
+      
+      const dataUrl = await toPng(invoiceRef.current, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        pixelRatio: 3, // High quality
+        filter: (node) => {
+          const exclusionClasses = ['download-exclude'];
+          return !exclusionClasses.some(className => 
+            (node instanceof HTMLElement) && node.classList.contains(className)
+          );
+        },
+        style: {
+          borderRadius: '0px',
+          margin: '0',
+          padding: '0',
+        }
+      });
+      
+      const link = document.createElement('a');
+      link.download = `Invoice-${selectedTxForInvoice.transactionId.slice(-8).toUpperCase()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert('ডাউনলোড ব্যর্থ হয়েছে।');
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
   };
 
   const downloadTransactionsAsImage = async () => {
@@ -509,37 +711,40 @@ const AdminDashboard: React.FC = () => {
   const netBalance = stats.totalCollection - (expenses.length === 0 ? 0 : stats.totalExpense);
 
   return (
-    <div className="bg-transparent min-h-screen font-['Hind_Siliguri'] pb-20">
+    <div className="bg-transparent min-h-screen font-['Baloo_Da_2'] pb-20">
       <header className="px-6 py-5 glass-nav sticky top-0 z-50 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-[#0D9488] rounded-xl text-white shadow-lg"><LayoutDashboard className="w-5 h-5" /></div>
-          <div><h1 className="text-base font-black uppercase leading-none">এডমিন প্যানেল</h1><p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">Unity Care Foundation</p></div>
+          <div><h1 className="text-base font-black uppercase leading-none">{isAdmin ? 'এডমিন প্যানেল' : 'ম্যানেজমেন্ট প্যানেল'}</h1><p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">Unity Care Foundation</p></div>
         </div>
-        <button onClick={handleLogout} className="p-3 bg-rose-50 text-rose-600 rounded-2xl active:scale-95 transition-all"><LogOut className="w-6 h-6" /></button>
+        <button onClick={handleLogout} className={`p-3 ${isAdmin ? 'bg-rose-50 text-rose-600' : 'bg-teal-50 text-teal-600'} rounded-2xl active:scale-95 transition-all`}>
+          {isAdmin ? <LogOut className="w-6 h-6" /> : <Home className="w-6 h-6" />}
+        </button>
       </header>
 
       <div className="glass-nav px-6 overflow-x-auto flex gap-6 sticky top-[73px] z-40 no-scrollbar shadow-sm">
         {[
-          { id: 'overview', label: 'ওভারভিউ', icon: <TrendingUp className="w-4 h-4" /> },
-          { id: 'users', label: 'সদস্য তালিকা', icon: <Users className="w-4 h-4" /> },
-          { id: 'assistance', label: 'আবেদন', icon: <HandHelping className="w-4 h-4" /> },
-          { id: 'txs', label: 'লেনদেন', icon: <DollarSign className="w-4 h-4" /> },
+          { id: 'overview', label: 'ওভারভিউ', icon: <TrendingUp className="w-4 h-4" />, adminOnly: true },
+          { id: 'users', label: 'সদস্য তালিকা', icon: <Users className="w-4 h-4" />, adminOnly: true },
+          { id: 'assistance', label: 'আবেদন', icon: <HandHelping className="w-4 h-4" />, adminOnly: true },
+          { id: 'txs', label: 'লেনদেন', icon: <DollarSign className="w-4 h-4" />, adminOnly: true },
           { id: 'expense', label: 'ব্যয়', icon: (
             <div className="relative w-4 h-4 flex items-center justify-center">
               <div className="absolute bottom-0 w-2.5 h-1.5 bg-blue-600 rounded-sm"></div>
               <div className="absolute bottom-0.5 w-2 h-2 bg-amber-400 rounded-sm"></div>
               <div className="absolute top-0 w-1.5 h-1.5 bg-pink-100 rounded-full"></div>
             </div>
-          ) },
-          { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-4 h-4" /> },
-          { id: 'complaints', label: 'অভিযোগ', icon: <AlertCircle className="w-4 h-4" /> },
-          { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" /> },
-          { id: 'activities', label: 'মেম্বার অ্যাক্টিভিটি', icon: <Clock className="w-4 h-4" /> },
-          { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" /> },
-          { id: 'txManagement', label: 'লেনদেন ম্যানেজমেন্ট', icon: <Wallet className="w-4 h-4" /> },
-          { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" /> },
-          { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" /> }
-        ].map(tab => (
+          ), adminOnly: true },
+          { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-4 h-4" />, adminOnly: true },
+          { id: 'complaints', label: 'অভিযোগ', icon: <AlertCircle className="w-4 h-4" />, adminOnly: true },
+          { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" />, adminOnly: true },
+          { id: 'activities', label: 'মেম্বার অ্যাক্টিভিটি', icon: <Clock className="w-4 h-4" />, adminOnly: true },
+          { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" />, adminOnly: true },
+          { id: 'recipients', label: 'গৃহীতার তথ্য', icon: <Heart className="w-4 h-4" />, adminOnly: false },
+          { id: 'txManagement', label: 'লেনদেন ম্যানেজমেন্ট', icon: <Wallet className="w-4 h-4" />, adminOnly: true },
+          { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" />, adminOnly: true },
+          { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" />, adminOnly: true }
+        ].filter(tab => isAdmin || (!tab.adminOnly && currentUser?.canManageRecipients)).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`py-5 px-1 border-b-[3px] text-[10px] font-black uppercase flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id ? 'border-[#0D9488] text-[#0D9488]' : 'border-transparent text-slate-400'}`}>
             {tab.icon} {tab.label}
           </button>
@@ -815,16 +1020,30 @@ const AdminDashboard: React.FC = () => {
                                   </div>
                                 </td>
                                 <td className="px-5 py-2.5 text-center align-middle">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setTxToDelete(t);
-                                    }}
-                                    disabled={isSubmitting}
-                                    className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors disabled:opacity-50"
-                                  >
-                                    {isSubmitting && txToDelete?.id === t.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                  </button>
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedTxForInvoice(t);
+                                      }}
+                                      disabled={isDownloadingInvoice}
+                                      className="p-2 bg-teal-50 text-teal-600 rounded-xl hover:bg-teal-100 transition-colors disabled:opacity-50"
+                                      title="Download Invoice"
+                                    >
+                                      {isDownloadingInvoice && selectedTxForInvoice?.id === t.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                    </button>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTxToDelete(t);
+                                      }}
+                                      disabled={isSubmitting}
+                                      className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors disabled:opacity-50"
+                                      title="Delete Transaction"
+                                    >
+                                      {isSubmitting && txToDelete?.id === t.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -1382,6 +1601,229 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         )}
+        {activeTab === 'recipients' && (
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
+            <div className="bg-white p-8 rounded-[3rem] border shadow-xl space-y-6">
+              <div className="flex flex-col items-center text-center space-y-2 mb-4">
+                <div className="p-4 bg-rose-50 rounded-full text-rose-600 shadow-inner">
+                  <Heart className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">ইউনিটি কেয়ার ফাউন্ডেশন</h2>
+                  <p className="text-xs font-bold text-rose-600">সহায়তা / অনুদান গ্রহণকারী ফরম</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ইনসাফের পথে, মানবতার সাথে</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Section 1: Basic Info */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">১️⃣ ব্যক্তিগত তথ্য</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">অনুদান নং</label>
+                    <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="অনুদান নম্বর লিখুন..." value={recipientDonationNo} onChange={e => setRecipientDonationNo(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">👤 পূর্ণ নাম</label>
+                    <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="গৃহীতার নাম লিখুন..." value={recipientName} onChange={e => setRecipientName(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">📱 মোবাইল নম্বর</label>
+                    <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="০১৭xxxxxxxx" value={recipientPhone} onChange={e => setRecipientPhone(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">📍 গ্রাম / এলাকা</label>
+                    <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="গ্রাম বা এলাকার নাম..." value={recipientVillage} onChange={e => setRecipientVillage(e.target.value)} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">🏠 ওয়ার্ড নং</label>
+                      <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="ওয়ার্ড নং" value={recipientWardNo} onChange={e => setRecipientWardNo(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">🏡 হোল্ডিং নং</label>
+                      <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="হোল্ডিং নং" value={recipientHoldingNo} onChange={e => setRecipientHoldingNo(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Assistance Info */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">২️⃣ সহায়তার তথ্য</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">👨‍👩‍👧‍👦 পরিবারের সদস্য</label>
+                      <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="মোট সদস্য" value={recipientFamilyMembers} onChange={e => setRecipientFamilyMembers(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">💼 উপার্জনকারী</label>
+                      <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="উপার্জনকারী" value={recipientEarningMembers} onChange={e => setRecipientEarningMembers(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">💰 টাকার পরিমাণ</label>
+                      <input type="number" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="৳০০০" value={recipientAmount} onChange={e => setRecipientAmount(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">📅 তারিখ</label>
+                      <input type="date" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" value={recipientDate} onChange={e => setRecipientDate(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">❓ আগে সহায়তা পেয়েছেন?</label>
+                    <div className="flex gap-4 ml-4">
+                      <button onClick={() => setRecipientReceivedBefore(true)} className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all font-bold text-xs ${recipientReceivedBefore ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-slate-50 border-transparent text-slate-400'}`}>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${recipientReceivedBefore ? 'border-rose-500' : 'border-slate-300'}`}>
+                          {recipientReceivedBefore && <div className="w-2 h-2 bg-rose-500 rounded-full"></div>}
+                        </div>
+                        হ্যাঁ
+                      </button>
+                      <button onClick={() => setRecipientReceivedBefore(false)} className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all font-bold text-xs ${!recipientReceivedBefore ? 'bg-slate-100 border-slate-300 text-slate-600' : 'bg-slate-50 border-transparent text-slate-400'}`}>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${!recipientReceivedBefore ? 'border-slate-500' : 'border-slate-300'}`}>
+                          {!recipientReceivedBefore && <div className="w-2 h-2 bg-slate-500 rounded-full"></div>}
+                        </div>
+                        না
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">সাহায্যের কারণ</label>
+                    <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="যেমন: চিকিৎসা, শিক্ষা..." value={recipientReason} onChange={e => setRecipientReason(e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Section 3: Witnesses */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">৩️⃣ উপস্থিত সদস্য (সাক্ষী)</span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50/50 rounded-[2rem] border border-slate-100 space-y-4">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">১ম সদস্য</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" className="w-full p-4 bg-white border-2 rounded-2xl outline-none font-bold text-xs focus:border-rose-100 transition-all" placeholder="নাম" value={recipientWitness1Name} onChange={e => setRecipientWitness1Name(e.target.value)} />
+                      <input type="text" className="w-full p-4 bg-white border-2 rounded-2xl outline-none font-bold text-xs focus:border-rose-100 transition-all" placeholder="মোবাইল" value={recipientWitness1Phone} onChange={e => setRecipientWitness1Phone(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-50/50 rounded-[2rem] border border-slate-100 space-y-4">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">২য় সদস্য</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" className="w-full p-4 bg-white border-2 rounded-2xl outline-none font-bold text-xs focus:border-rose-100 transition-all" placeholder="নাম" value={recipientWitness2Name} onChange={e => setRecipientWitness2Name(e.target.value)} />
+                      <input type="text" className="w-full p-4 bg-white border-2 rounded-2xl outline-none font-bold text-xs focus:border-rose-100 transition-all" placeholder="মোবাইল" value={recipientWitness2Phone} onChange={e => setRecipientWitness2Phone(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">অতিরিক্ত নোট (ঐচ্ছিক)</label>
+                  <textarea className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs min-h-[100px] focus:border-rose-200 transition-all" placeholder="বিস্তারিত তথ্য..." value={recipientNote} onChange={e => setRecipientNote(e.target.value)} />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  {editingRecipient && (
+                    <button 
+                      onClick={() => {
+                        setEditingRecipient(null);
+                        setRecipientDonationNo('');
+                        setRecipientName('');
+                        setRecipientPhone('');
+                        setRecipientVillage('');
+                        setRecipientWardNo('');
+                        setRecipientHoldingNo('');
+                        setRecipientFamilyMembers('');
+                        setRecipientEarningMembers('');
+                        setRecipientReceivedBefore(false);
+                        setRecipientWitness1Name('');
+                        setRecipientWitness1Phone('');
+                        setRecipientWitness2Name('');
+                        setRecipientWitness2Phone('');
+                        setRecipientAmount('');
+                        setRecipientDate(new Date().toISOString().split('T')[0]);
+                        setRecipientReason('');
+                        setRecipientNote('');
+                      }} 
+                      className="flex-1 py-5 bg-slate-100 text-slate-600 rounded-3xl font-black uppercase text-xs active:scale-95 transition-all"
+                    >
+                      বাতিল
+                    </button>
+                  )}
+                  <button 
+                    onClick={handleAddRecipient} 
+                    disabled={isSubmitting} 
+                    className="flex-[2] py-5 bg-rose-600 text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 border-b-4 border-rose-800 disabled:opacity-50"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (editingRecipient ? 'আপডেট করুন' : 'তথ্য সেভ করুন')}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-widest ml-6">গৃহীতাদের তালিকা ({toBengaliNumber(recipients.length)})</h3>
+              {recipients.length === 0 ? (
+                <div className="bg-white p-12 rounded-[3rem] text-center border border-dashed border-slate-300">
+                  <p className="text-slate-400 font-bold">কোন তথ্য পাওয়া যায়নি</p>
+                </div>
+              ) : (
+                recipients.map(r => (
+                  <div key={r.id} className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 group">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
+                          <UserIcon className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black text-slate-800">{r.name}</h4>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{toBengaliNumber(r.phone)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEditRecipient(r)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteRecipient(r.id)} className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-slate-50 p-3 rounded-2xl">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">পরিমাণ</p>
+                        <p className="text-xs font-black text-rose-600">৳{toBengaliNumber(r.amount.toLocaleString())}</p>
+                      </div>
+                      <div className="bg-slate-50 p-3 rounded-2xl">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">তারিখ</p>
+                        <p className="text-xs font-black text-slate-700">{toBengaliNumber(r.date)}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">কারণ</p>
+                      <p className="text-[11px] font-bold text-slate-700">{r.reason}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'settings' && (
           <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
              <div className="space-y-4">
@@ -1495,6 +1937,25 @@ const AdminDashboard: React.FC = () => {
                         className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isPermanentMember ? 'bg-amber-500' : 'bg-slate-200'}`}
                      >
                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isPermanentMember ? 'left-7' : 'left-1'}`}></div>
+                     </button>
+                  </div>
+
+                  <div className="bg-blue-50/50 p-5 rounded-[2.5rem] border border-blue-100 flex items-center justify-between mb-4">
+                     <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white rounded-2xl shadow-sm">
+                           <Users className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest leading-none">গৃহীতার তথ্য এডিট</p>
+                           <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-1">তথ্য এডিট করার অনুমতি</p>
+                        </div>
+                     </div>
+                     <button 
+                        onClick={handleToggleRecipientPermission}
+                        disabled={isSubmitting}
+                        className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.canManageRecipients ? 'bg-blue-500' : 'bg-slate-200'}`}
+                     >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.canManageRecipients ? 'left-7' : 'left-1'}`}></div>
                      </button>
                   </div>
 
@@ -1953,6 +2414,205 @@ const AdminDashboard: React.FC = () => {
                 Close Window
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Download Modal */}
+      {selectedTxForInvoice && (
+        <div className="fixed inset-0 z-[110] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-300 overflow-y-auto no-scrollbar">
+          <div className="relative w-full max-w-xl bg-white rounded-3xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col my-auto">
+            {/* Premium Invoice Header */}
+            <div ref={invoiceRef} className="bg-white flex flex-col w-full">
+              <div className="bg-[#0F172A] text-white relative shrink-0 overflow-hidden">
+                {/* Diagonal Shape with better positioning */}
+                <div className="absolute top-0 right-0 w-[42%] h-full bg-rose-600 transform skew-x-[-10deg] translate-x-10"></div>
+                
+                <div className="p-4 sm:p-5 flex justify-between items-center relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center shrink-0">
+                      <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-[#0F172A] no-glow" />
+                    </div>
+                    <div className="min-w-0 pr-2">
+                      <h3 className="text-sm sm:text-lg font-black uppercase tracking-tight leading-none truncate">UNITY CARE</h3>
+                      <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-[0.1em] mt-1 truncate">unitycarefoundation07@gmail.com</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter italic leading-none">INVOICE</h2>
+                    <div className="mt-1 text-[8px] sm:text-[9px] font-bold text-rose-100 flex flex-col items-end gap-0.5">
+                      <p className="whitespace-nowrap">NO: #{selectedTxForInvoice.transactionId.slice(-8).toUpperCase()}</p>
+                      <p className="whitespace-nowrap">DATE: {selectedTxForInvoice.date}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
+                {/* Info Section */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="text-[8px] sm:text-[9px] font-black text-rose-600 uppercase tracking-widest border-b border-rose-100 pb-0.5 inline-block">INVOICE TO:</h4>
+                    <div className="space-y-0.5">
+                      <p className="text-sm sm:text-base font-black text-slate-800 uppercase truncate">{selectedTxForInvoice.userName}</p>
+                      <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 truncate">Verified Member, UCF</p>
+                      <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] text-slate-400 font-bold mt-1">
+                         <Phone className="w-2.5 h-2.5 no-glow" /> +880 1777-599874
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] text-slate-400 font-bold">
+                         <Mail className="w-2.5 h-2.5 no-glow" /> unitycarefoundation07@gmail.com
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-[8px] sm:text-[9px] font-black text-rose-600 uppercase tracking-widest border-b border-rose-100 pb-0.5 inline-block">PAYMENT INFO:</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase">Method:</p>
+                        <p className="text-[9px] sm:text-[10px] font-black text-slate-800 uppercase">{selectedTxForInvoice.method === 'Admin Manual' ? 'Manual' : selectedTxForInvoice.method}</p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase">TX ID:</p>
+                        <p className="text-[9px] sm:text-[10px] font-black text-slate-800 uppercase tracking-tighter">#{selectedTxForInvoice.transactionId.slice(-10)}</p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase">Fund:</p>
+                        <p className="text-[9px] sm:text-[10px] font-black text-teal-600 uppercase">{selectedTxForInvoice.fundType}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table Section */}
+                <div className="rounded-xl border border-slate-100 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#0F172A] text-white text-[8px] sm:text-[9px] font-black uppercase tracking-widest">
+                        <th className="p-2 sm:p-3">Description</th>
+                        <th className="p-2 sm:p-3 text-center">Amount</th>
+                        <th className="p-2 sm:p-3 text-center">Qty</th>
+                        <th className="p-2 sm:p-3 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[10px] sm:text-[11px] font-bold text-slate-700">
+                      <tr className="border-b border-slate-50">
+                        <td className="p-2 sm:p-3">
+                          <p className="font-black text-slate-800">General Donation</p>
+                        </td>
+                        <td className="p-2 sm:p-3 text-center">৳{toBengaliNumber(selectedTxForInvoice.amount)}</td>
+                        <td className="p-2 sm:p-3 text-center">1</td>
+                        <td className="p-2 sm:p-3 text-right font-black">৳{toBengaliNumber(selectedTxForInvoice.amount)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Summary Section */}
+                <div className="flex justify-end">
+                  <div className="w-full max-w-[140px] sm:max-w-[200px] space-y-1.5">
+                    <div className="flex justify-between items-center text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase">
+                      <p>Subtotal:</p>
+                      <p>৳{toBengaliNumber(selectedTxForInvoice.amount)}</p>
+                    </div>
+                    <div className="bg-rose-600 p-2 sm:p-3 rounded-xl text-white flex justify-between items-center">
+                      <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest">Total:</p>
+                      <p className="text-sm sm:text-lg font-black">৳{toBengaliNumber(selectedTxForInvoice.amount)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Section */}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 relative">
+                  {/* Stamp SVG */}
+                  <div className="absolute -top-20 left-1/4 transform -translate-x-1/2 opacity-90 pointer-events-none select-none">
+                    <div className="relative w-28 h-28 sm:w-36 sm:h-36 rotate-[-15deg]">
+                      <svg viewBox="0 0 200 200" className="w-full h-full no-glow">
+                        {/* Outer Circles */}
+                        <circle cx="100" cy="100" r="95" fill="none" stroke="#E11D48" strokeWidth="2" strokeDasharray="4 2" />
+                        <circle cx="100" cy="100" r="90" fill="none" stroke="#E11D48" strokeWidth="4" />
+                        <circle cx="100" cy="100" r="65" fill="none" stroke="#E11D48" strokeWidth="2" />
+                        
+                        {/* Curved Text */}
+                        <path id="curveTop" d="M 30,100 A 70,70 0 0,1 170,100" fill="none" />
+                        <text className="text-[16px] font-black fill-rose-600 uppercase tracking-[0.15em]">
+                          <textPath href="#curveTop" startOffset="50%" textAnchor="middle">
+                            Donation Received
+                          </textPath>
+                        </text>
+                        
+                        <path id="curveBottom" d="M 170,100 A 70,70 0 0,1 30,100" fill="none" />
+                        <text className="text-[16px] font-black fill-rose-600 uppercase tracking-[0.15em]">
+                          <textPath href="#curveBottom" startOffset="50%" textAnchor="middle">
+                            Donation Received
+                          </textPath>
+                        </text>
+
+                        {/* Center Text */}
+                        <g transform="translate(100, 100)">
+                          <line x1="-75" y1="-22" x2="75" y2="-22" stroke="#E11D48" strokeWidth="2.5" />
+                          <text y="-2" textAnchor="middle" className="text-[16px] font-black fill-rose-600 uppercase tracking-tight">
+                            Unity Care
+                          </text>
+                          <text y="16" textAnchor="middle" className="text-[12px] font-bold fill-rose-600 uppercase tracking-[0.2em]">
+                            Foundation
+                          </text>
+                          <line x1="-75" y1="25" x2="75" y2="25" stroke="#E11D48" strokeWidth="2.5" />
+                        </g>
+
+                        {/* Stars */}
+                        <text x="35" y="105" className="text-[12px] fill-rose-600">★</text>
+                        <text x="165" y="105" className="text-[12px] fill-rose-600">★</text>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <h4 className="text-[8px] sm:text-[9px] font-black text-slate-800 uppercase tracking-widest">Terms:</h4>
+                    <p className="text-[7px] sm:text-[8px] text-slate-400 leading-relaxed italic">
+                      This receipt is issued for humanitarian projects of Unity Care Foundation.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center justify-end">
+                    <div className="relative mb-0 h-8 sm:h-10 flex items-center justify-center">
+                      <span className="signature-text text-sm sm:text-xl text-slate-800 select-none transform -rotate-1">
+                        IT Accountant
+                      </span>
+                    </div>
+                    <div className="w-20 sm:w-28 h-px bg-slate-300 mb-1"></div>
+                    <p className="text-[8px] sm:text-[9px] font-black text-slate-800 uppercase tracking-widest">Authorized</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Bar */}
+              <div className="bg-[#0F172A] p-3 sm:p-4 flex justify-between items-center shrink-0">
+                 <div className="flex gap-2 sm:gap-4">
+                   <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase">
+                     <Globe className="w-2.5 h-2.5 text-rose-500 no-glow" /> unitycare.org
+                   </div>
+                   <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase">
+                     <MapPin className="w-2.5 h-2.5 text-rose-500 no-glow" /> Bandharia.Telikhali
+                   </div>
+                 </div>
+                 <div className="flex gap-2">
+                   {!isDownloadingInvoice && (
+                     <button 
+                       onClick={handleDownloadInvoice}
+                       className="px-2 sm:px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[7px] sm:text-[8px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 active:scale-95"
+                     >
+                       {isDownloadingInvoice ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3 no-glow" />} Download
+                     </button>
+                   )}
+                 </div>
+              </div>
+            </div>
+
+            {/* Close Button Overlay */}
+            <button 
+              onClick={() => setSelectedTxForInvoice(null)}
+              className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-lg backdrop-blur-md flex items-center justify-center active:scale-90 transition-all z-50 print:hidden"
+            >
+              <X className="w-5 h-5 no-glow" />
+            </button>
           </div>
         </div>
       )}

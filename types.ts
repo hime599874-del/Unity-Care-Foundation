@@ -62,6 +62,7 @@ export interface User {
   lastActive?: number;
   expiryDate?: string;
   isIdCardEnabled?: boolean;
+  canManageRecipients?: boolean;
 }
 
 export interface Transaction {
@@ -171,5 +172,32 @@ export interface MemberActivity {
   type: ActivityType;
   description: string;
   path?: string;
+  timestamp: number;
+}
+
+export interface RecipientInfo {
+  id: string;
+  donationNo: string;
+  name: string;
+  phone: string;
+  village: string;
+  wardNo: string;
+  holdingNo: string;
+  familyMembers: number;
+  earningMembers: number;
+  date: string;
+  receivedBefore: boolean;
+  witness1: {
+    name: string;
+    phone: string;
+  };
+  witness2: {
+    name: string;
+    phone: string;
+  };
+  amount: number;
+  reason: string;
+  note?: string;
+  addedBy: string;
   timestamp: number;
 }

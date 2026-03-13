@@ -1,7 +1,7 @@
 
 import { initializeApp } from "firebase/app";
 import { 
-  initializeFirestore,
+  getFirestore,
   collection, 
   addDoc, 
   updateDoc, 
@@ -16,9 +16,11 @@ import {
   limit,
   setDoc,
   getDocs,
-  enableMultiTabIndexedDbPersistence
+  getDoc,
+  enableMultiTabIndexedDbPersistence,
+  getDocFromServer
 } from "firebase/firestore";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
@@ -32,13 +34,18 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-/**
- * CRITICAL: Use initializeFirestore with experimentalForceLongPolling to bypass 
- * network restrictions that cause the "10 seconds timeout" error.
- */
-const firestore = initializeFirestore(app, {
-  experimentalForceLongPolling: true
-});
+const firestore = getFirestore(app);
+
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(firestore, 'test', 'connection'));
+  } catch (error) {
+    if(error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('Could not reach Cloud Firestore backend'))) {
+      console.error("🔥 Firebase Connection Error: Could not reach Cloud Firestore. Please ensure you have created a Firestore Database in your Firebase Console (Build -> Firestore Database -> Create database).");
+    }
+  }
+}
+testConnection();
 
 // Enable Offline Persistence to ensure the app works even when connection is flaky
 // We catch the error to prevent app crash if persistence is already enabled or unsupported
@@ -91,53 +98,33 @@ const toPlainObject = (data: any, visited = new WeakSet()): any => {
     return data.map(i => toPlainObject(i, visited));
   }
   
-  // Aggressive check for Firestore internal objects or non-plain objects
+  // Fast path for plain objects that don't look like Firestore internals
   const constructorName = data.constructor?.name;
-  const proto = Object.getPrototypeOf(data);
-  const isPlain = proto === Object.prototype || proto === null;
-  
-  const hasFirestoreMarkers = 
-    data.firestore || 
-    data._firestore || 
-    data.converter || 
-    data._delegate || 
-    data.src || 
-    data.i || 
-    (constructorName && (
-      constructorName === 'Q$1' || 
-      constructorName === 'Sa' || 
-      constructorName === 'DocumentReference' || 
-      constructorName === 'Query' ||
-      constructorName === 'CollectionReference' ||
-      (constructorName.length <= 3 && !['Obj', 'Arr', 'Dat'].includes(constructorName.slice(0,3)))
-    ));
-
-  if (!isPlain || hasFirestoreMarkers) {
-    // If it's a Firestore object, try to extract useful primitive info or return null
+  if (constructorName && (
+    constructorName === 'Q$1' || 
+    constructorName === 'Sa' || 
+    constructorName === 'DocumentReference' || 
+    constructorName === 'Query' ||
+    constructorName === 'CollectionReference'
+  )) {
     try {
       if (data.id && typeof data.id === 'string') return data.id;
       if (data.path && typeof data.path === 'string') return data.path;
     } catch (e) {}
     return null;
   }
-  
+
   // Plain Objects
   visited.add(data);
   const result: any = {};
   
-  // Use Object.getOwnPropertyNames to catch non-enumerable properties if necessary,
-  // but for state we usually only care about enumerable ones.
-  const keys = Object.keys(data);
-  for (const key of keys) {
-    // Exclude internal Firestore metadata/circular properties
-    if (key.startsWith('_') || key === 'firestore' || key === 'converter' || key === 'src' || key === 'i') continue;
-    
-    try {
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      if (key.startsWith('_') || key === 'firestore' || key === 'converter' || key === 'src' || key === 'i') continue;
+      
       const val = data[key];
       if (typeof val === 'function') continue;
       result[key] = toPlainObject(val, visited);
-    } catch (e) {
-      result[key] = null;
     }
   }
   return result;
@@ -201,6 +188,7 @@ class FirebaseDB {
   private suggestions: Suggestion[] = [];
   private complaints: Complaint[] = [];
   private activities: MemberActivity[] = [];
+  private recipients: RecipientInfo[] = [];
   private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0 };
   private contactConfig: ContactConfig = {
     whatsapp: 'https://chat.whatsapp.com/C39euDOPaskI3KoeNZMW2H?mode=gi_t',
@@ -211,18 +199,40 @@ class FirebaseDB {
     policyUrl: 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk'
   };
   private listeners: (() => void)[] = [];
+  private isReady: boolean = false;
+  private readyPromise: Promise<void>;
+  private resolveReady!: () => void;
 
-  constructor() { this.initRealtimeSync(); }
+  constructor() { 
+    this.readyPromise = new Promise((resolve) => {
+      this.resolveReady = resolve;
+    });
+    this.initRealtimeSync(); 
+  }
 
   private initRealtimeSync() {
     try {
+      let usersInitialized = false;
       onSnapshot(collection(firestore, "users"), (snapshot) => {
         this.users = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as User[];
         this.updateLocalStats();
         this.notify();
-      }, (error) => safeError("Firestore: Users sync error:", error));
+        if (!usersInitialized) {
+          usersInitialized = true;
+          this.isReady = true;
+          this.resolveReady();
+        }
+      }, (error) => {
+        safeError("Firestore: Users sync error:", error);
+        // Resolve anyway to prevent app hang
+        if (!usersInitialized) {
+          usersInitialized = true;
+          this.isReady = true;
+          this.resolveReady();
+        }
+      });
 
-      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(2000)), (snapshot) => {
+      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(500)), (snapshot) => {
         this.transactions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Transaction[];
         this.updateLocalStats();
         this.notify();
@@ -257,6 +267,11 @@ class FirebaseDB {
         this.activities = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as MemberActivity[];
         this.notify();
       }, (error) => safeError("Firestore: Activities sync error:", error));
+
+      onSnapshot(query(collection(firestore, "recipients"), orderBy("timestamp", "desc")), (snapshot) => {
+        this.recipients = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as RecipientInfo[];
+        this.notify();
+      }, (error) => safeError("Firestore: Recipients sync error:", error));
 
       onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
         if (snapshot.exists()) {
@@ -304,8 +319,11 @@ class FirebaseDB {
   getSuggestions(): Suggestion[] { return this.suggestions; }
   getComplaints(): Complaint[] { return this.complaints; }
   getActivities(): MemberActivity[] { return this.activities; }
+  getRecipients(): RecipientInfo[] { return this.recipients; }
   getStats(): AppStats { return this.stats; }
   getContactConfig(): ContactConfig { return this.contactConfig; }
+  whenReady(): Promise<void> { return this.readyPromise; }
+  isDbReady(): boolean { return this.isReady; }
 
   async updateContactConfig(config: ContactConfig) {
     await setDoc(doc(firestore, "metadata", "contact"), sanitizeForUpload(config), { merge: true });
@@ -526,6 +544,74 @@ class FirebaseDB {
   }
   async markNotificationAsRead(notifId: string) { await updateDoc(doc(firestore, "notifications", notifId), { isRead: true }); }
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
+  
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const normalize = (p: string) => p.replace(/\D/g, '').slice(-10);
+    const searchDigits = normalize(phone);
+    
+    if (!searchDigits) return undefined;
+
+    // 1. Check local cache first (fastest)
+    const cached = this.users.find(u => normalize(u.phone) === searchDigits);
+    if (cached) return cached;
+    
+    // 2. Try fetching by multiple possible Document IDs directly
+    try {
+      const phoneDigits = phone.replace(/\D/g, '');
+      const idsToTry = [
+        `u_${phoneDigits}`,         // u_8801777599874
+        `u_${searchDigits}`,        // u_1777599874
+        `u_880${searchDigits}`,     // u_8801777599874 (redundant but safe)
+        `u_0${searchDigits}`        // u_01777599874
+      ];
+
+      for (const id of idsToTry) {
+        const userDoc = await getDoc(doc(firestore, "users", id));
+        if (userDoc.exists()) {
+          const userData = { id: userDoc.id, ...toPlainObject(userDoc.data()) } as User;
+          // Add to local cache to prevent future misses
+          if (!this.users.find(u => u.id === userData.id)) {
+            this.users.push(userData);
+          }
+          return userData;
+        }
+      }
+    } catch (e) {
+      safeError("Firestore: getUserByPhone ID fetch error:", e);
+    }
+    
+    // 3. Fallback to Query with multiple common formats
+    try {
+      const formatsToTry = [
+        phone,                          // Original input (+88017...)
+        `+880${searchDigits}`,           // Standard (+88017...)
+        `0${searchDigits}`,             // Local (017...)
+        searchDigits,                   // Last 10 (17...)
+        phone.replace(/\D/g, ''),       // Digits only (88017...)
+        `880${searchDigits}`            // Digits without plus (88017...)
+      ];
+
+      const uniqueFormats = Array.from(new Set(formatsToTry));
+
+      for (const format of uniqueFormats) {
+        const q = query(collection(firestore, "users"), where("phone", "==", format));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const d = snap.docs[0];
+          const userData = { id: d.id, ...toPlainObject(d.data()) } as User;
+          if (!this.users.find(u => u.id === userData.id)) {
+            this.users.push(userData);
+          }
+          return userData;
+        }
+      }
+    } catch (e) {
+      safeError("Firestore: getUserByPhone query error:", e);
+    }
+    
+    return undefined;
+  }
+
   async submitAssistanceRequest(reqData: any) { 
     const timestamp = Date.now();
     const initialEvent = { status: AssistanceStatus.PENDING, timestamp, note: 'আবেদন জমা দেওয়া হয়েছে' };
@@ -535,6 +621,20 @@ class FirebaseDB {
       timestamp,
       timeline: [initialEvent]
     })); 
+  }
+
+  async addRecipient(data: any) {
+    const cleanData = sanitizeForUpload({ ...data, timestamp: Date.now() });
+    await addDoc(collection(firestore, "recipients"), cleanData);
+  }
+
+  async updateRecipient(id: string, data: any) {
+    const cleanData = sanitizeForUpload(data);
+    await updateDoc(doc(firestore, "recipients", id), cleanData);
+  }
+
+  async deleteRecipient(id: string) {
+    await deleteDoc(doc(firestore, "recipients", id));
   }
 }
 

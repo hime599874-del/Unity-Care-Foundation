@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
 import { useAuth } from '../App';
+import { useLanguage } from '../services/LanguageContext';
 import { UserStatus, User as UserType } from '../types';
 import { 
   Phone, User, ShieldCheck, ArrowRight, ArrowLeft, Camera, 
@@ -129,6 +130,7 @@ const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Prom
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [step, setStep] = useState(1);
+  const { t, language } = useLanguage();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
@@ -178,36 +180,35 @@ const AuthPage: React.FC = () => {
     setFormData({...formData, birthYear: cleaned ? parseInt(cleaned) : undefined});
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
     setError('');
     
     try {
-      const users = db.getUsers();
-      const normalizeForMatch = (phone: string) => phone.replace(/\D/g, '').slice(-10);
-      const searchDigits = normalizeForMatch(phoneInput);
-      
-      const user = users.find(u => {
-        const userDigits = normalizeForMatch(u.phone);
-        return userDigits === searchDigits;
-      });
+      // Ensure DB is ready before checking
+      if (!db.isDbReady()) {
+        await db.whenReady();
+      }
+
+      const fullPhone = getNormalizedPhone();
+      const user = await db.getUserByPhone(fullPhone);
       
       if (!user) {
-        setError('এই নম্বরটি দিয়ে কোন অ্যাকাউন্ট পাওয়া যায়নি। সঠিক নম্বর দিন অথবা নতুন নিবন্ধন করুন।');
+        setError(t('login_error_no_account'));
         setIsSubmitting(false);
         return;
       }
       
       if (user.status === UserStatus.PENDING) {
-        setError('আপনার আবেদনটি এখনো এডমিন অনুমোদনের অপেক্ষায় আছে। অনুমোদিত হলে লগইন করতে পারবেন।');
+        setError(t('login_error_pending'));
         setIsSubmitting(false);
         return;
       }
 
       if (user.status === UserStatus.REJECTED) {
-        setError('দুঃখিত, আপনার আবেদনটি বাতিল করা হয়েছে। বিস্তারিত জানতে এডমিনের সাথে যোগাযোগ করুন।');
+        setError(t('login_error_rejected'));
         setIsSubmitting(false);
         return;
       }
@@ -216,7 +217,7 @@ const AuthPage: React.FC = () => {
       setCurrentUser(user);
       navigate('/dashboard');
     } catch (err) {
-      setError('লগইন করতে সমস্যা হয়েছে। দয়া করে ইন্টারনেট কানেকশন চেক করে আবার চেষ্টা করুন।');
+      setError(t('login_error_general'));
       setIsSubmitting(false);
     }
   };
@@ -224,44 +225,42 @@ const AuthPage: React.FC = () => {
   const nextStep = () => {
     setError('');
     if (step === 1) {
-      if (!formData.profilePic) return setError('একটি প্রোফাইল ছবি আপলোড করুন।');
+      if (!formData.profilePic) return setError(t('reg_error_photo'));
       if (!formData.name || !phoneInput || !formData.bloodGroup || !formData.profession || !formData.birthYear) {
-        return setError('রক্তের গ্রুপ ও জন্ম সালসহ সব তথ্য পূরণ করুন।');
+        return setError(t('reg_error_fields'));
       }
       if (formData.birthYear && (formData.birthYear < 1920 || formData.birthYear > new Date().getFullYear())) {
-        return setError('সঠিক জন্ম সাল প্রদান করুন (যেমন: ১৯৯৫)।');
+        return setError(t('reg_error_birth_year'));
       }
     }
     if (step === 2) {
       if (formData.location === 'Bangladesh' && (!formData.address?.district || !formData.address?.upazila)) {
-        return setError('জেলা এবং উপজেলা নির্বাচন করুন।');
+        return setError(t('reg_error_location'));
       }
     }
     setStep(s => s + 1);
   };
 
   const handleRegister = async () => {
-    // CRITICAL: Prevent duplicate submission immediately
     if (isSubmitting) return;
     setIsSubmitting(true);
     setError('');
     
     const fullPhone = getNormalizedPhone();
     
-    // Check for duplicate locally first to save database hits
     const existingUser = db.getUsers().find(u => {
         const normalize = (p: string) => p.replace(/\D/g, '').slice(-10);
         return normalize(u.phone) === normalize(fullPhone);
     });
     
     if (existingUser) {
-        setError('এই নম্বরটি দিয়ে ইতিমধ্যে আবেদন করা হয়েছে। অনুগ্রহ করে অনুমোদনের অপেক্ষা করুন বা লগইন করুন।');
+        setError(t('reg_error_exists'));
         setIsSubmitting(false);
         return;
     }
 
     if (!formData.policyConsent) {
-        setError('নীতিমালায় সম্মতি দেওয়া বাধ্যতামূলক।');
+        setError(t('reg_error_terms'));
         setIsSubmitting(false);
         return;
     }
@@ -284,9 +283,8 @@ const AuthPage: React.FC = () => {
       };
       
       await db.registerUser(registrationData);
-      setSuccess('আবেদন সফল হয়েছে! এডমিন অনুমোদনের অপেক্ষা করুন।');
+      setSuccess(t('reg_success'));
       
-      // Navigate away after a short delay
       setTimeout(() => { 
         setIsLogin(true); 
         setStep(1); 
@@ -294,7 +292,7 @@ const AuthPage: React.FC = () => {
         setIsSubmitting(false); 
       }, 3000);
     } catch (err: any) {
-      setError(err.message || 'রেজিস্ট্রেশন করতে সমস্যা হয়েছে।');
+      setError(err.message || t('error_occurred'));
       setIsSubmitting(false);
     }
   };
@@ -308,7 +306,7 @@ const AuthPage: React.FC = () => {
           const compressed = await compressImage(reader.result as string);
           setFormData(prev => ({ ...prev, [field]: compressed }));
         } catch (e) {
-          setError('ছবি প্রসেস করতে সমস্যা হয়েছে।');
+          setError(t('image_process_error'));
         }
       };
       reader.readAsDataURL(file);
@@ -331,8 +329,8 @@ const AuthPage: React.FC = () => {
            <div className="w-16 h-16 bg-teal-600 rounded-[1.5rem] shadow-xl flex items-center justify-center mx-auto mb-4 border-4 border-white rotate-3">
               <Package className="w-8 h-8 text-white" />
            </div>
-           <h1 className="text-2xl font-black text-slate-900 premium-text italic leading-none">Unity Care Foundation</h1>
-           <p className="text-slate-400 font-bold text-[10px] mt-2 uppercase tracking-[0.3em] leading-none">{isLogin ? 'সদস্য লগইন' : `নিবন্ধন - ধাপ ${step}/৩`}</p>
+           <h1 className="text-2xl font-black text-slate-900 premium-text italic leading-none">Unity Care {t('foundation')}</h1>
+           <p className="text-slate-400 font-bold text-[10px] mt-2 uppercase tracking-[0.3em] leading-none">{isLogin ? t('member_login') : `${t('register')} - ${t('step')} ${step}/৩`}</p>
         </div>
 
         <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl border border-slate-100 relative overflow-hidden">
@@ -342,7 +340,7 @@ const AuthPage: React.FC = () => {
           {isLogin ? (
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-4">মোবাইল নম্বর</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-4">{t('phone')}</p>
                 <div className="flex gap-3">
                    <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-xs shadow-sm hover:border-teal-300">
                       <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200" alt="Flag" />
@@ -354,16 +352,23 @@ const AuthPage: React.FC = () => {
                     name="phone-login"
                     autoComplete="tel"
                     className={inputClass} 
-                    placeholder="নম্বর লিখুন..." 
+                    placeholder={t('enter_number')} 
                     value={phoneInput} 
                     onChange={e => handlePhoneChange(e.target.value)} 
                    />
                 </div>
               </div>
               <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-teal-700 active:scale-95 transition-all border-b-4 border-teal-800">
-                {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'লগইন করুন'}
+                {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('login_title')}
               </button>
-              <button type="button" onClick={() => { setIsLogin(false); setStep(1); }} className="w-full text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-6">নতুন সদস্য নিবন্ধন</button>
+              
+              <div className="text-center mt-2">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  {db.isDbReady() ? `ডাটাবেজ সংযুক্ত: ${db.getUsers().length} জন সদস্য লোড হয়েছে` : 'ডাটাবেজ কানেক্ট হচ্ছে...'}
+                </p>
+              </div>
+
+              <button type="button" onClick={() => { setIsLogin(false); setStep(1); }} className="w-full text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-4">{t('dont_have_account')} {t('register')}</button>
             </form>
           ) : (
             <div className="space-y-6">
@@ -379,7 +384,7 @@ const AuthPage: React.FC = () => {
                           <input type="file" className="hidden" accept="image/*" onChange={e => handleImageUpload(e, 'profilePic')} />
                         </label>
                       </div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-4">আপনার ছবি দিন</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-4">{t('upload_photo')}</p>
                    </div>
                    
                    <input 
@@ -387,7 +392,7 @@ const AuthPage: React.FC = () => {
                     name="full-name"
                     autoComplete="name"
                     className={inputClass} 
-                    placeholder="আপনার পূর্ণ নাম" 
+                    placeholder={t('name')} 
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value})} 
                    />
@@ -402,7 +407,7 @@ const AuthPage: React.FC = () => {
                         name="user-phone"
                         autoComplete="tel"
                         className={inputClass} 
-                        placeholder="মোবাইল নম্বর" 
+                        placeholder={t('phone')} 
                         value={phoneInput} 
                         onChange={e => handlePhoneChange(e.target.value)} 
                       />
@@ -410,47 +415,47 @@ const AuthPage: React.FC = () => {
                    
                    <div className="grid grid-cols-2 gap-3">
                       <button type="button" onClick={() => { setShowProfessionModal(true); setProfessionSearch(''); }} className={selectBtnClass}>
-                         <span className={`text-[11px] truncate ${formData.profession ? 'text-black' : 'text-slate-400'}`}>{formData.profession || 'পেশা নির্বাচন'}</span>
+                         <span className={`text-[11px] truncate ${formData.profession ? 'text-black' : 'text-slate-400'}`}>{formData.profession || t('select_profession')}</span>
                          <Briefcase className="w-4 h-4 text-slate-400" />
                       </button>
                       <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
-                        <input type="number" name="birth-year" autoComplete="bday-year" className={`${inputClass} pl-10 text-[11px]`} placeholder="জন্ম সাল (৪ সংখ্যা)" value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
+                        <input type="number" name="birth-year" autoComplete="bday-year" className={`${inputClass} pl-10 text-[11px]`} placeholder={t('birth_year')} value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
                       </div>
                    </div>
 
                    <button type="button" onClick={() => setShowBloodModal(true)} className={`${selectBtnClass} py-5 border-rose-100 bg-rose-50/20`}>
                      <div className="flex items-center gap-3">
                         <Droplets className="w-7 h-7 text-rose-500 fill-rose-500/10" />
-                        <span className={`text-base font-black ${formData.bloodGroup ? 'text-black' : 'text-slate-500'}`}>{formData.bloodGroup || 'রক্তের গ্রুপ'}</span>
+                        <span className={`text-base font-black ${formData.bloodGroup ? 'text-black' : 'text-slate-500'}`}>{formData.bloodGroup || t('blood_group')}</span>
                      </div>
                      <ChevronDown className="w-6 h-6 text-slate-400" />
                    </button>
 
-                   <button onClick={nextStep} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-lg uppercase shadow-xl border-b-4 border-teal-800 active:scale-95 transition-all">পরবর্তী ধাপ <ArrowRight className="w-6 h-6 inline ml-2" /></button>
+                   <button onClick={nextStep} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-lg uppercase shadow-xl border-b-4 border-teal-800 active:scale-95 transition-all">{t('next_step')} <ArrowRight className="w-6 h-6 inline ml-2" /></button>
                 </div>
               )}
               
               {step === 2 && (
                 <div className="space-y-5 animate-in slide-in-from-right duration-300">
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setFormData({...formData, location: 'Bangladesh'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Bangladesh' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>বাংলাদেশ</button>
-                    <button onClick={() => setFormData({...formData, location: 'Abroad'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Abroad' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>প্রবাস</button>
+                    <button onClick={() => setFormData({...formData, location: 'Bangladesh'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Bangladesh' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>{t('bangladesh')}</button>
+                    <button onClick={() => setFormData({...formData, location: 'Abroad'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Abroad' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>{t('abroad')}</button>
                   </div>
                   <div className="space-y-3">
                     <button onClick={() => { setShowDistrictModal(true); setLocationSearch(''); }} className={selectBtnClass}>
-                       <span className={`text-base ${formData.address?.district ? 'text-black' : 'text-slate-400'}`}>{formData.address?.district || 'জেলা নির্বাচন করুন'}</span>
+                       <span className={`text-base ${formData.address?.district ? 'text-black' : 'text-slate-400'}`}>{formData.address?.district || t('select_district')}</span>
                        <MapPin className="w-5 h-5 text-teal-500" />
                     </button>
-                    <button onClick={() => { if (!formData.address?.district) return setError('আগে জেলা নির্বাচন করুন।'); setShowUpazilaModal(true); setLocationSearch(''); }} className={selectBtnClass}>
-                       <span className={`text-base ${formData.address?.upazila ? 'text-black' : 'text-slate-400'}`}>{formData.address?.upazila || 'উপজেলা নির্বাচন করুন'}</span>
+                    <button onClick={() => { if (!formData.address?.district) return setError(t('select_district_first')); setShowUpazilaModal(true); setLocationSearch(''); }} className={selectBtnClass}>
+                       <span className={`text-base ${formData.address?.upazila ? 'text-black' : 'text-slate-400'}`}>{formData.address?.upazila || t('select_upazila')}</span>
                        <MapPin className="w-5 h-5 text-teal-500" />
                     </button>
-                    <input type="text" className={inputClass} placeholder="গ্রাম / মহল্লা" value={formData.address?.village} onChange={e => setFormData({...formData, address: {...formData.address!, village: e.target.value}})} />
+                    <input type="text" className={inputClass} placeholder={t('village_area')} value={formData.address?.village} onChange={e => setFormData({...formData, address: {...formData.address!, village: e.target.value}})} />
                   </div>
                   <div className="flex gap-4 mt-8">
                     <button onClick={() => setStep(1)} className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-7 h-7" /></button>
-                    <button onClick={nextStep} className="flex-grow py-5 bg-teal-600 text-white rounded-2xl font-black shadow-2xl uppercase text-lg border-b-4 border-teal-800 active:scale-95 transition-all">পরবর্তী ধাপ</button>
+                    <button onClick={nextStep} className="flex-grow py-5 bg-teal-600 text-white rounded-2xl font-black shadow-2xl uppercase text-lg border-b-4 border-teal-800 active:scale-95 transition-all">{t('next_step')}</button>
                   </div>
                 </div>
               )}
@@ -463,20 +468,41 @@ const AuthPage: React.FC = () => {
                         <FileCheck className="w-7 h-7" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-black text-slate-900 premium-text leading-tight">নীতিমালা ও শর্তাবলী</h3>
+                        <h3 className="text-2xl font-black text-slate-900 premium-text leading-tight">{t('terms_conditions')}</h3>
                         <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Unity Care Foundation Charter</p>
                       </div>
                     </div>
                     
                     <div className="space-y-3 max-h-[24rem] overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
                       {[
-                        { icon: <ShieldCheck className="w-5 h-5" />, text: "সংগঠনের সকল কার্যক্রমে পূর্ণ স্বচ্ছতা ও সততা বজায় রাখা আপনার প্রধান নৈতিক দায়িত্ব।" },
-                        { icon: <Info className="w-5 h-5" />, text: "আপনার ব্যক্তিগত তথ্য সংগঠনের কাজের বাইরে অন্য কোথাও প্রকাশ বা ব্যবহার করা হবে না।" },
-                        { icon: <HeartHandshake className="w-5 h-5" />, text: "জমাকৃত প্রতিটি অর্থ শুধুমাত্র আর্তমানবতার সেবা, দুর্যোগ মোকাবিলা ও সমাজকল্যাণে ব্যয় হবে।" },
-                        { icon: <ShieldAlert className="w-5 h-5" />, text: "সংগঠনের পরিচয় ব্যবহার করে কোনো ব্যক্তিগত ফায়দা বা রাজনৈতিক কাজ করা সম্পূর্ণ নিষিদ্ধ।" },
-                        { icon: <Zap className="w-5 h-5" />, text: "বিশেষ দুর্যোগে স্বেচ্ছাসেবী হিসেবে সশরীরে কাজ করার মানসিক প্রস্তুতি থাকতে হবে।" },
-                        { icon: <Scale className="w-5 h-5" />, text: "সদস্যপদ সক্রিয় রাখতে মাসিক ফি বা অনুদান নিয়মিত প্রদান করে তহবিলে সহযোগিতা করতে হবে।" },
-                        { icon: <Trash2 className="w-5 h-5" />, text: "সংগঠনের আদর্শ পরিপন্থী কোনো কাজের প্রমাণ পাওয়া গেলে সদস্যপদ বাতিল হতে পারে।" }
+                        { 
+                          icon: <ShieldCheck className="w-5 h-5" />, 
+                          text: t('policy_1')
+                        },
+                        { 
+                          icon: <Info className="w-5 h-5" />, 
+                          text: t('policy_2')
+                        },
+                        { 
+                          icon: <HeartHandshake className="w-5 h-5" />, 
+                          text: t('policy_3')
+                        },
+                        { 
+                          icon: <ShieldAlert className="w-5 h-5" />, 
+                          text: t('policy_4')
+                        },
+                        { 
+                          icon: <Zap className="w-5 h-5" />, 
+                          text: t('policy_5')
+                        },
+                        { 
+                          icon: <Scale className="w-5 h-5" />, 
+                          text: t('policy_6')
+                        },
+                        { 
+                          icon: <Trash2 className="w-5 h-5" />, 
+                          text: t('policy_7')
+                        }
                       ].map((policy, i) => (
                         <div key={i} className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-teal-50/30 transition-colors group">
                            <div className="shrink-0 w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center text-teal-600 group-hover:scale-110 transition-transform">
@@ -497,7 +523,9 @@ const AuthPage: React.FC = () => {
                               onChange={e => setFormData({...formData, policyConsent: e.target.checked})} 
                             />
                           </div>
-                          <span className="text-white font-black text-[13px] leading-tight uppercase group-hover:opacity-90">আমি সংগঠনের সকল নীতিমালা ও শর্তাবলী অত্যন্ত গুরুত্বের সাথে মেনে চলার অঙ্গীকার করছি।</span>
+                          <span className="text-white font-black text-[13px] leading-tight uppercase group-hover:opacity-90">
+                            {t('terms_agreement_text')}
+                          </span>
                        </label>
                     </div>
                   </div>
@@ -505,12 +533,12 @@ const AuthPage: React.FC = () => {
                   <div className="flex gap-4 pt-2">
                     <button onClick={() => setStep(2)} className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-8 h-8" /></button>
                     <button onClick={handleRegister} disabled={isSubmitting || !formData.policyConsent} className="flex-grow py-5 bg-slate-900 text-white rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 border-black tracking-widest disabled:opacity-50">
-                      {isSubmitting ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : 'নিবন্ধন সম্পন্ন করুন'}
+                      {isSubmitting ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : t('complete_registration')}
                     </button>
                   </div>
                 </div>
               )}
-              <button type="button" onClick={() => { setIsLogin(true); setStep(1); }} className="w-full text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-6">ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন</button>
+              <button type="button" onClick={() => { setIsLogin(true); setStep(1); }} className="w-full text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-6">{t('already_have_account')} {t('login')}</button>
             </div>
           )}
         </div>
@@ -520,14 +548,14 @@ const AuthPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
              <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest text-sm">দেশ নির্বাচন করুন</h3>
+                <h3 className="font-black uppercase tracking-widest text-sm">{t('select_country')}</h3>
                 <button onClick={() => setShowCountryModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="max-h-96 overflow-y-auto p-4 space-y-2">
                 {COUNTRY_DIAL_CODES.map(c => (
                   <button key={c.code} onClick={() => { setSelectedDialCode(c); setShowCountryModal(false); }} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl transition-all font-black text-xs text-slate-700">
                     <img src={c.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${c.flag}.png`} className="w-7 h-auto rounded-sm border border-slate-200" alt={c.name} />
-                    <span>{c.name}</span>
+                    <span>{language === 'bn' ? c.name : (c.name === 'বাংলাদেশ' ? 'Bangladesh' : c.name === 'ভারত' ? 'India' : c.name === 'সৌদি আরব' ? 'Saudi Arabia' : c.name === 'ইউএই' ? 'UAE' : c.name === 'যুক্তরাজ্য' ? 'UK' : c.name === 'যুক্তরাষ্ট্র' ? 'USA' : c.name === 'মালয়েশিয়া' ? 'Malaysia' : c.name === 'ইতালি' ? 'Italy' : c.name === 'কাতার' ? 'Qatar' : c.name === 'কুয়েত' ? 'Kuwait' : c.name === 'সিঙ্গাপুর' ? 'Singapore' : c.name === 'ওমান' ? 'Oman' : 'Other')}</span>
                     <span className="ml-auto text-teal-600">{c.code}</span>
                   </button>
                 ))}
@@ -540,7 +568,7 @@ const AuthPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
              <div className="p-6 bg-rose-600 text-white flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest text-sm">রক্তের গ্রুপ</h3>
+                <h3 className="font-black uppercase tracking-widest text-sm">{t('blood_group')}</h3>
                 <button onClick={() => setShowBloodModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="p-6 grid grid-cols-4 gap-3">
@@ -558,13 +586,13 @@ const AuthPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
              <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest text-sm">জেলা নির্বাচন</h3>
+                <h3 className="font-black uppercase tracking-widest text-sm">{t('select_district')}</h3>
                 <button onClick={() => setShowDistrictModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="p-4 bg-slate-50 border-b">
                 <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
                    <Search className="w-4 h-4 text-slate-400" />
-                   <input type="text" placeholder="জেলা খুঁজুন..." className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
+                   <input type="text" placeholder={t('search_district')} className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
                 </div>
              </div>
              <div className="overflow-y-auto p-4 space-y-1">
@@ -582,13 +610,13 @@ const AuthPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
              <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest text-sm">উপজেলা নির্বাচন</h3>
+                <h3 className="font-black uppercase tracking-widest text-sm">{t('select_upazila')}</h3>
                 <button onClick={() => setShowUpazilaModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="p-4 bg-slate-50 border-b">
                 <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
                    <Search className="w-4 h-4 text-slate-400" />
-                   <input type="text" placeholder="উপজেলা খুঁজুন..." className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
+                   <input type="text" placeholder={t('search_upazila')} className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
                 </div>
              </div>
              <div className="overflow-y-auto p-4 space-y-1">
@@ -606,13 +634,13 @@ const AuthPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
              <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest text-sm">পেশা নির্বাচন</h3>
+                <h3 className="font-black uppercase tracking-widest text-sm">{t('select_profession')}</h3>
                 <button onClick={() => setShowProfessionModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="p-4 bg-slate-50 border-b">
                 <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
                    <Search className="w-4 h-4 text-slate-400" />
-                   <input type="text" placeholder="পেশা খুঁজুন..." className="w-full text-xs font-black outline-none" value={professionSearch} onChange={e => setProfessionSearch(e.target.value)} />
+                   <input type="text" placeholder={t('search_profession')} className="w-full text-xs font-black outline-none" value={professionSearch} onChange={e => setProfessionSearch(e.target.value)} />
                 </div>
              </div>
              <div className="overflow-y-auto p-4 space-y-1">

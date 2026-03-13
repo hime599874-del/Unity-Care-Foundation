@@ -1,23 +1,35 @@
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { User, UserStatus, ActivityType } from './types';
 import { db } from './services/db';
-import WelcomePage from './pages/WelcomePage';
-import AuthPage from './pages/AuthPage';
-import UserDashboard from './pages/UserDashboard';
-import TransactionPage from './pages/TransactionPage';
-import AssistancePage from './pages/AssistancePage';
-import HistoryPage from './pages/HistoryPage';
-import LeaderboardPage from './pages/LeaderboardPage';
-import ProfilePage from './pages/ProfilePage';
-import ExpensePage from './pages/ExpensePage';
-import VoucherPage from './pages/VoucherPage';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminAuth from './pages/AdminAuth';
-import ProgressPage from './pages/ProgressPage';
-import PublicProfilePage from './pages/PublicProfilePage';
-import { Heart, Home, CreditCard, User as UserIcon } from 'lucide-react';
+import { Heart, Home, CreditCard, User as UserIcon, Loader2 } from 'lucide-react';
+import { LanguageProvider, useLanguage } from './services/LanguageContext';
+
+// Lazy load pages
+const WelcomePage = lazy(() => import('./pages/WelcomePage'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const UserDashboard = lazy(() => import('./pages/UserDashboard'));
+const TransactionPage = lazy(() => import('./pages/TransactionPage'));
+const AssistancePage = lazy(() => import('./pages/AssistancePage'));
+const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const ExpensePage = lazy(() => import('./pages/ExpensePage'));
+const VoucherPage = lazy(() => import('./pages/VoucherPage'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminAuth = lazy(() => import('./pages/AdminAuth'));
+const RecipientListPage = lazy(() => import('./pages/RecipientListPage'));
+const ProgressPage = lazy(() => import('./pages/ProgressPage'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const VerifyInvoicePage = lazy(() => import('./pages/VerifyInvoicePage'));
+
+// Loading component for Suspense
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+  </div>
+);
 
 interface AuthContextType {
   currentUser: User | null;
@@ -36,6 +48,7 @@ export const useAuth = () => {
 
 const BottomNav: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   
   // Hide if not logged in, or if in admin mode, or if not on the dashboard page
@@ -45,17 +58,17 @@ const BottomNav: React.FC = () => {
     <div className="fixed bottom-0 left-0 right-0 glass-nav px-6 py-3 flex justify-around items-center z-[100] rounded-t-[2.5rem] print:hidden bottom-nav">
       <Link to="/dashboard" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
         <Home className="w-6 h-6 no-glow" />
-        <span className="text-[9px] font-black uppercase tracking-widest">হোম</span>
+        <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('home')}</span>
       </Link>
       <Link to="/transaction" className="flex flex-col items-center gap-1 -mt-12">
         <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center shadow-xl shadow-teal-200 border-4 border-white text-white active:scale-90 transition-all">
           <CreditCard className="w-7 h-7 no-glow" />
         </div>
-        <span className="text-[9px] font-black text-teal-700 uppercase tracking-widest mt-1">দান করুন</span>
+        <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('donate_now')}</span>
       </Link>
       <Link to="/profile" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
         <UserIcon className="w-6 h-6 no-glow" />
-        <span className="text-[9px] font-black uppercase tracking-widest">প্রোফাইল</span>
+        <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('profile')}</span>
       </Link>
     </div>
   );
@@ -91,23 +104,27 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <main className={`flex-grow ${showNav ? 'pb-24' : ''}`}>
         <ActivityTracker />
-        <Routes>
-          <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <WelcomePage />} />
-          <Route path="/auth" element={currentUser ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
-          <Route path="/dashboard" element={currentUser ? <UserDashboard /> : <Navigate to="/" replace />} />
-          <Route path="/transaction" element={currentUser ? <TransactionPage /> : <Navigate to="/" replace />} />
-          <Route path="/assistance" element={currentUser ? <AssistancePage /> : <Navigate to="/" replace />} />
-          <Route path="/history" element={currentUser ? <HistoryPage /> : <Navigate to="/" replace />} />
-          <Route path="/leaderboard" element={currentUser ? <LeaderboardPage /> : <Navigate to="/" replace />} />
-          <Route path="/profile" element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />} />
-          <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
-          <Route path="/vouchers" element={currentUser ? <VoucherPage /> : <Navigate to="/" replace />} />
-          <Route path="/progress" element={currentUser ? <ProgressPage /> : <Navigate to="/" replace />} />
-          <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
-          <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
-          <Route path="/u/:userId" element={<PublicProfilePage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <WelcomePage />} />
+            <Route path="/auth" element={currentUser ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
+            <Route path="/dashboard" element={currentUser ? <UserDashboard /> : <Navigate to="/" replace />} />
+            <Route path="/transaction" element={currentUser ? <TransactionPage /> : <Navigate to="/" replace />} />
+            <Route path="/assistance" element={currentUser ? <AssistancePage /> : <Navigate to="/" replace />} />
+            <Route path="/history" element={currentUser ? <HistoryPage /> : <Navigate to="/" replace />} />
+            <Route path="/leaderboard" element={currentUser ? <LeaderboardPage /> : <Navigate to="/" replace />} />
+            <Route path="/profile" element={currentUser ? <ProfilePage /> : <Navigate to="/" replace />} />
+            <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
+            <Route path="/vouchers" element={currentUser ? <VoucherPage /> : <Navigate to="/" replace />} />
+            <Route path="/recipients" element={currentUser ? <RecipientListPage /> : <Navigate to="/" replace />} />
+            <Route path="/progress" element={currentUser ? <ProgressPage /> : <Navigate to="/" replace />} />
+            <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
+            <Route path="/admin-dashboard" element={isAdmin || currentUser?.canManageRecipients ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
+            <Route path="/u/:userId" element={<PublicProfilePage />} />
+            <Route path="/verify/:transactionId" element={<VerifyInvoicePage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
       
       <BottomNav />
@@ -130,6 +147,22 @@ const App: React.FC = () => {
     // Listen for database changes to keep the current user state updated in real-time
     const savedId = localStorage.getItem('current_user_id');
     
+    const initApp = async () => {
+      await db.whenReady();
+      
+      if (savedId) {
+        const user = db.getUser(savedId);
+        if (user && user.status === UserStatus.APPROVED) {
+          setCurrentUser(user);
+          db.updateLastActive(user.id);
+          db.logActivity(user.id, user.name, ActivityType.LOGIN, "Entered the application");
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initApp();
+    
     const unsubscribe = db.subscribe(() => {
       if (savedId) {
         const user = db.getUser(savedId);
@@ -147,19 +180,7 @@ const App: React.FC = () => {
           });
         }
       }
-      if (isLoading) setIsLoading(false);
     });
-
-    if (savedId) {
-      const user = db.getUser(savedId);
-      if (user && user.status === UserStatus.APPROVED) {
-        setCurrentUser(user);
-        db.updateLastActive(user.id);
-        db.logActivity(user.id, user.name, ActivityType.LOGIN, "Entered the application");
-      }
-    } else {
-      setIsLoading(false);
-    }
 
     return unsubscribe;
   }, []);
@@ -179,11 +200,13 @@ const App: React.FC = () => {
   }
 
   return (
-    <AuthContext.Provider value={{ currentUser, setCurrentUser, isAdmin, setIsAdmin }}>
-      <HashRouter>
-        <AppContent />
-      </HashRouter>
-    </AuthContext.Provider>
+    <LanguageProvider>
+      <AuthContext.Provider value={{ currentUser, setCurrentUser, isAdmin, setIsAdmin }}>
+        <HashRouter>
+          <AppContent />
+        </HashRouter>
+      </AuthContext.Provider>
+    </LanguageProvider>
   );
 };
 

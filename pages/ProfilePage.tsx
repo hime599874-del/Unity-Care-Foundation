@@ -4,9 +4,11 @@ import { useAuth } from '../App';
 import { db } from '../services/db';
 import { 
   ArrowLeft, Camera, User, Mail, Phone, Save, 
-  CheckCircle2, Hash, LogOut, Loader2, Award, QrCode, X, Download
+  CheckCircle2, Hash, LogOut, Loader2, Award, QrCode, X, Download,
+  Languages
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { useLanguage } from '../services/LanguageContext';
 
 const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
   return new Promise((resolve) => {
@@ -38,6 +40,7 @@ const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Prom
 
 const ProfilePage: React.FC = () => {
   const { currentUser, setCurrentUser } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -106,15 +109,15 @@ const ProfilePage: React.FC = () => {
           <button onClick={() => navigate('/dashboard')} className="p-2 bg-white/20 rounded-xl backdrop-blur-md active:scale-90 transition-all">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-black italic">প্রোফাইল সেটিংস</h1>
+          <h1 className="text-xl font-black italic">{t('edit_profile')}</h1>
         </div>
         <button 
           onClick={handleLogout} 
           className="p-3 bg-rose-500 text-white rounded-2xl shadow-lg active:scale-90 hover:bg-rose-600 transition-all border border-rose-400 flex items-center gap-2"
-          title="লগ আউট"
+          title={t('logout')}
         >
           <LogOut className="w-5 h-5" />
-          <span className="text-xs font-black uppercase tracking-widest hidden xs:inline">বিদায়</span>
+          <span className="text-xs font-black uppercase tracking-widest hidden xs:inline">{t('logout')}</span>
         </button>
       </div>
 
@@ -141,20 +144,20 @@ const ProfilePage: React.FC = () => {
         <div className="mb-8 flex items-center gap-2 glass-card px-5 py-2.5 rounded-full">
            <Hash className="w-4 h-4 text-teal-600" />
            <p className="text-xs font-black text-slate-500 uppercase tracking-widest text-center">
-             সদস্য আইডি: <span className="text-teal-700 text-sm">{toBengaliNumber(memberId)}</span>
+             {language === 'bn' ? 'সদস্য আইডি:' : 'Member ID:'} <span className="text-teal-700 text-sm">{toBengaliNumber(memberId)}</span>
            </p>
         </div>
 
         {showSuccess && (
           <div className="w-full max-w-md mb-6 p-4 bg-green-50 text-green-600 rounded-2xl font-black text-[11px] flex items-center gap-3 border border-green-100 animate-in fade-in zoom-in">
-            <CheckCircle2 className="w-5 h-5" /> তথ্য সফলভাবে আপডেট হয়েছে!
+            <CheckCircle2 className="w-5 h-5" /> {t('success')}!
           </div>
         )}
 
         <div className="w-full max-w-md space-y-6">
           <div className="glass-card p-8 rounded-[2.5rem] space-y-6">
             <div>
-              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">পূর্ণ নাম</label>
+              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">{t('name')}</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
                 <input 
@@ -164,13 +167,13 @@ const ProfilePage: React.FC = () => {
                   className={inputClass} 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
-                  placeholder="আপনার নাম" 
+                  placeholder={t('name')} 
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">ইমেইল</label>
+              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">{t('email')}</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
                 <input 
@@ -187,10 +190,38 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">মোবাইল নম্বর</label>
+              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">{t('phone')}</label>
               <div className="relative">
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5 z-10" />
                 <input className={`${inputClass} bg-slate-100 text-slate-400 border-transparent cursor-not-allowed`} value={toBengaliNumber(currentUser?.phone || '')} disabled />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-[0.2em] ml-1">{t('language')}</label>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setLanguage('bn')}
+                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                    language === 'bn' 
+                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' 
+                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  <Languages className="w-4 h-4" />
+                  {t('bangla')}
+                </button>
+                <button
+                  onClick={() => setLanguage('en')}
+                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                    language === 'en' 
+                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' 
+                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  <Languages className="w-4 h-4" />
+                  {t('english')}
+                </button>
               </div>
             </div>
           </div>
@@ -200,7 +231,7 @@ const ProfilePage: React.FC = () => {
             disabled={isSaving}
             className="w-full py-5 bg-teal-600 text-white rounded-[2rem] font-black text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50"
           >
-            {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-6 h-6" /> তথ্য সেভ করুন</>}
+            {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-6 h-6" /> {t('save')}</>}
           </button>
 
           {currentUser?.isIdCardEnabled && (
@@ -208,7 +239,7 @@ const ProfilePage: React.FC = () => {
               onClick={() => setShowIdCard(true)}
               className="w-full py-5 bg-white text-teal-700 border-2 border-teal-600 rounded-[2rem] font-black text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all mt-4"
             >
-              <Award className="w-6 h-6" /> সাংগঠনিক আইডি কার্ড
+              <Award className="w-6 h-6" /> {language === 'bn' ? 'সাংগঠনিক আইডি কার্ড' : 'Organizational ID Card'}
             </button>
           )}
         </div>
@@ -220,136 +251,125 @@ const ProfilePage: React.FC = () => {
             {/* Lanyard/Ribbon */}
             <div className="flex flex-col items-center -mb-6 relative z-50">
               {/* Curved Ribbon Part */}
-              <div className="w-20 h-48 bg-gradient-to-r from-rose-600 via-slate-900 to-rose-600 relative flex flex-col items-center shadow-2xl rounded-b-3xl overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/30"></div>
-                <div className="writing-mode-vertical text-[10px] font-black text-white/90 uppercase tracking-[0.4em] mt-8 whitespace-nowrap drop-shadow-lg">
-                   UNITY CARE FOUNDATION
+              <div className="w-20 h-48 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 relative flex flex-col items-center shadow-2xl rounded-b-3xl overflow-hidden border-x border-white/10">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.1),transparent)]"></div>
+                <div className="writing-mode-vertical text-[9px] font-black text-white/90 uppercase tracking-[0.5em] mt-10 whitespace-nowrap drop-shadow-lg">
+                   OFFICIAL MEMBER
                 </div>
               </div>
               
               {/* Metal Hook Assembly */}
               <div className="flex flex-col items-center -mt-4">
                 {/* Leather/Plastic Holder */}
-                <div className="w-16 h-8 bg-slate-900 rounded-t-2xl shadow-2xl border-b border-slate-800 relative">
-                   <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-5 h-1.5 bg-white/10 rounded-full"></div>
+                <div className="w-16 h-8 bg-slate-950 rounded-t-2xl shadow-2xl border-b border-white/5 relative">
+                   <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-5 h-1.5 bg-white/5 rounded-full"></div>
                 </div>
                 {/* Metal Ring */}
-                <div className="w-8 h-8 border-[6px] border-slate-400 rounded-full -mt-1.5 shadow-2xl relative z-10">
-                   <div className="absolute inset-0 border border-white/40 rounded-full"></div>
+                <div className="w-8 h-8 border-[6px] border-slate-300 rounded-full -mt-1.5 shadow-2xl relative z-10 bg-slate-400">
+                   <div className="absolute inset-0 border border-white/60 rounded-full"></div>
                 </div>
                 {/* Metal Clip */}
-                <div className="w-14 h-18 bg-gradient-to-r from-slate-400 via-slate-100 to-slate-400 rounded-b-3xl shadow-[0_15px_30px_rgba(0,0,0,0.4)] border border-slate-500 flex flex-col items-center pt-2 relative">
-                   <div className="w-10 h-2 bg-slate-500 rounded-full mb-1.5 shadow-inner"></div>
-                   <div className="w-6 h-12 bg-gradient-to-b from-slate-200 to-slate-300 rounded-full border border-slate-400 shadow-inner"></div>
+                <div className="w-14 h-18 bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300 rounded-b-3xl shadow-[0_15px_30px_rgba(0,0,0,0.4)] border border-slate-400 flex flex-col items-center pt-2 relative">
+                   <div className="w-10 h-2 bg-slate-400 rounded-full mb-1.5 shadow-inner"></div>
+                   <div className="w-6 h-12 bg-gradient-to-b from-slate-100 to-slate-200 rounded-full border border-slate-300 shadow-inner"></div>
                    {/* Reflection */}
-                   <div className="absolute top-5 left-3 w-1.5 h-10 bg-white/50 rounded-full blur-[1.5px]"></div>
+                   <div className="absolute top-5 left-3 w-1.5 h-10 bg-white/60 rounded-full blur-[1.5px]"></div>
                 </div>
               </div>
             </div>
 
             {/* ID Card Body */}
-            <div className="w-full aspect-[2.5/4] bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] overflow-hidden relative border border-slate-200 flex flex-col">
-              {/* Geometric Background Patterns - Premium Corporate Layers */}
-              <div className="absolute inset-0 z-0 opacity-100 pointer-events-none overflow-hidden">
-                {/* Top Dark Navy Layer with V-Cut */}
-                <div className="absolute top-0 left-0 w-full h-[35%] bg-[#0f172a] clip-path-id-top-v opacity-100"></div>
-                
-                {/* Pink/Red Side Polygons */}
-                <div className="absolute top-[15%] -left-[15%] w-[45%] h-[45%] bg-[#e91e63] rotate-[15deg] shadow-2xl"></div>
-                <div className="absolute top-[15%] -right-[15%] w-[45%] h-[45%] bg-[#e91e63] -rotate-[15deg] shadow-2xl"></div>
-                
-                {/* White Central Layer (Implicitly the card background, but we can add a subtle gradient) */}
-                <div className="absolute top-[30%] left-0 w-full h-full bg-gradient-to-b from-white via-white to-slate-50"></div>
-
-                {/* Dot Patterns on Side Polygons */}
-                <div className="absolute top-[25%] left-4 grid grid-cols-3 gap-1.5 opacity-30">
-                   {[...Array(9)].map((_, i) => <div key={i} className="w-1 h-1 bg-white rounded-full"></div>)}
+            <div className="w-full aspect-[2.5/4] bg-white rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden relative border border-slate-200 flex flex-col">
+              {/* Premium Corporate Background */}
+              <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-slate-50">
+                {/* Top Header Section */}
+                <div className="absolute top-0 left-0 w-full h-[32%] bg-[#0f172a] overflow-hidden">
+                   {/* Subtle Grid Pattern */}
+                   <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '15px 15px' }}></div>
+                   {/* Abstract Shapes */}
+                   <div className="absolute -top-10 -right-10 w-40 h-40 bg-teal-500/20 rounded-full blur-3xl"></div>
+                   <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-slate-900 via-slate-900 to-teal-900/40"></div>
                 </div>
-                <div className="absolute top-[25%] right-4 grid grid-cols-3 gap-1.5 opacity-30">
-                   {[...Array(9)].map((_, i) => <div key={i} className="w-1 h-1 bg-white rounded-full"></div>)}
-                </div>
+                
+                {/* Diagonal Accent */}
+                <div className="absolute top-[28%] -left-[10%] w-[120%] h-12 bg-teal-600 -rotate-3 shadow-lg z-10"></div>
+                <div className="absolute top-[29%] -left-[10%] w-[120%] h-12 bg-slate-900 -rotate-3 shadow-lg z-0"></div>
               </div>
 
               {/* Card Content */}
-              <div className="relative z-10 flex flex-col items-center pt-10 px-8 flex-grow">
+              <div className="relative z-20 flex flex-col items-center pt-8 px-6 flex-grow">
                 {/* Foundation Logo/Name at Top */}
-                <div className="mb-4 text-center">
-                   <div className="w-10 h-10 bg-white rounded-full p-1.5 shadow-xl mx-auto mb-2 border border-slate-100 flex items-center justify-center">
-                      <Award className="w-6 h-6 text-[#e91e63]" />
+                <div className="mb-6 text-center">
+                   <div className="w-12 h-12 bg-white rounded-2xl p-2 shadow-xl mx-auto mb-3 border border-slate-100 flex items-center justify-center rotate-3">
+                      <Award className="w-8 h-8 text-teal-600" />
                    </div>
-                   <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] leading-none mb-1">UNITY CARE</h3>
-                   <p className="text-[7px] font-bold text-white/60 uppercase tracking-[0.2em]">Foundation</p>
+                   <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] leading-none mb-1 drop-shadow-md">UNITY CARE</h3>
+                   <p className="text-[8px] font-bold text-teal-400 uppercase tracking-[0.2em]">Foundation</p>
                 </div>
 
-                {/* Profile Picture Circle */}
-                <div className="relative mb-5">
-                  <div className="w-36 h-36 bg-white rounded-full p-1 shadow-2xl border-4 border-slate-900/5">
-                    <div className="w-full h-full bg-slate-100 rounded-full overflow-hidden border-4 border-white">
+                {/* Profile Picture with Premium Frame */}
+                <div className="relative mb-6">
+                  <div className="w-36 h-36 bg-white rounded-[2.5rem] p-1 shadow-2xl border border-slate-200 rotate-2">
+                    <div className="w-full h-full bg-slate-100 rounded-[2.2rem] overflow-hidden border-2 border-white -rotate-2">
                       {currentUser.profilePic ? (
-                        <img src={currentUser.profilePic} className="w-full h-full object-cover" />
+                        <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
                       ) : (
                         <User className="w-16 h-16 m-10 text-slate-200" />
                       )}
                     </div>
                   </div>
+                  {/* Verified Badge */}
+                  <div className="absolute -bottom-2 -right-2 bg-teal-600 text-white p-1.5 rounded-full shadow-lg border-2 border-white">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
                 </div>
 
                 {/* Name & Designation */}
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-black text-[#0f172a] uppercase tracking-tight leading-none mb-1.5">{currentUser.name}</h2>
-                  <p className="text-[12px] font-black text-[#e91e63] uppercase tracking-widest">{currentUser.designation || 'Verified Member'}</p>
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">{currentUser.name}</h2>
+                  <div className="inline-block px-4 py-1 bg-slate-900 rounded-full">
+                    <p className="text-[10px] font-black text-teal-400 uppercase tracking-[0.2em]">{currentUser.designation || (language === 'bn' ? 'ভেরিফাইড সদস্য' : 'Verified Member')}</p>
+                  </div>
                 </div>
 
-                {/* Details Section */}
-                <div className="w-full space-y-1.5 mb-4 px-2">
-                   <div className="flex justify-between items-center text-[11px] font-bold">
-                      <span className="text-slate-400 uppercase tracking-widest">ID</span>
-                      <span className="text-slate-900 font-black tracking-widest">: {memberId}</span>
+                {/* Details Section - Structured Grid */}
+                <div className="w-full grid grid-cols-2 gap-x-4 gap-y-3 mb-6 px-2">
+                   <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'সদস্য আইডি' : 'Member ID'}</span>
+                      <span className="text-[11px] text-slate-900 font-black tracking-widest">{memberId}</span>
                    </div>
-                   <div className="flex justify-between items-center text-[11px] font-bold">
-                      <span className="text-slate-400 uppercase tracking-widest">Joining</span>
-                      <span className="text-slate-900 font-black tracking-widest">: {currentUser.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString('en-GB') : '01/02/2026'}</span>
+                   <div className="flex flex-col text-right">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}</span>
+                      <span className="text-[11px] text-rose-600 font-black tracking-widest">{currentUser.bloodGroup || '—'}</span>
                    </div>
-                   <div className="flex justify-between items-center text-[11px] font-bold">
-                      <span className="text-slate-400 uppercase tracking-widest">Phone</span>
-                      <span className="text-slate-900 font-black tracking-widest">: {currentUser.phone}</span>
+                   <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'যোগদানের তারিখ' : 'Joining Date'}</span>
+                      <span className="text-[11px] text-slate-900 font-black tracking-widest">{currentUser.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-GB') : '01/02/2026'}</span>
                    </div>
-                   <div className="flex justify-between items-center text-[11px] font-bold">
-                      <span className="text-slate-400 uppercase tracking-widest">Blood Group</span>
-                      <span className="text-[#e91e63] font-black tracking-widest">: {currentUser.bloodGroup || '—'}</span>
-                   </div>
-                   <div className="flex justify-between items-center text-[11px] font-bold">
-                      <span className="text-slate-400 uppercase tracking-widest">Expiry</span>
-                      <span className="text-rose-600 font-black tracking-widest">: {currentUser.expiryDate || '31/12/2026'}</span>
+                   <div className="flex flex-col text-right">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'মেয়াদ শেষ' : 'Expiry Date'}</span>
+                      <span className="text-[11px] text-rose-600 font-black tracking-widest">{currentUser.expiryDate || '31/12/2026'}</span>
                    </div>
                 </div>
 
-                {/* QR Code Area with Colorful Layers */}
-                <div className="mt-auto mb-16 relative w-full flex justify-center">
-                  {/* Decorative Bottom Layers within the content flow */}
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[140%] h-40 bg-[#0f172a] clip-path-id-top-v rotate-180 opacity-100 z-0"></div>
-                  <div className="absolute -bottom-6 -left-10 w-48 h-24 bg-[#e91e63] clip-path-id-diagonal-right opacity-80 -rotate-6 z-0"></div>
-                  <div className="absolute -bottom-6 -right-10 w-48 h-24 bg-[#e91e63] clip-path-id-diagonal-left opacity-80 rotate-6 z-0"></div>
-                  
-                  {/* The QR Code itself */}
-                  <div className="p-2 bg-white rounded-2xl shadow-2xl border-2 border-slate-100 relative z-10 transform hover:scale-105 transition-transform duration-300">
+                {/* QR Code Area */}
+                <div className="mt-auto mb-10 relative w-full flex justify-center">
+                  <div className="p-2.5 bg-white rounded-2xl shadow-2xl border border-slate-100 relative z-10 transform hover:scale-105 transition-transform duration-300">
                     <QRCodeSVG 
                       className="no-glow"
                       value={`${window.location.origin}/#/u/${currentUser.id}`}
-                      size={90}
+                      size={80}
                       level="H"
                       includeMargin={false}
                     />
                   </div>
+                  {/* Decorative Bottom Elements */}
+                  <div className="absolute -bottom-10 left-0 w-full h-20 bg-slate-900 clip-path-id-top-v rotate-180 opacity-100 z-0"></div>
                 </div>
               </div>
 
-              {/* Bottom Accent Bar */}
-              <div className="h-4 bg-[#0f172a] w-full flex">
-                 <div className="h-full w-1/3 bg-[#e91e63]"></div>
-                 <div className="h-full w-1/3 bg-[#0f172a]"></div>
-                 <div className="h-full w-1/3 bg-[#e91e63]"></div>
-              </div>
+              {/* Bottom Brand Bar */}
+              <div className="h-2 bg-teal-600 w-full"></div>
             </div>
 
             {/* Action Buttons */}
@@ -358,13 +378,13 @@ const ProfilePage: React.FC = () => {
                 onClick={() => setShowIdCard(false)}
                 className="flex-grow py-4 bg-white/10 text-white rounded-2xl font-black uppercase text-xs backdrop-blur-md border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
-                <X className="w-4 h-4" /> বন্ধ করুন
+                <X className="w-4 h-4" /> {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
               </button>
               <button 
                 onClick={() => window.print()}
-                className="flex-grow py-4 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-rose-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="flex-grow py-4 bg-teal-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-teal-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
-                <Download className="w-4 h-4" /> প্রিন্ট করুন
+                <Download className="w-4 h-4" /> {language === 'bn' ? 'প্রিন্ট করুন' : 'Print'}
               </button>
             </div>
           </div>
