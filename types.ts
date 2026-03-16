@@ -76,6 +76,7 @@ export interface Transaction {
   date: string;
   status: TransactionStatus;
   timestamp: number;
+  smsSent?: boolean;
 }
 
 export interface Suggestion {

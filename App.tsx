@@ -45,17 +45,17 @@ const BottomNav: React.FC = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 glass-nav px-6 py-3 flex justify-around items-center z-[100] rounded-t-[2.5rem] print:hidden bottom-nav">
       <Link to="/dashboard" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
-        <Home className="w-6 h-6 no-glow" />
+        <Home className="w-6 h-6 no-glow" strokeWidth={2.5} />
         <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('home')}</span>
       </Link>
       <Link to="/transaction" className="flex flex-col items-center gap-1 -mt-12">
         <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center shadow-xl shadow-teal-200 border-4 border-white text-white active:scale-90 transition-all">
-          <CreditCard className="w-7 h-7 no-glow" />
+          <CreditCard className="w-7 h-7 no-glow" strokeWidth={2.5} />
         </div>
         <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('donate_now')}</span>
       </Link>
       <Link to="/profile" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
-        <UserIcon className="w-6 h-6 no-glow" />
+        <UserIcon className="w-6 h-6 no-glow" strokeWidth={2.5} />
         <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('profile')}</span>
       </Link>
     </div>

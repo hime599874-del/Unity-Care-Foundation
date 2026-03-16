@@ -11,7 +11,7 @@ import {
   FileCheck, ShieldAlert, HeartHandshake, Zap, Scale, Trash2
 } from 'lucide-react';
 
-import { BD_LOCATION_DATA, PROFESSIONS, COUNTRY_DIAL_CODES, BLOOD_GROUPS } from '../constants/locationData';
+import { BD_LOCATION_DATA, PROFESSIONS, COUNTRY_DIAL_CODES, BLOOD_GROUPS } from '../src/constants/locationData';
 
 const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
   return new Promise((resolve) => {

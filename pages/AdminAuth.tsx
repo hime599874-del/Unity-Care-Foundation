@@ -4,17 +4,44 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
 import { db } from '../services/db';
+import { User, UserStatus } from '../types';
 
 const AdminAuth: React.FC = () => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const { setIsAdmin } = useAuth();
+  const { setCurrentUser } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin.trim() === '0000') {
-      setIsAdmin(true);
+      const adminUser: User = {
+        id: 'admin',
+        name: 'Admin',
+        phone: '00000000000',
+        birthYear: 2000,
+        bloodGroup: 'O+',
+        location: 'Bangladesh',
+        address: {
+          district: '',
+          upazila: '',
+          union: '',
+          ward: '',
+          village: ''
+        },
+        profession: 'Admin',
+        interests: [],
+        isStudent: false,
+        isVolunteerInterested: false,
+        policyConsent: true,
+        status: UserStatus.APPROVED,
+        totalDonation: 0,
+        yearlyDonation: 0,
+        transactionCount: 0,
+        registeredAt: Date.now(),
+        designation: 'Admin'
+      };
+      setCurrentUser(adminUser);
       navigate('/admin-dashboard');
     } else {
       setError('ভুল পিন কোড। আবার চেষ্টা করুন।');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
 import { db } from '../services/db';
 import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType } from '../types';
 import { 
@@ -37,7 +37,7 @@ const getAssistanceStatusLabel = (status: AssistanceStatus) => {
 };
 
 const AdminDashboard: React.FC = () => {
-  const { currentUser, setIsAdmin, isAdmin } = useAuth();
+  const { currentUser, setCurrentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -115,6 +115,8 @@ const AdminDashboard: React.FC = () => {
   const [userDesignation, setUserDesignation] = useState('');
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState<string | null>(null);
+  const [manualSmsPhone, setManualSmsPhone] = useState('');
+  const [manualSmsMessage, setManualSmsMessage] = useState('');
   const [fundFilter, setFundFilter] = useState<FundType | 'All'>('AppProblem');
 
   useEffect(() => {
@@ -450,10 +452,37 @@ const AdminDashboard: React.FC = () => {
 
   const handleLogout = () => { 
     if (isAdmin) {
-      setIsAdmin(false); 
+      setCurrentUser(null); 
       navigate('/'); 
     } else {
       navigate('/dashboard');
+    }
+  };
+
+  const handleSendGenericSms = async () => {
+    if (!manualSmsPhone || !manualSmsMessage || isSendingSms !== null) return;
+    setIsSendingSms('sending');
+    try {
+      await db.sendGenericSms(manualSmsPhone, manualSmsMessage);
+      alert('SMS সফলভাবে পাঠানো হয়েছে।');
+      setManualSmsPhone('');
+      setManualSmsMessage('');
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setIsSendingSms(null);
+    }
+  };
+
+  const handleSendTransactionSms = async (tx: Transaction) => {
+    setIsSendingSms(tx.id);
+    try {
+      await db.sendManualSms(tx.id);
+      alert('SMS সফলভাবে পাঠানো হয়েছে।');
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setIsSendingSms(null);
     }
   };
 
@@ -526,15 +555,27 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleSendManualSms = async (t: Transaction) => {
-    if (!confirm('আপনি কি এই ট্রানজেকশনের SMS পাঠাতে চান?')) return;
+    console.log('Send SMS button clicked. Transaction ID:', t.id);
+    
+    if (!confirm('আপনি কি এই ট্রানজেকশনের SMS পাঠাতে চান?')) {
+      console.log('User cancelled SMS send.');
+      return;
+    }
+    
     try {
       setIsSendingSms(t.id);
+      console.log('Calling db.sendManualSms for transaction:', t.id);
+      
       const message = await db.sendManualSms(t.id);
-      alert(`SMS সফলভাবে পাঠানো হয়েছে!\n\nমেসেজ:\n${message}`);
+      
+      console.log('SMS sent successfully. Message:', message);
+      alert(`SMS সফলভাবে পাঠানো হয়েছে!`);
     } catch (e: any) {
-      alert(`SMS পাঠাতে সমস্যা হয়েছে: ${e.message}`);
+      console.error('Error in handleSendManualSms. Error object:', e);
+      alert(`SMS পাঠাতে সমস্যা হয়েছে: ${e.message || 'Unknown error'}`);
     } finally {
       setIsSendingSms(null);
+      console.log('Finished handleSendManualSms.');
     }
   };
 
@@ -845,6 +886,13 @@ const AdminDashboard: React.FC = () => {
   }, [users, transactions]);
 
   const filteredUsers = useMemo(() => users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone.includes(searchQuery)), [users, searchQuery]);
+  const userMap = useMemo(() => {
+    const map: Record<string, User> = {};
+    users.forEach(u => {
+      map[u.id] = u;
+    });
+    return map;
+  }, [users]);
   const netBalance = stats.totalCollection - (expenses.length === 0 ? 0 : stats.totalExpense);
 
   return (
@@ -915,8 +963,12 @@ const AdminDashboard: React.FC = () => {
                 {users.filter(u=>u.status===UserStatus.PENDING).map(u => (
                   <div key={u.id} className="p-4 glass-card rounded-[1.8rem] flex items-center justify-between hover:border-indigo-200 transition-colors">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
-                        <UserIcon className="w-5 h-5" />
+                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shrink-0 overflow-hidden border border-slate-100">
+                        {u.profilePic ? (
+                          <img src={u.profilePic} className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="w-5 h-5" />
+                        )}
                       </div>
                       <div className="overflow-hidden">
                         <p className="text-sm font-black truncate">{u.name}</p>
@@ -938,12 +990,17 @@ const AdminDashboard: React.FC = () => {
                 {transactions.filter(t=>t.status===TransactionStatus.PENDING).map(t => (
                   <div key={t.id} className="p-4 glass-card rounded-[1.8rem] flex items-center justify-between hover:border-amber-200 transition-colors">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
-                        <Smartphone className="w-5 h-5" />
+                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0 overflow-hidden border border-slate-100">
+                        {userMap[t.userId]?.profilePic ? (
+                          <img src={userMap[t.userId].profilePic} className="w-full h-full object-cover" />
+                        ) : (
+                          <Smartphone className="w-5 h-5" />
+                        )}
                       </div>
                       <div className="overflow-hidden">
                         <p className="text-sm font-black truncate">{t.userName}</p>
                         <p className="text-[9px] text-slate-400 font-bold uppercase">৳{toBengaliNumber(t.amount)} • {t.method}</p>
+                        <p className="text-[8px] font-black text-slate-500">{toBengaliNumber(userMap[t.userId]?.phone || '')}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -1039,8 +1096,18 @@ const AdminDashboard: React.FC = () => {
                   <div key={req.id} onClick={() => setViewingAssistance(req)} className="bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col gap-3 group active:scale-[0.98] transition-all cursor-pointer">
                      <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center"><HandHelping className="w-6 h-6" /></div>
-                           <div><p className="text-xs font-black">{req.userName}</p><p className="text-[9px] text-slate-400 font-bold uppercase">{req.category}</p></div>
+                           <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100">
+                             {userMap[req.userId]?.profilePic ? (
+                               <img src={userMap[req.userId].profilePic} className="w-full h-full object-cover" />
+                             ) : (
+                               <HandHelping className="w-6 h-6" />
+                             )}
+                           </div>
+                           <div>
+                             <p className="text-xs font-black">{req.userName}</p>
+                             <p className="text-[9px] text-slate-400 font-bold uppercase">{req.category}</p>
+                             <p className="text-[8px] font-black text-slate-500">{toBengaliNumber(req.userPhone)}</p>
+                           </div>
                         </div>
                         <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${
                           req.status === AssistanceStatus.APPROVED ? 'bg-emerald-50 text-emerald-600' : 
@@ -1299,14 +1366,19 @@ const AdminDashboard: React.FC = () => {
                   <div key={s.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-xs">
-                          {s.userName.charAt(0)}
+                        <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-xs overflow-hidden border border-slate-100">
+                          {userMap[s.userId]?.profilePic ? (
+                            <img src={userMap[s.userId].profilePic} className="w-full h-full object-cover" />
+                          ) : (
+                            s.userName.charAt(0)
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{s.userName}</p>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                             <Clock className="w-3 h-3" /> {new Date(s.timestamp).toLocaleDateString()}
                           </p>
+                          <p className="text-[8px] font-black text-slate-500">{toBengaliNumber(userMap[s.userId]?.phone || '')}</p>
                         </div>
                       </div>
                     </div>
@@ -1345,14 +1417,19 @@ const AdminDashboard: React.FC = () => {
                   <div key={c.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 font-black text-xs">
-                          {c.userName.charAt(0)}
+                        <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 font-black text-xs overflow-hidden border border-slate-100">
+                          {userMap[c.userId]?.profilePic ? (
+                            <img src={userMap[c.userId].profilePic} className="w-full h-full object-cover" />
+                          ) : (
+                            c.userName.charAt(0)
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{c.userName}</p>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                             <Clock className="w-3 h-3" /> {new Date(c.timestamp).toLocaleDateString()}
                           </p>
+                          <p className="text-[8px] font-black text-slate-500">{toBengaliNumber(userMap[c.userId]?.phone || '')}</p>
                         </div>
                       </div>
                     </div>
@@ -1632,8 +1709,20 @@ const AdminDashboard: React.FC = () => {
                             <p className="text-[10px] font-bold text-slate-500">{toBengaliNumber(t.date)}</p>
                           </td>
                           <td className="px-6 py-4">
-                            <p className="text-xs font-black text-slate-800 uppercase">{t.userName}</p>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{t.method} • {t.fundType}</p>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                {userMap[t.userId]?.profilePic ? (
+                                  <img src={userMap[t.userId].profilePic} className="w-full h-full object-cover" />
+                                ) : (
+                                  <UserIcon className="w-4 h-4 m-2 text-slate-300" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-slate-800 uppercase leading-none mb-1">{t.userName}</p>
+                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mb-1">{t.method} • {t.fundType}</p>
+                                <p className="text-[8px] font-black text-slate-500">{toBengaliNumber(userMap[t.userId]?.phone)}</p>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <p className="text-sm font-black text-[#0D9488]">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
@@ -1646,7 +1735,26 @@ const AdminDashboard: React.FC = () => {
                               {t.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-6 py-4 text-center flex gap-2 justify-center">
+                            <button 
+                              onClick={() => handleSendTransactionSms(t)}
+                              disabled={isSendingSms !== null}
+                              className={`p-2.5 rounded-xl transition-all active:scale-90 disabled:opacity-50 relative ${
+                                t.smsSent ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                              }`}
+                              title={t.smsSent ? "SMS পাঠানো হয়েছে" : "SMS পাঠান"}
+                            >
+                              {isSendingSms === t.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : t.smsSent ? (
+                                <div className="relative">
+                                  <Smartphone className="w-4 h-4" />
+                                  <Check className="w-2.5 h-2.5 absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full border border-white" />
+                                </div>
+                              ) : (
+                                <Smartphone className="w-4 h-4" />
+                              )}
+                            </button>
                             <button 
                               onClick={() => setTxToDelete(t)}
                               disabled={isSubmitting}
@@ -2046,10 +2154,29 @@ const AdminDashboard: React.FC = () => {
                     </div>
                     
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-xs font-semibold text-slate-500">SMS স্ট্যাটাস</span>
-                      <span className="text-xs font-bold px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg">
-                        Active
-                      </span>
+                       <span className="text-xs font-semibold text-slate-500">ম্যানুয়াল SMS পাঠান</span>
+                    </div>
+                    <div className="space-y-3 mt-4">
+                      <input 
+                        type="tel" 
+                        placeholder="ফোন নম্বর (যেমন: 017...)" 
+                        className="w-full p-3 bg-white border rounded-xl text-sm font-bold"
+                        value={manualSmsPhone}
+                        onChange={(e) => setManualSmsPhone(e.target.value)}
+                      />
+                      <textarea 
+                        placeholder="আপনার মেসেজ লিখুন..." 
+                        className="w-full p-3 bg-white border rounded-xl text-sm font-bold h-24"
+                        value={manualSmsMessage}
+                        onChange={(e) => setManualSmsMessage(e.target.value)}
+                      />
+                      <button 
+                        onClick={handleSendGenericSms}
+                        disabled={isSendingSms !== null}
+                        className="w-full py-3 bg-teal-600 text-white rounded-xl font-black text-sm hover:bg-teal-700 disabled:opacity-50"
+                      >
+                        {isSendingSms ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'SMS পাঠান'}
+                      </button>
                     </div>
                   </div>
                 </div>

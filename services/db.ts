@@ -418,6 +418,7 @@ class FirebaseDB {
           .then(() => {
             console.log('SMS request sent to gateway.');
             updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) }).catch(console.error);
+            updateDoc(txDocRef, { smsSent: true }).catch(console.error);
           })
           .catch(error => console.error('Error sending SMS:', error));
       } catch (error) {
@@ -426,28 +427,38 @@ class FirebaseDB {
     }
   }
 
-  async sendManualSms(txId: string) {
-    const tx = this.transactions.find(t => t.id === txId);
-    if (!tx) throw new Error('Transaction not found');
-    
-    const user = this.users.find(u => u.id === tx.userId);
-    if (!user || !user.phone) throw new Error('User or phone not found');
-
-    const userName = user.name || 'Member';
-    const dateStr = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const message = `Dear ${userName}, Thank you! Your donation of BDT ${tx.amount} to Unity Care Foundation was successfully received on ${dateStr}.`;
-    
+  async sendGenericSms(phone: string, message: string) {
     const encodedMessage = encodeURIComponent(message);
-    const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${user.phone}&text=${encodedMessage}`;
+    let formattedPhone = phone.replace(/\D/g, '');
+    if (formattedPhone.length === 11) formattedPhone = '880' + formattedPhone.slice(1);
+    
+    const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${formattedPhone}&text=${encodedMessage}`;
     
     try {
       await fetch(url, { method: 'GET', mode: 'no-cors' });
       await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
-      return message;
+      return true;
     } catch (error) {
-      console.error('Error sending manual SMS:', error);
-      throw error;
+      console.error('Error sending SMS:', error);
+      throw new Error('এসএমএস পাঠানো সম্ভব হয়নি।');
     }
+  }
+
+  async sendManualSms(txId: string) {
+    const txDoc = await getDoc(doc(firestore, "transactions", txId));
+    if (!txDoc.exists()) throw new Error('লেনদেন পাওয়া যায়নি।');
+    const txData = txDoc.data() as Transaction;
+    
+    const userDoc = await getDoc(doc(firestore, "users", txData.userId));
+    if (!userDoc.exists()) throw new Error('ব্যবহারকারী পাওয়া যায়নি।');
+    const userData = userDoc.data() as User;
+    
+    const dateStr = new Date(txData.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const message = `Dear ${userData.name}, Thank you! Your donation of BDT ${txData.amount} to Unity Care Foundation was successfully received on ${dateStr}.`;
+    
+    await this.sendGenericSms(userData.phone, message);
+    await updateDoc(doc(firestore, "transactions", txId), { smsSent: true });
+    return message;
   }
 
   async rejectTransaction(txId: string) { await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED }); }

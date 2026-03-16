@@ -1,70 +1,75 @@
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, UserStatus, ActivityType } from '../types';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User } from '../types';
 import { db } from './db';
 
 interface AuthContextType {
   currentUser: User | null;
-  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  setCurrentUser: (user: User | null) => void;
   isAdmin: boolean;
-  setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => sessionStorage.getItem('is_admin_active') === 'true');
   const [isLoading, setIsLoading] = useState(true);
 
+  const setCurrentUserPersisted = (user: User | null) => {
+    setCurrentUser(user);
+    if (user) {
+      localStorage.setItem('current_user_id', user.id);
+    } else {
+      localStorage.removeItem('current_user_id');
+    }
+  };
+
   useEffect(() => {
-    const savedId = localStorage.getItem('current_user_id');
-    
-    const initApp = async () => {
-      await db.whenReady();
-      
-      if (savedId) {
-        const user = db.getUser(savedId);
-        if (user && user.status === UserStatus.APPROVED) {
-          setCurrentUser(user);
-          db.updateLastActive(user.id);
-          db.logActivity(user.id, user.name, ActivityType.LOGIN, "Entered the application");
+    const initAuth = async () => {
+      try {
+        // Wait for database to sync initial data
+        await db.whenReady();
+        
+        const userId = localStorage.getItem('current_user_id');
+        if (userId) {
+          const user = db.getUser(userId);
+          if (user) {
+            setCurrentUser(user);
+          }
         }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
-    initApp();
-    
-    const unsubscribe = db.subscribe(() => {
-      if (savedId) {
-        const user = db.getUser(savedId);
-        if (user && user.status === UserStatus.APPROVED) {
-          setCurrentUser(prevUser => {
-            if (!prevUser) return user;
-            const hasChanged = 
-              user.totalDonation !== prevUser.totalDonation || 
-              user.transactionCount !== prevUser.transactionCount ||
-              user.status !== prevUser.status ||
-              user.name !== prevUser.name ||
-              user.profilePic !== prevUser.profilePic;
+    initAuth();
+  }, []);
 
-            return hasChanged ? user : prevUser;
-          });
+  useEffect(() => {
+    if (!currentUser || isLoading) return;
+
+    const unsubscribe = db.subscribe(() => {
+      const updatedUser = db.getUser(currentUser.id);
+      if (updatedUser) {
+        // Update local state if database record changed
+        if (JSON.stringify(updatedUser) !== JSON.stringify(currentUser)) {
+          setCurrentUser(updatedUser);
         }
+      } else {
+        // User was removed from database, log them out
+        setCurrentUserPersisted(null);
       }
     });
 
     return unsubscribe;
-  }, []);
+  }, [currentUser?.id, isLoading]);
 
-  useEffect(() => {
-    sessionStorage.setItem('is_admin_active', isAdmin.toString());
-  }, [isAdmin]);
+  const isAdmin = currentUser?.designation === 'Admin' || currentUser?.canManageRecipients === true;
 
   return (
-    <AuthContext.Provider value={{ currentUser, setCurrentUser, isAdmin, setIsAdmin, isLoading }}>
+    <AuthContext.Provider value={{ currentUser, setCurrentUser: setCurrentUserPersisted, isAdmin, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -72,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };
