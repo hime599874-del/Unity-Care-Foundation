@@ -8,7 +8,7 @@ import { useAuth } from '../services/AuthContext';
 
 const RecipientListPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const [recipients, setRecipients] = useState<RecipientInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -106,9 +106,9 @@ const RecipientListPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {currentUser?.canManageRecipients && (
+                {isAdmin && (
                   <button 
-                    onClick={() => navigate(`/admin-dashboard?tab=recipients&edit=${r.id}`)} 
+                    onClick={() => navigate(`/manage-recipients?edit=${r.id}`)} 
                     className="p-3 bg-blue-500 text-white rounded-2xl active:scale-90 transition-all shadow-lg shadow-blue-200"
                   >
                     <Edit className="w-5 h-5" />

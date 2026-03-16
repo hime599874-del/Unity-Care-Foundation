@@ -146,7 +146,11 @@ const AdminDashboard: React.FC = () => {
       setExpenses(db.getExpenses().sort((a,b) => b.timestamp - a.timestamp));
       setProjects(db.getProjects().sort((a,b) => b.timestamp - a.timestamp));
       setActivities(db.getActivities().sort((a,b) => b.timestamp - a.timestamp));
-      setRecipients(db.getRecipients().sort((a,b) => b.timestamp - a.timestamp));
+      const allRecipients = db.getRecipients().sort((a,b) => b.timestamp - a.timestamp);
+      setRecipients(allRecipients);
+      if (!editingRecipient) {
+        setRecipientDonationNo(getNextDonationNo(allRecipients));
+      }
       setStats(db.getStats());
       const latestConfig = db.getContactConfig();
       setContactConfig(latestConfig);
@@ -245,6 +249,15 @@ const AdminDashboard: React.FC = () => {
     } catch (e: any) { alert(e.message); } finally { setIsSubmitting(false); }
   };
 
+  const getNextDonationNo = (allRecipients: RecipientInfo[]) => {
+    if (allRecipients.length === 0) return '1';
+    const nos = allRecipients
+      .map(r => parseInt(r.donationNo))
+      .filter(n => !isNaN(n));
+    if (nos.length === 0) return '1';
+    return (Math.max(...nos) + 1).toString();
+  };
+
   const handleAddRecipient = async () => {
     if (!recipientName || !recipientAmount || isSubmitting) return;
     setIsSubmitting(true);
@@ -283,7 +296,7 @@ const AdminDashboard: React.FC = () => {
         alert('তথ্য সফলভাবে যোগ করা হয়েছে।');
       }
 
-      setRecipientDonationNo('');
+      setRecipientDonationNo(getNextDonationNo(recipients));
       setRecipientName('');
       setRecipientPhone('');
       setRecipientVillage('');
@@ -1922,7 +1935,7 @@ const AdminDashboard: React.FC = () => {
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">অনুদান নং</label>
-                    <input type="text" className="w-full p-5 bg-slate-50 border-2 rounded-[1.8rem] outline-none font-bold text-xs focus:border-rose-200 transition-all" placeholder="অনুদান নম্বর লিখুন..." value={recipientDonationNo} onChange={e => setRecipientDonationNo(e.target.value)} />
+                    <input type="text" readOnly className="w-full p-5 bg-slate-100 border-2 rounded-[1.8rem] outline-none font-bold text-xs cursor-not-allowed opacity-70" placeholder="অনুদান নম্বর" value={recipientDonationNo} />
                   </div>
 
                   <div className="space-y-1.5">
@@ -2037,7 +2050,7 @@ const AdminDashboard: React.FC = () => {
                     <button 
                       onClick={() => {
                         setEditingRecipient(null);
-                        setRecipientDonationNo('');
+                        setRecipientDonationNo(getNextDonationNo(recipients));
                         setRecipientName('');
                         setRecipientPhone('');
                         setRecipientVillage('');

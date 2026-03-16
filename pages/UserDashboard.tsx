@@ -307,7 +307,7 @@ const UserDashboard: React.FC = () => {
               label: 'গৃহীতা ম্যানেজমেন্ট', 
               color: 'from-teal-400 via-emerald-500 to-green-600', 
               glowColor: '#10B981', 
-              path: '/admin-dashboard?tab=recipients' 
+              path: '/manage-recipients' 
             }] : []),
             { icon: <img src="https://img.icons8.com/fluency/96/clipboard.png" className="w-9 h-9 object-contain" alt="History" />, label: t('history'), color: 'from-violet-500 via-purple-600 to-fuchsia-600', glowColor: '#8B5CF6', path: '/history' },
             { icon: <img src="https://img.icons8.com/fluency/96/idea.png" className="w-9 h-9 object-contain" alt="Suggestion" />, label: t('suggestion'), color: 'from-lime-400 via-emerald-500 to-teal-600', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },

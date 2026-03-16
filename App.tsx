@@ -20,6 +20,7 @@ const VoucherPage = lazy(() => import('./pages/VoucherPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminAuth = lazy(() => import('./pages/AdminAuth'));
 const RecipientListPage = lazy(() => import('./pages/RecipientListPage'));
+const RecipientManagementPage = lazy(() => import('./pages/RecipientManagementPage'));
 const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const VerifyInvoicePage = lazy(() => import('./pages/VerifyInvoicePage'));
@@ -39,8 +40,8 @@ const BottomNav: React.FC = () => {
   const { t } = useLanguage();
   const location = useLocation();
   
-  // Hide if not logged in, or if in admin mode, or if not on the dashboard page
-  if (!currentUser || isAdmin || location.pathname !== '/dashboard') return null;
+  // Hide if not logged in, or if not on the dashboard page
+  if (!currentUser || location.pathname !== '/dashboard') return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 glass-nav px-6 py-3 flex justify-around items-center z-[100] rounded-t-[2.5rem] print:hidden bottom-nav">
@@ -86,7 +87,7 @@ const AppContent: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
   const location = useLocation();
   const isDashboard = location.pathname === '/dashboard';
-  const showNav = currentUser && !isAdmin && isDashboard;
+  const showNav = currentUser && isDashboard;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -105,9 +106,10 @@ const AppContent: React.FC = () => {
             <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
             <Route path="/vouchers" element={currentUser ? <VoucherPage /> : <Navigate to="/" replace />} />
             <Route path="/recipients" element={currentUser ? <RecipientListPage /> : <Navigate to="/" replace />} />
+            <Route path="/manage-recipients" element={currentUser && (isAdmin || currentUser?.canManageRecipients) ? <RecipientManagementPage /> : <Navigate to="/" replace />} />
             <Route path="/progress" element={currentUser ? <ProgressPage /> : <Navigate to="/" replace />} />
             <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
-            <Route path="/admin-dashboard" element={isAdmin || currentUser?.canManageRecipients ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
+            <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
             <Route path="/u/:userId" element={<PublicProfilePage />} />
             <Route path="/verify/:transactionId" element={<VerifyInvoicePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
