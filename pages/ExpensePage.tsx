@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
 import { Expense } from '../types';
-import { ArrowLeft, Calendar, FileText, TrendingDown, Wallet, Receipt, Info, X } from 'lucide-react';
+import { useToast } from '../services/ToastContext';
+import { ArrowLeft, Calendar, FileText, TrendingDown, Wallet, Receipt, Info, X, Download, Loader2 } from 'lucide-react';
 
 const ExpensePage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [stats, setStats] = useState(db.getStats());
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +23,31 @@ const ExpensePage: React.FC = () => {
     const unsubscribe = db.subscribe(refreshData);
     return unsubscribe;
   }, []);
+
+  const handleDownloadImage = async (imageUrl: string) => {
+    try {
+      setIsDownloading(true);
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Expense_Proof_${Date.now()}.jpg`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast('ডাউনলোড ব্যর্থ হয়েছে।', 'error');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const toBengaliNumber = (num: number | string) => {
     return num.toLocaleString();
@@ -187,12 +215,22 @@ const ExpensePage: React.FC = () => {
           onClick={() => setSelectedImage(null)}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm cursor-pointer"
         >
-          <button 
-            onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
-            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all z-[60]"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="absolute top-6 right-6 flex gap-3 z-[60]">
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleDownloadImage(selectedImage); }}
+              disabled={isDownloading}
+              className="p-3 bg-teal-600 hover:bg-teal-700 rounded-full text-white transition-all shadow-lg disabled:opacity-50"
+              title="Download Image"
+            >
+              {isDownloading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Download className="w-6 h-6" />}
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
+              className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
           <div 
             onClick={(e) => e.stopPropagation()}
             className="max-w-full max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl cursor-default"

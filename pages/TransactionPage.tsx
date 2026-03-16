@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
+import { useToast } from '../services/ToastContext';
 import { db } from '../services/db';
+import { FundType } from '../types';
 import { 
   ArrowLeft, Smartphone, ChevronDown, DollarSign, Wallet,
   Check, X, Send, CheckCircle2, Landmark as BankIcon, 
@@ -16,9 +18,11 @@ const BANGLADESHI_BANKS = [
 
 const TransactionPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const { showToast } = useToast();
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<'Bkash' | 'Nagad' | 'Rocket' | 'Bank'>('Bkash');
   const [selectedBank, setSelectedBank] = useState('');
+  const [fundType, setFundType] = useState<FundType>('General');
   const [txId, setTxId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,23 +34,23 @@ const TransactionPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount) return alert('টাকার পরিমাণ লিখুন।');
-    if (method === 'Bank' && !selectedBank) return alert('ব্যাংকের নাম নির্বাচন করুন।');
-    if (txId.length < 4) return alert('লেনদেনের শেষ ৪ ডিজিট লিখুন।');
+    if (!amount) return showToast('টাকার পরিমাণ লিখুন।', 'error');
+    if (method === 'Bank' && !selectedBank) return showToast('ব্যাংকের নাম নির্বাচন করুন।', 'error');
+    if (txId.length < 4) return showToast('লেনদেনের শেষ 4 ডিজিট লিখুন।', 'error');
     if (isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      await db.submitTransaction({
-        userId: currentUser?.id,
-        userName: currentUser?.name,
-        amount: parseFloat(amount),
-        method,
-        bankName: method === 'Bank' ? selectedBank : null,
-        transactionId: txId.trim(),
-        date,
-        fundType: 'General'
-      });
+        await db.submitTransaction({
+          userId: currentUser?.id,
+          userName: currentUser?.name,
+          amount: parseFloat(amount),
+          method,
+          bankName: method === 'Bank' ? selectedBank : null,
+          transactionId: txId.trim(),
+          date,
+          fundType
+        });
       
       setIsSuccess(true);
       setTimeout(() => {
@@ -55,7 +59,7 @@ const TransactionPage: React.FC = () => {
       }, 800);
     } catch (err) {
       setIsSubmitting(false);
-      alert('তথ্য জমা দিতে সমস্যা হয়েছে।');
+      showToast('তথ্য জমা দিতে সমস্যা হয়েছে।', 'error');
     }
   };
 
@@ -92,6 +96,31 @@ const TransactionPage: React.FC = () => {
                     className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 active:scale-95 transition-all hover:bg-white hover:border-teal-200 shadow-sm"
                   >
                     ৳{toBengaliNumber(amt)}
+                  </button>
+                ))}
+             </div>
+          </div>
+
+          <div className="glass-card p-6 rounded-[2.5rem] space-y-6">
+             <div className="flex items-center gap-3">
+                <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl"><Coins className="w-6 h-6" /></div>
+                <h3 className="font-black text-slate-800 text-sm uppercase tracking-widest">ফান্ড টাইপ</h3>
+             </div>
+             <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: 'General', label: 'সাধারণ' },
+                  { id: 'AppProblem', label: 'অ্যাপ প্রবলেম' },
+                  { id: 'Special', label: 'বিশেষ' },
+                  { id: 'Emergency', label: 'জরুরী' }
+                ].map(f => (
+                  <button 
+                    key={f.id} 
+                    type="button" 
+                    disabled={isSubmitting} 
+                    onClick={() => setFundType(f.id as any)} 
+                    className={`p-4 rounded-2xl border-2 transition-all ${fundType === f.id ? 'bg-amber-50 border-amber-500' : 'bg-slate-50 border-slate-100'}`}
+                  >
+                    <span className={`font-black text-[10px] ${fundType === f.id ? 'text-amber-700' : 'text-slate-400'}`}>{f.label}</span>
                   </button>
                 ))}
              </div>
@@ -136,7 +165,7 @@ const TransactionPage: React.FC = () => {
                 <div className="p-2 bg-rose-50 text-rose-600 rounded-xl"><Hash className="w-5 h-5" /></div>
                 <h3 className="font-black text-slate-800 text-[11px] uppercase tracking-widest">ভেরিফিকেশন</h3>
              </div>
-             <input type="text" maxLength={4} disabled={isSubmitting} className={`${inputClass} !p-3 text-center tracking-widest text-base shadow-inner`} placeholder="নম্বরের শেষ ৪ ডিজিট" value={txId} onChange={e => setTxId(e.target.value.replace(/\D/g, ''))} />
+             <input type="text" maxLength={4} disabled={isSubmitting} className={`${inputClass} !p-3 text-center tracking-widest text-base shadow-inner`} placeholder="নম্বরের শেষ 4 ডিজিট" value={txId} onChange={e => setTxId(e.target.value.replace(/\D/g, ''))} />
              <input type="date" disabled={isSubmitting} className={`${inputClass} !p-3 text-xs shadow-inner`} value={date} onChange={e => setDate(e.target.value)} />
           </div>
 

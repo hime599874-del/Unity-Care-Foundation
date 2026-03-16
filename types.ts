@@ -20,7 +20,7 @@ export enum AssistanceStatus {
   DISBURSED = 'DISBURSED'
 }
 
-export type FundType = 'General' | 'Special' | 'Emergency' | 'Other';
+export type FundType = 'General' | 'Special' | 'Emergency' | 'AppProblem' | 'Other';
 
 export interface User {
   id: string;
@@ -149,6 +149,7 @@ export interface AppStats {
   totalExpense: number;
   totalUsers: number;
   pendingRequests: number;
+  totalSmsSent?: number;
 }
 
 export interface Notification {

@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
 import { db } from '../services/db';
+import { useToast } from '../services/ToastContext';
 import { Transaction, TransactionStatus } from '../types';
-import { ArrowLeft, Printer, Download, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
+import { ArrowLeft, Printer, Download, ChevronLeft, ChevronRight, Hash, Loader2 } from 'lucide-react';
+import { toPng } from 'html-to-image';
 
 const HistoryPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const { showToast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState(Math.max(2026, new Date().getFullYear()));
 
@@ -38,6 +43,35 @@ const HistoryPage: React.FC = () => {
     return num.toString();
   };
 
+  const handleDownload = async () => {
+    if (!reportRef.current) return;
+    
+    try {
+      setIsDownloading(true);
+      const dataUrl = await toPng(reportRef.current, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `Donation_Report_${currentUser?.name}_${selectedYear}.png`;
+      link.href = dataUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast('ডাউনলোড ব্যর্থ হয়েছে।', 'error');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-[#f8fafc] via-[#e2e8f0] to-[#cbd5e1] min-h-screen pb-24 font-sans">
       <div className="px-5 pt-6 pb-2 flex items-center justify-between sticky top-0 bg-white/40 backdrop-blur-2xl z-30 border-b border-white/20">
@@ -45,16 +79,23 @@ const HistoryPage: React.FC = () => {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black shadow-lg uppercase tracking-wider">
+          <button 
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black shadow-lg uppercase tracking-wider"
+          >
             <Printer className="w-3.5 h-3.5" /> প্রিন্ট
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-xl text-[9px] font-black shadow-lg shadow-teal-200/50 uppercase tracking-wider">
-            <Download className="w-3.5 h-3.5" /> সেভ
+          <button 
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-xl text-[9px] font-black shadow-lg shadow-teal-200/50 uppercase tracking-wider disabled:opacity-50"
+          >
+            {isDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} সেভ
           </button>
         </div>
       </div>
 
-      <div className="px-3 mt-4">
+      <div className="px-3 mt-4" ref={reportRef}>
         <div className="bg-white/95 backdrop-blur-md rounded-[2.5rem] shadow-2xl shadow-slate-900/10 overflow-hidden border border-white max-w-4xl mx-auto">
           <div className="bg-gradient-to-r from-teal-600 to-teal-800 py-7 px-6 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
 import { ProjectProgress, TransactionStatus } from '../types';
+import { useToast } from '../services/ToastContext';
 import { 
   ArrowLeft, TrendingUp, Target, Calendar, 
   CheckCircle2, Clock, AlertCircle, BarChart3,
@@ -19,6 +20,7 @@ const ProgressPage: React.FC = () => {
   const [stats, setStats] = useState(db.getStats());
   const [selectedMonth, setSelectedMonth] = useState('2026-02');
   const [tempMonth, setTempMonth] = useState('2026-02');
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,11 +44,11 @@ const ProgressPage: React.FC = () => {
       if (year > 2026 || (year === 2026 && month >= 2)) {
         setSelectedMonth(tempMonth);
       } else {
-        alert('অনুগ্রহ করে ২০২৬-০২ বা তার পরের তারিখ দিন।');
+        showToast('অনুগ্রহ করে 2026-02 বা তার পরের তারিখ দিন।', 'info');
         setTempMonth(selectedMonth);
       }
     } else {
-      alert('সঠিক ফরম্যাটে (YYYY-MM) তারিখ লিখুন। যেমন: 2026-03');
+      showToast('সঠিক ফরম্যাটে (YYYY-MM) তারিখ লিখুন। যেমন: 2026-03', 'info');
       setTempMonth(selectedMonth);
     }
   };
@@ -205,7 +207,7 @@ const ProgressPage: React.FC = () => {
           <div className="flex items-center gap-2 px-2">
             <div className="w-1 h-1 rounded-full bg-rose-500"></div>
             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-              এনালাইসিস শুরু: ২০২৬-০২ থেকে
+              এনালাইসিস শুরু: 2026-02 থেকে
             </p>
           </div>
         </motion.div>

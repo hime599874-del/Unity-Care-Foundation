@@ -1,7 +1,10 @@
 
 import { initializeApp } from "firebase/app";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { 
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection, 
   addDoc, 
   updateDoc, 
@@ -17,10 +20,9 @@ import {
   setDoc,
   getDocs,
   getDoc,
-  enableMultiTabIndexedDbPersistence,
   getDocFromServer
 } from "firebase/firestore";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo, FundType } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
@@ -34,7 +36,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-const firestore = getFirestore(app);
+const firestore = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
 
 async function testConnection() {
   try {
@@ -46,18 +52,6 @@ async function testConnection() {
   }
 }
 testConnection();
-
-// Enable Offline Persistence to ensure the app works even when connection is flaky
-// We catch the error to prevent app crash if persistence is already enabled or unsupported
-enableMultiTabIndexedDbPersistence(firestore).catch((err) => {
-    if (err.code === 'failed-precondition') {
-        console.warn("Firestore: Multiple tabs open, persistence enabled in only one tab.");
-    } else if (err.code === 'unimplemented') {
-        console.warn("Firestore: The current browser does not support persistence.");
-    } else {
-        console.error("Firestore persistence error:", err);
-    }
-});
 
 /**
  * Safe logging to prevent circularity errors during error reporting.
@@ -189,7 +183,7 @@ class FirebaseDB {
   private complaints: Complaint[] = [];
   private activities: MemberActivity[] = [];
   private recipients: RecipientInfo[] = [];
-  private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0 };
+  private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0, totalSmsSent: 0 };
   private contactConfig: ContactConfig = {
     whatsapp: 'https://chat.whatsapp.com/C39euDOPaskI3KoeNZMW2H?mode=gi_t',
     facebook: 'https://www.facebook.com/share/17peDnCVEV/',
@@ -232,7 +226,7 @@ class FirebaseDB {
         }
       });
 
-      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(500)), (snapshot) => {
+      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc")), (snapshot) => {
         this.transactions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Transaction[];
         this.updateLocalStats();
         this.notify();
@@ -263,7 +257,7 @@ class FirebaseDB {
         this.notify();
       }, (error) => safeError("Firestore: Complaints sync error:", error));
 
-      onSnapshot(query(collection(firestore, "activities"), orderBy("timestamp", "desc"), limit(500)), (snapshot) => {
+      onSnapshot(query(collection(firestore, "activities"), orderBy("timestamp", "desc")), (snapshot) => {
         this.activities = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as MemberActivity[];
         this.notify();
       }, (error) => safeError("Firestore: Activities sync error:", error));
@@ -287,7 +281,12 @@ class FirebaseDB {
         if (snapshot.exists()) {
           const data = toPlainObject(snapshot.data());
           if (data) {
-            this.stats = { ...this.stats, totalCollection: data.totalCollection || 0, totalExpense: data.totalExpense || 0 };
+            this.stats = { 
+              ...this.stats, 
+              totalCollection: data.totalCollection || 0, 
+              totalExpense: data.totalExpense || 0,
+              totalSmsSent: data.totalSmsSent || 0
+            };
             this.notify();
           }
         }
@@ -367,8 +366,8 @@ class FirebaseDB {
     await addDoc(collection(firestore, "complaints"), cleanData);
   }
 
-  async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Manual', customDate?: string) {
-    const txData = { userId, userName, amount, method, status: TransactionStatus.APPROVED, transactionId: `ADM-${Date.now().toString().slice(-6)}`, date: customDate || new Date().toISOString().split('T')[0], timestamp: customDate ? new Date(customDate).getTime() : Date.now(), fundType: 'General' };
+  async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Manual', customDate?: string, fundType: FundType = 'General') {
+    const txData = { userId, userName, amount, method, status: TransactionStatus.APPROVED, transactionId: `ADM-${Date.now().toString().slice(-6)}`, date: customDate || new Date().toISOString().split('T')[0], timestamp: customDate ? new Date(customDate).getTime() : Date.now(), fundType };
     await runTransaction(firestore, async (transaction) => {
       const userRef = doc(firestore, "users", userId);
       const statsRef = doc(firestore, "metadata", "stats");
@@ -381,17 +380,74 @@ class FirebaseDB {
 
   async approveTransaction(txId: string) {
     const txDocRef = doc(firestore, "transactions", txId);
+    let userPhone = "";
+    let userName = "";
+    let amount = 0;
+    
     await runTransaction(firestore, async (transaction) => {
       const txSnap = await transaction.get(txDocRef);
       if (!txSnap.exists()) return;
       const txData = txSnap.data();
       if (txData.status === TransactionStatus.APPROVED) return;
+      
+      amount = txData.amount;
+      
       const userRef = doc(firestore, "users", txData.userId);
+      const userSnap = await transaction.get(userRef);
+      if (userSnap.exists()) {
+        userPhone = userSnap.data().phone;
+        userName = userSnap.data().name || 'Member';
+      }
+      
       const statsRef = doc(firestore, "metadata", "stats");
       transaction.update(txDocRef, { status: TransactionStatus.APPROVED });
       transaction.update(userRef, { totalDonation: increment(txData.amount), transactionCount: increment(1) });
       transaction.set(statsRef, { totalCollection: increment(txData.amount) }, { merge: true });
     });
+
+    // Send SMS after successful transaction
+    if (userPhone && amount > 0) {
+      try {
+        const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const message = `Dear ${userName}, Thank you! Your donation of BDT ${amount} to Unity Care Foundation was successfully received on ${dateStr}.`;
+        const encodedMessage = encodeURIComponent(message);
+        // Using the provided credentials
+        const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${userPhone}&text=${encodedMessage}`;
+        
+        fetch(url, { method: 'GET', mode: 'no-cors' })
+          .then(() => {
+            console.log('SMS request sent to gateway.');
+            updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) }).catch(console.error);
+          })
+          .catch(error => console.error('Error sending SMS:', error));
+      } catch (error) {
+        console.error('Failed to trigger SMS:', error);
+      }
+    }
+  }
+
+  async sendManualSms(txId: string) {
+    const tx = this.transactions.find(t => t.id === txId);
+    if (!tx) throw new Error('Transaction not found');
+    
+    const user = this.users.find(u => u.id === tx.userId);
+    if (!user || !user.phone) throw new Error('User or phone not found');
+
+    const userName = user.name || 'Member';
+    const dateStr = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const message = `Dear ${userName}, Thank you! Your donation of BDT ${tx.amount} to Unity Care Foundation was successfully received on ${dateStr}.`;
+    
+    const encodedMessage = encodeURIComponent(message);
+    const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${user.phone}&text=${encodedMessage}`;
+    
+    try {
+      await fetch(url, { method: 'GET', mode: 'no-cors' });
+      await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+      return message;
+    } catch (error) {
+      console.error('Error sending manual SMS:', error);
+      throw error;
+    }
   }
 
   async rejectTransaction(txId: string) { await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED }); }
@@ -495,7 +551,37 @@ class FirebaseDB {
 
   async updateLastActive(userId: string) { try { await updateDoc(doc(firestore, "users", userId), { lastActive: Date.now() }); } catch (e) {} }
   async deleteUser(id: string) { await deleteDoc(doc(firestore, "users", id)); }
-  async updateUser(id: string, updates: any) { await updateDoc(doc(firestore, "users", id), sanitizeForUpload(updates)); }
+  async updateUser(id: string, updates: any) {
+    if (updates.status === UserStatus.APPROVED) {
+      try {
+        const userRef = doc(firestore, "users", id);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (userData.status !== UserStatus.APPROVED) {
+            const userPhone = userData.phone;
+            const userName = userData.name || 'Member';
+            
+            if (userPhone) {
+              const message = `Dear ${userName}, your account has been successfully approved. You can now log in to Unity Care Foundation.`;
+              const encodedMessage = encodeURIComponent(message);
+              const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${userPhone}&text=${encodedMessage}`;
+              
+              fetch(url, { method: 'GET', mode: 'no-cors' })
+                .then(() => {
+                  console.log('User approval SMS request sent to gateway.');
+                  updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) }).catch(console.error);
+                })
+                .catch(error => console.error('Error sending user approval SMS:', error));
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to process user approval SMS:', e);
+      }
+    }
+    await updateDoc(doc(firestore, "users", id), sanitizeForUpload(updates)); 
+  }
   async sendNotification(userId: string, message: string) { await addDoc(collection(firestore, "notifications"), sanitizeForUpload({ userId, message, timestamp: Date.now(), isRead: false })); }
   async updateAssistanceStatus(reqId: string, status: AssistanceStatus, adminNote?: string) {
     const reqRef = doc(firestore, "assistance_requests", reqId);
@@ -635,6 +721,12 @@ class FirebaseDB {
 
   async deleteRecipient(id: string) {
     await deleteDoc(doc(firestore, "recipients", id));
+  }
+
+  async adminSignIn() {
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
   }
 }
 

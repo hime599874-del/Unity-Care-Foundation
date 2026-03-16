@@ -31,20 +31,8 @@ const PageLoader = () => (
   </div>
 );
 
-interface AuthContextType {
-  currentUser: User | null;
-  setCurrentUser: (user: User | null) => void;
-  isAdmin: boolean;
-  setIsAdmin: (isAdmin: boolean) => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
-};
+import { AuthProvider, useAuth } from './services/AuthContext';
+import { ToastProvider } from './services/ToastContext';
 
 const BottomNav: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
@@ -139,55 +127,19 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => sessionStorage.getItem('is_admin_active') === 'true');
+  return (
+    <LanguageProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <AppWrapper />
+        </ToastProvider>
+      </AuthProvider>
+    </LanguageProvider>
+  );
+};
 
-  useEffect(() => {
-    // Listen for database changes to keep the current user state updated in real-time
-    const savedId = localStorage.getItem('current_user_id');
-    
-    const initApp = async () => {
-      await db.whenReady();
-      
-      if (savedId) {
-        const user = db.getUser(savedId);
-        if (user && user.status === UserStatus.APPROVED) {
-          setCurrentUser(user);
-          db.updateLastActive(user.id);
-          db.logActivity(user.id, user.name, ActivityType.LOGIN, "Entered the application");
-        }
-      }
-      setIsLoading(false);
-    };
-
-    initApp();
-    
-    const unsubscribe = db.subscribe(() => {
-      if (savedId) {
-        const user = db.getUser(savedId);
-        if (user && user.status === UserStatus.APPROVED) {
-          setCurrentUser(prevUser => {
-            if (!prevUser) return user;
-            const hasChanged = 
-              user.totalDonation !== prevUser.totalDonation || 
-              user.transactionCount !== prevUser.transactionCount ||
-              user.status !== prevUser.status ||
-              user.name !== prevUser.name ||
-              user.profilePic !== prevUser.profilePic;
-
-            return hasChanged ? user : prevUser;
-          });
-        }
-      }
-    });
-
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    sessionStorage.setItem('is_admin_active', isAdmin.toString());
-  }, [isAdmin]);
+const AppWrapper: React.FC = () => {
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -200,13 +152,9 @@ const App: React.FC = () => {
   }
 
   return (
-    <LanguageProvider>
-      <AuthContext.Provider value={{ currentUser, setCurrentUser, isAdmin, setIsAdmin }}>
-        <HashRouter>
-          <AppContent />
-        </HashRouter>
-      </AuthContext.Provider>
-    </LanguageProvider>
+    <HashRouter>
+      <AppContent />
+    </HashRouter>
   );
 };
 

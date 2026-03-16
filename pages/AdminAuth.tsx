@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
 import { ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
+import { db } from '../services/db';
 
 const AdminAuth: React.FC = () => {
   const [pin, setPin] = useState('');

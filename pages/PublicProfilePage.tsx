@@ -72,7 +72,7 @@ const PublicProfilePage: React.FC = () => {
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+    return date.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric', numberingSystem: 'latn' });
   };
 
   if (loading) {

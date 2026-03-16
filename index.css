@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Baloo+Da+2:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Baloo+Da+2:wght@400;500;600;700;800&display=swap');
 
 @theme {
   --font-sans: "Inter", "Baloo Da 2", ui-sans-serif, system-ui, sans-serif;

@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
 import { useLanguage } from '../services/LanguageContext';
+import { useToast } from '../services/ToastContext';
 import { db } from '../services/db';
 import { Notification, TransactionStatus, Expense, Transaction } from '../types';
 import { 
@@ -16,6 +17,7 @@ import {
 const UserDashboard: React.FC = () => {
   const { currentUser } = useAuth();
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
   const [appStats, setAppStats] = useState(db.getStats());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
@@ -107,9 +109,9 @@ const UserDashboard: React.FC = () => {
       await db.submitComplaint(currentUser.id, currentUser.name, complaintText.trim());
       setComplaintText('');
       setShowComplaintModal(false);
-      alert(t('complaint_sent'));
+      showToast(t('complaint_sent'), 'success');
     } catch (e) {
-      alert(t('error_occurred'));
+      showToast(t('error_occurred'), 'error');
     } finally {
       setIsSendingComplaint(false);
     }
@@ -132,8 +134,8 @@ const UserDashboard: React.FC = () => {
       await db.submitSuggestion(currentUser.id, currentUser.name, suggestionText.trim());
       setSuggestionText('');
       setShowSuggestionModal(false);
-      alert(t('suggestion_sent'));
-    } catch (e) { alert(t('error_occurred')); } finally { setIsSendingSuggestion(false); }
+      showToast(t('suggestion_sent'), 'success');
+    } catch (e) { showToast(t('error_occurred'), 'error'); } finally { setIsSendingSuggestion(false); }
   };
 
   const copyToClipboard = (text: string, field: string) => {
@@ -446,8 +448,8 @@ const UserDashboard: React.FC = () => {
 
       {/* Contact Modal */}
       {showContactModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-t-[3.5rem] sm:rounded-[3.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-500">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
               {/* Header */}
               <div className="p-8 bg-[#E91E63] text-white flex justify-between items-center relative overflow-hidden shrink-0">
                  <div className="absolute top-[-20px] left-[-20px] w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
@@ -600,8 +602,8 @@ const UserDashboard: React.FC = () => {
 
       {/* Payment Information Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-sm rounded-t-[3.5rem] sm:rounded-[3.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-500">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
               {/* Header */}
               <div className="p-8 bg-[#2563EB] text-white flex justify-between items-center relative overflow-hidden shrink-0">
                  <div className="absolute top-[-20px] left-[-20px] w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>

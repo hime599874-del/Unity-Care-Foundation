@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
+import { useToast } from '../services/ToastContext';
 import { db } from '../services/db';
 import { AssistanceStatus, AssistanceRequest } from '../types';
 import { 
@@ -11,6 +12,7 @@ import {
 
 const AssistancePage: React.FC = () => {
   const { currentUser } = useAuth();
+  const { showToast } = useToast();
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<any>('Emergency');
@@ -44,9 +46,9 @@ const AssistancePage: React.FC = () => {
       });
       setReason('');
       setAmount('');
-      alert('আপনার আবেদনটি এডমিন প্যানেলে পাঠানো হয়েছে।');
+      showToast('আপনার আবেদনটি এডমিন প্যানেলে পাঠানো হয়েছে।', 'success');
     } catch (err) {
-      alert('আবেদন পাঠাতে সমস্যা হয়েছে।');
+      showToast('আবেদন পাঠাতে সমস্যা হয়েছে।', 'error');
     } finally {
       setIsSubmitting(false);
     }

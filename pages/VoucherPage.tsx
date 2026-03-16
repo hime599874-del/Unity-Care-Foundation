@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../services/db';
 import { Transaction, TransactionStatus } from '../types';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
 import { ArrowLeft, Calendar, FileText, X, Wallet, Receipt, ArrowUpRight, Clock, Download, ShieldCheck, CheckCircle2, Building2, MapPin, Phone, Mail, Globe } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
@@ -72,7 +72,13 @@ const VoucherPage: React.FC = () => {
       const link = document.createElement('a');
       link.download = `Voucher-${selectedTx?.transactionId.slice(-8).toUpperCase()}.png`;
       link.href = dataUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
       link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
     } catch (err) {
       console.error('Download failed:', err);
     } finally {

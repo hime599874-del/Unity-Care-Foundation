@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../services/AuthContext';
+import { useToast } from '../services/ToastContext';
 import { db } from '../services/db';
 import { 
   ArrowLeft, Camera, User, Mail, Phone, Save, 
   CheckCircle2, Hash, LogOut, Loader2, Award, QrCode, X, Download,
-  Languages
+  Languages, Printer
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../services/LanguageContext';
+import { toPng } from 'html-to-image';
 
 const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
   return new Promise((resolve) => {
@@ -26,7 +28,7 @@ const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Prom
       } else {
         if (height > maxHeight) {
           width *= maxHeight / height;
-          height = maxHeight;
+          width = maxHeight;
         }
       }
       canvas.width = width;
@@ -41,12 +43,15 @@ const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Prom
 const ProfilePage: React.FC = () => {
   const { currentUser, setCurrentUser } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { showToast } = useToast();
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showIdCard, setShowIdCard] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const idCardRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
 
@@ -58,7 +63,7 @@ const ProfilePage: React.FC = () => {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
-      alert('তথ্য সেভ করতে সমস্যা হয়েছে।');
+      showToast('তথ্য সেভ করতে সমস্যা হয়েছে।', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -86,12 +91,41 @@ const ProfilePage: React.FC = () => {
           const compressed = await compressImage(reader.result as string);
           await db.updateUser(currentUser.id, { profilePic: compressed });
         } catch (err) {
-          alert('ছবি আপলোড করতে সমস্যা হয়েছে।');
+          showToast('ছবি আপলোড করতে সমস্যা হয়েছে।', 'error');
         } finally {
           setIsUploading(false);
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDownloadIdCard = async () => {
+    if (!idCardRef.current) return;
+    
+    try {
+      setIsDownloading(true);
+      const dataUrl = await toPng(idCardRef.current, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        pixelRatio: 3, // Higher quality for ID card
+      });
+      
+      const link = document.createElement('a');
+      link.download = `ID_Card_${currentUser?.name}.png`;
+      link.href = dataUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast('ডাউনলোড ব্যর্থ হয়েছে।', 'error');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -279,7 +313,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* ID Card Body */}
-            <div className="w-full aspect-[2.5/4] bg-white rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden relative border border-slate-200 flex flex-col">
+            <div ref={idCardRef} className="w-full aspect-[2.5/4] bg-white rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden relative border border-slate-200 flex flex-col">
               {/* Premium Corporate Background */}
               <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-slate-50">
                 {/* Top Header Section */}
@@ -344,7 +378,7 @@ const ProfilePage: React.FC = () => {
                    </div>
                    <div className="flex flex-col">
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'যোগদানের তারিখ' : 'Joining Date'}</span>
-                      <span className="text-[11px] text-slate-900 font-black tracking-widest">{currentUser.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-GB') : '01/02/2026'}</span>
+                      <span className="text-[11px] text-slate-900 font-black tracking-widest">{currentUser.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-GB', { numberingSystem: 'latn' }) : '01/02/2026'}</span>
                    </div>
                    <div className="flex flex-col text-right">
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'মেয়াদ শেষ' : 'Expiry Date'}</span>
@@ -381,10 +415,18 @@ const ProfilePage: React.FC = () => {
                 <X className="w-4 h-4" /> {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
               </button>
               <button 
-                onClick={() => window.print()}
-                className="flex-grow py-4 bg-teal-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-teal-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                onClick={handleDownloadIdCard}
+                disabled={isDownloading}
+                className="flex-grow py-4 bg-teal-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-teal-900/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Download className="w-4 h-4" /> {language === 'bn' ? 'প্রিন্ট করুন' : 'Print'}
+                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} {language === 'bn' ? 'ডাউনলোড' : 'Download'}
+              </button>
+              <button 
+                onClick={() => window.print()}
+                className="p-4 bg-slate-800 text-white rounded-2xl font-black shadow-lg active:scale-95 transition-all flex items-center justify-center"
+                title={language === 'bn' ? 'প্রিন্ট' : 'Print'}
+              >
+                <Printer className="w-4 h-4" />
               </button>
             </div>
           </div>

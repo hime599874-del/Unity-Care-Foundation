@@ -1,6 +1,6 @@
 {
-  "name": "Manobik App V2",
-  "description": "A comprehensive humanitarian organization management app with real-time donation tracking, admin approval workflows, and transparency leaderboards.",
+  "name": "Unity Care Foundation",
+  "description": "A comprehensive humanitarian organization management app for Unity Care Foundation, featuring real-time donation tracking, admin approval workflows, and transparency leaderboards.",
   "requestFramePermissions": [
     "camera"
   ]

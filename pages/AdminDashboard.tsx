@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
@@ -12,10 +12,12 @@ import {
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
   Download, Smartphone, Landmark, Award, Activity, QrCode, Edit,
-  FileText, Printer, Heart, CreditCard, Mail, Building2, Globe
+  FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { QRCodeSVG } from 'qrcode.react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const toBengaliNumber = (num: number | string | undefined | null) => {
   if (num === undefined || num === null) return '';
@@ -40,6 +42,9 @@ const AdminDashboard: React.FC = () => {
   const reportRef = useRef<HTMLDivElement>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
   
+  const [isGeneratingMonthlyPDF, setIsGeneratingMonthlyPDF] = useState(false);
+  const monthlyReportRef = useRef<HTMLDivElement>(null);
+  
   const [users, setUsers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [assistance, setAssistance] = useState<AssistanceRequest[]>([]);
@@ -52,7 +57,9 @@ const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState(db.getStats());
   const [contactConfig, setContactConfig] = useState<ContactConfig>(db.getContactConfig());
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights' | 'txManagement' | 'recipients'>(isAdmin ? 'overview' : 'recipients');
+  const [smsBalance, setSmsBalance] = useState<string | null>(null);
+  const [isSmsLoading, setIsSmsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights' | 'txManagement' | 'recipients' | 'sms'>(isAdmin ? 'overview' : 'recipients');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [qrSearchQuery, setQrSearchQuery] = useState('');
@@ -103,9 +110,12 @@ const AdminDashboard: React.FC = () => {
   
   const [manualAmount, setManualAmount] = useState('');
   const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
+  const [manualFundType, setManualFundType] = useState<FundType>('General');
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [userDesignation, setUserDesignation] = useState('');
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+  const [isSendingSms, setIsSendingSms] = useState<string | null>(null);
+  const [fundFilter, setFundFilter] = useState<FundType | 'All'>('AppProblem');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -153,7 +163,60 @@ const AdminDashboard: React.FC = () => {
     if (activeTab === 'settings') {
       setSettingsForm(db.getContactConfig());
     }
+    if (activeTab === 'sms') {
+      fetchSmsBalance();
+    }
   }, [activeTab]);
+
+  const fetchSmsBalance = async () => {
+    setIsSmsLoading(true);
+    try {
+      const targetUrl = `https://panel2.smsbangladesh.com/balance?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}`;
+      // Using codetabs proxy as an alternative
+      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error('Proxy response not ok');
+      const text = await response.text();
+      try {
+        const json = JSON.parse(text);
+        if (json["AVAILABLE BALANCE ="]) {
+          setSmsBalance(json["AVAILABLE BALANCE ="] + ' ৳');
+        } else {
+          setSmsBalance(text);
+        }
+      } catch (e) {
+        setSmsBalance(text);
+      }
+    } catch (error) {
+      console.error('Failed to fetch SMS balance:', error);
+      // Fallback to allorigins get endpoint if codetabs fails
+      try {
+        const targetUrl = `https://panel2.smsbangladesh.com/balance?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}`;
+        const fallbackUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+        const fallbackResponse = await fetch(fallbackUrl);
+        const data = await fallbackResponse.json();
+        if (data.contents) {
+          try {
+            const json = JSON.parse(data.contents);
+            if (json["AVAILABLE BALANCE ="]) {
+              setSmsBalance(json["AVAILABLE BALANCE ="] + ' ৳');
+            } else {
+              setSmsBalance(data.contents);
+            }
+          } catch (e) {
+            setSmsBalance(data.contents);
+          }
+        } else {
+          throw new Error('No contents in fallback response');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        setSmsBalance('Error fetching balance. Please try again later.');
+      }
+    } finally {
+      setIsSmsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (viewingUser) {
@@ -456,10 +519,23 @@ const AdminDashboard: React.FC = () => {
   const handleAddManualFunds = async () => {
     if (!viewingUser || !manualAmount) return;
     try {
-      await db.addManualTransaction(viewingUser.id, viewingUser.name, parseFloat(manualAmount), 'Manual', manualDate);
+      await db.addManualTransaction(viewingUser.id, viewingUser.name, parseFloat(manualAmount), 'Manual', manualDate, manualFundType);
       setManualAmount('');
       alert('সফলভাবে যোগ হয়েছে।');
     } catch (e) { alert('ব্যর্থ হয়েছে।'); }
+  };
+
+  const handleSendManualSms = async (t: Transaction) => {
+    if (!confirm('আপনি কি এই ট্রানজেকশনের SMS পাঠাতে চান?')) return;
+    try {
+      setIsSendingSms(t.id);
+      const message = await db.sendManualSms(t.id);
+      alert(`SMS সফলভাবে পাঠানো হয়েছে!\n\nমেসেজ:\n${message}`);
+    } catch (e: any) {
+      alert(`SMS পাঠাতে সমস্যা হয়েছে: ${e.message}`);
+    } finally {
+      setIsSendingSms(null);
+    }
   };
 
   const handleDownloadInvoice = async () => {
@@ -681,6 +757,67 @@ const AdminDashboard: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const filteredMonthlyTxs = useMemo(() => {
+    const [year, month] = reportMonth.split('-').map(Number);
+    return transactions.filter(t => {
+      const d = new Date(t.timestamp);
+      const matchesMonth = d.getFullYear() === year && (d.getMonth() + 1) === month;
+      const matchesStatus = t.status === TransactionStatus.APPROVED;
+      const matchesFund = fundFilter === 'All' ? true : t.fundType === fundFilter;
+      return matchesMonth && matchesStatus && matchesFund;
+    });
+  }, [transactions, reportMonth, fundFilter]);
+
+  const monthlyTotalAmount = useMemo(() => {
+    return filteredMonthlyTxs.reduce((sum, t) => sum + t.amount, 0);
+  }, [filteredMonthlyTxs]);
+
+  const getMethodIcon = (method: string) => {
+    const m = method.toLowerCase();
+    if (m.includes('bkash')) return <Smartphone className="w-3 h-3 text-rose-500" />;
+    if (m.includes('rocket')) return <Rocket className="w-3 h-3 text-violet-500" />;
+    if (m.includes('bank')) return <Building2 className="w-3 h-3 text-blue-500" />;
+    return <CreditCard className="w-3 h-3 text-slate-400" />;
+  };
+
+  const reportMonthEn = useMemo(() => {
+    const [year, month] = reportMonth.split('-').map(Number);
+    const dateObj = new Date(year, month - 1);
+    return dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  }, [reportMonth]);
+
+  const downloadMonthlyPDFReport = async () => {
+    setIsGeneratingMonthlyPDF(true);
+    
+    // Small delay to ensure the hidden template is rendered with current data
+    setTimeout(async () => {
+      if (monthlyReportRef.current) {
+        try {
+          const dataUrl = await toPng(monthlyReportRef.current, { 
+            quality: 1.0, 
+            pixelRatio: 2,
+            cacheBust: true,
+          });
+          
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          
+          pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          
+          pdf.save(`Transaction_Report_${reportMonth}_${fundFilter}.pdf`);
+        } catch (err) {
+          console.error('PDF generation failed', err);
+          alert('PDF generation failed. Please try again.');
+        } finally {
+          setIsGeneratingMonthlyPDF(false);
+        }
+      } else {
+        setIsGeneratingMonthlyPDF(false);
+      }
+    }, 500);
+  };
+
   const monthlyInsights = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
@@ -743,6 +880,7 @@ const AdminDashboard: React.FC = () => {
           { id: 'recipients', label: 'গৃহীতার তথ্য', icon: <Heart className="w-4 h-4" />, adminOnly: false },
           { id: 'txManagement', label: 'লেনদেন ম্যানেজমেন্ট', icon: <Wallet className="w-4 h-4" />, adminOnly: true },
           { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" />, adminOnly: true },
+          { id: 'sms', label: 'SMS সেটিংস', icon: <MessageCircle className="w-4 h-4" />, adminOnly: true },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" />, adminOnly: true }
         ].filter(tab => isAdmin || (!tab.adminOnly && currentUser?.canManageRecipients)).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`py-5 px-1 border-b-[3px] text-[10px] font-black uppercase flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id ? 'border-[#0D9488] text-[#0D9488]' : 'border-transparent text-slate-400'}`}>
@@ -835,6 +973,7 @@ const AdminDashboard: React.FC = () => {
                       <thead className="bg-slate-50 border-b">
                          <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
                             <th className="px-6 py-4">সদস্য</th>
+                            <th className="px-6 py-4">ইমেইল</th>
                             <th className="px-6 py-4">ঠিকানা</th>
                             <th className="px-6 py-4 text-center">রক্তের গ্রুপ</th>
                             <th className="px-6 py-4 text-center">অ্যাকশন</th>
@@ -853,6 +992,9 @@ const AdminDashboard: React.FC = () => {
                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{u.phone}</p>
                                     </div>
                                  </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                 <p className="text-[11px] font-bold text-slate-500">{u.email || '—'}</p>
                               </td>
                               <td className="px-6 py-4">
                                  <div className="text-[11px] font-bold text-slate-500 leading-tight">
@@ -1032,6 +1174,19 @@ const AdminDashboard: React.FC = () => {
                                     >
                                       {isDownloadingInvoice && selectedTxForInvoice?.id === t.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                     </button>
+                                    {t.status === TransactionStatus.APPROVED && (
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSendManualSms(t);
+                                        }}
+                                        disabled={isSendingSms === t.id}
+                                        className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                                        title="Send SMS"
+                                      >
+                                        {isSendingSms === t.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                      </button>
+                                    )}
                                     <button 
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1391,7 +1546,7 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'txManagement' && (
           <div className="space-y-6 animate-in fade-in max-w-lg mx-auto md:max-w-4xl">
-            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -1412,9 +1567,43 @@ const AdminDashboard: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                {reportMonth}-এর লেনদেনসমূহ দেখাচ্ছে
-              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {['All', 'AppProblem', 'General', 'Special', 'Emergency', 'Other'].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFundFilter(f as any)}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      fundFilter === f 
+                        ? 'bg-[#0D9488] text-white shadow-lg shadow-teal-100' 
+                        : 'bg-slate-50 text-slate-400 border border-slate-100'
+                    }`}
+                  >
+                    {f === 'AppProblem' ? 'অ্যাপ প্রবলেম' : f === 'All' ? 'সব' : f}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-teal-50 p-6 rounded-3xl border border-teal-100">
+                  <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest mb-1">এই মাসের মোট আদায় ({fundFilter === 'All' ? 'সব' : fundFilter})</p>
+                  <h3 className="text-2xl font-black text-teal-600">
+                    ৳{toBengaliNumber(transactions
+                      .filter(t => t.status === TransactionStatus.APPROVED && t.date.startsWith(reportMonth) && (fundFilter === 'All' ? true : t.fundType === fundFilter))
+                      .reduce((sum, t) => sum + t.amount, 0)
+                      .toLocaleString()
+                    )}
+                  </h3>
+                </div>
+                <div className="flex items-center justify-center">
+                  <button 
+                    onClick={downloadMonthlyPDFReport}
+                    className="w-full h-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all"
+                  >
+                    <Download className="w-5 h-5" /> পিডিএফ ডাউনলোড করুন
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
@@ -1434,7 +1623,8 @@ const AdminDashboard: React.FC = () => {
                       .filter(t => {
                         const matchesSearch = t.userName.toLowerCase().includes(searchQuery.toLowerCase());
                         const matchesMonth = t.date.startsWith(reportMonth);
-                        return matchesSearch && matchesMonth;
+                        const matchesFund = fundFilter === 'All' ? true : t.fundType === fundFilter;
+                        return matchesSearch && matchesMonth && matchesFund;
                       })
                       .map(t => (
                         <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
@@ -1467,7 +1657,7 @@ const AdminDashboard: React.FC = () => {
                           </td>
                         </tr>
                       ))}
-                    {transactions.filter(t => t.date.startsWith(reportMonth)).length === 0 && (
+                    {transactions.filter(t => t.date.startsWith(reportMonth) && (fundFilter === 'All' ? true : t.fundType === fundFilter)).length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-6 py-12 text-center">
                           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">এই মাসে কোন লেনদেন পাওয়া যায়নি</p>
@@ -1824,6 +2014,56 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'sms' && (
+          <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
+             <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SMS API প্রোফাইল</p>
+                  <button onClick={fetchSmsBalance} className="text-[#0D9488] hover:bg-teal-50 p-2 rounded-full transition-colors">
+                    <RefreshCw className={`w-4 h-4 ${isSmsLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+                
+                <div className="bg-slate-50 p-6 rounded-3xl border space-y-4">
+                  <div className="flex items-center gap-3 text-slate-600 mb-2">
+                    <MessageCircle className="w-5 h-5 text-[#0D9488]" />
+                    <h3 className="font-bold text-sm">SMS Bangladesh API</h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2 border-b border-slate-200">
+                      <span className="text-xs font-semibold text-slate-500">বর্তমান ব্যালেন্স</span>
+                      <span className="text-sm font-black text-[#0D9488]">
+                        {isSmsLoading ? 'লোড হচ্ছে...' : (smsBalance || 'অজানা')}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center py-2 border-b border-slate-200">
+                      <span className="text-xs font-semibold text-slate-500">মোট SMS পাঠানো হয়েছে</span>
+                      <span className="text-sm font-black text-slate-700">
+                        {stats.totalSmsSent || 0} টি
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-xs font-semibold text-slate-500">SMS স্ট্যাটাস</span>
+                      <span className="text-xs font-bold px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg">
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                  <p className="text-xs text-blue-800 font-medium leading-relaxed">
+                    <Info className="w-4 h-4 inline mr-1 mb-0.5" />
+                    SMS ব্যালেন্স শেষ হলে panel2.smsbangladesh.com এ লগইন করে রিচার্জ করুন।
+                  </p>
+                </div>
+             </div>
+          </div>
+        )}
+
         {activeTab === 'settings' && (
           <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
              <div className="space-y-4">
@@ -1868,13 +2108,20 @@ const AdminDashboard: React.FC = () => {
                     <h2 className="text-2xl font-black text-white tracking-tight">{viewingUser.name}</h2>
                     <p className="text-[11px] font-bold text-teal-50 uppercase tracking-[0.1em] mt-1 opacity-90">সদস্য আইডি: {toBengaliNumber(viewingUser.phone.slice(-4))}</p>
                     
-                    <div className="flex items-center justify-center gap-4 mt-4 text-white/90">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold">
-                        <Phone className="w-3.5 h-3.5" /> {toBengaliNumber(viewingUser.phone)}
+                    <div className="flex flex-col items-center justify-center gap-2 mt-4 text-white/90">
+                      <div className="flex items-center justify-center gap-4">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                          <Phone className="w-3.5 h-3.5" /> {toBengaliNumber(viewingUser.phone)}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                          <MapPin className="w-3.5 h-3.5" /> {viewingUser.address?.district || '—'}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold">
-                        <MapPin className="w-3.5 h-3.5" /> {viewingUser.address?.district || '—'}
-                      </div>
+                      {viewingUser.email && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                          <Mail className="w-3.5 h-3.5" /> {viewingUser.email}
+                        </div>
+                      )}
                     </div>
                  </div>
               </div>
@@ -1992,6 +2239,17 @@ const AdminDashboard: React.FC = () => {
                        <input type="number" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-black text-sm shadow-sm" placeholder="টাকা..." value={manualAmount} onChange={e => setManualAmount(e.target.value)} />
                        <input type="date" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-bold text-[10px] shadow-sm" value={manualDate} onChange={e => setManualDate(e.target.value)} />
                     </div>
+                    <select 
+                      className="w-full p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-bold text-xs shadow-sm"
+                      value={manualFundType}
+                      onChange={e => setManualFundType(e.target.value as FundType)}
+                    >
+                      <option value="General">General</option>
+                      <option value="AppProblem">App Problem (অ্যাপ প্রবলেম)</option>
+                      <option value="Special">Special</option>
+                      <option value="Emergency">Emergency</option>
+                      <option value="Other">Other</option>
+                    </select>
                     <button onClick={handleAddManualFunds} className="w-full py-4 bg-[#0D9488] text-white rounded-2xl font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all">টাকা যোগ করুন</button>
                  </div>
 
@@ -2613,6 +2871,127 @@ const AdminDashboard: React.FC = () => {
             >
               <X className="w-5 h-5 no-glow" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Monthly Report Template for PDF Generation */}
+      {isGeneratingMonthlyPDF && (
+        <div className="fixed left-[-9999px] top-0 pointer-events-none">
+          <div 
+            ref={monthlyReportRef}
+            className="w-[794px] min-h-[1123px] bg-white p-10 font-['Baloo_Da_2'] text-slate-800 relative flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex flex-col items-center text-center mb-10">
+              <div className="mb-6">
+                <div className="w-24 h-24 mx-auto bg-white rounded-full flex items-center justify-center">
+                  <div className="relative">
+                    <div className="absolute -top-8 -left-8">
+                      <div className="w-16 h-16 text-[#2D6A4F] opacity-10">
+                        <Globe className="w-full h-full" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="flex gap-1.5 mb-1.5">
+                        <div className="w-1.5 h-8 bg-[#2D6A4F] rounded-full transform -rotate-45"></div>
+                        <div className="w-1.5 h-10 bg-[#2D6A4F] rounded-full"></div>
+                        <div className="w-1.5 h-8 bg-[#2D6A4F] rounded-full transform rotate-45"></div>
+                      </div>
+                      <div className="text-[12px] font-black text-[#2D6A4F] leading-tight uppercase tracking-tighter">
+                        Unity Care<br/>Foundation
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h1 className="text-5xl font-black text-[#1A3933] mb-2">Unity Care Foundation</h1>
+              <p className="text-2xl font-bold text-slate-500">Monthly Transaction Report - {reportMonthEn}</p>
+            </div>
+
+            {/* Summary Section */}
+            <div className="bg-[#F0F9F6] rounded-[2rem] p-8 mb-10 grid grid-cols-3 gap-6 border border-[#D1E7E0] shadow-sm">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-[#0D9488]">
+                  <FileSpreadsheet className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Total Transactions</p>
+                  <p className="text-3xl font-black text-slate-800 leading-none">{filteredMonthlyTxs.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-5 border-x border-[#D1E7E0] px-6">
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-[#0D9488]">
+                  <Wallet className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Total Amount</p>
+                  <p className="text-3xl font-black text-slate-800 leading-none">BDT {monthlyTotalAmount.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-5 pl-6">
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-[#0D9488]">
+                  <Calendar className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Report Generated</p>
+                  <p className="text-3xl font-black text-slate-800 leading-none">{new Date().toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm mb-8 flex-grow">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#0D9488] text-white">
+                    <th className="p-4 text-[12px] font-black uppercase tracking-wider text-center w-12">SL</th>
+                    <th className="p-4 text-[12px] font-black uppercase tracking-wider">Date</th>
+                    <th className="p-4 text-[12px] font-black uppercase tracking-wider">Name</th>
+                    <th className="p-4 text-[12px] font-black uppercase tracking-wider">Method</th>
+                    <th className="p-4 text-[12px] font-black uppercase tracking-wider text-center">TxID</th>
+                    <th className="p-4 text-[12px] font-black uppercase tracking-wider text-center">Fund</th>
+                    <th className="p-4 text-[12px] font-black uppercase tracking-wider text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMonthlyTxs.map((t, index) => (
+                    <tr key={t.id} className={index % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFA]'}>
+                      <td className="p-4 text-[12px] font-bold text-slate-500 text-center border-b border-slate-100">{index + 1}</td>
+                      <td className="p-4 text-[12px] font-bold text-slate-600 border-b border-slate-100">{t.date}</td>
+                      <td className="p-4 text-[12px] font-black text-slate-800 border-b border-slate-100">{t.userName}</td>
+                      <td className="p-4 text-[12px] font-bold text-slate-600 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                          {getMethodIcon(t.method)}
+                          {t.method}
+                        </div>
+                      </td>
+                      <td className="p-4 text-[12px] font-bold text-slate-500 text-center border-b border-slate-100">{t.transactionId}</td>
+                      <td className="p-4 text-[12px] font-bold text-slate-500 text-center border-b border-slate-100">{t.fundType}</td>
+                      <td className="p-4 text-[12px] font-black text-slate-800 text-right border-b border-slate-100">BDT {t.amount.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer Summary Bar */}
+            <div className="bg-[#E6F2EF] rounded-2xl p-5 flex justify-between items-center mb-10 border border-[#D1E7E0]">
+              <p className="text-lg font-black text-slate-700">Total Transactions: {filteredMonthlyTxs.length}</p>
+              <p className="text-lg font-black text-slate-700">Total Amount: BDT {monthlyTotalAmount.toLocaleString()}</p>
+            </div>
+
+            {/* Meta Footer */}
+            <div className="flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-auto">
+              <p>Page 1 of 1</p>
+              <p>Report Generated: {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+
+            {/* Bottom Decorative Pattern */}
+            <div className="absolute bottom-0 left-0 right-0 h-32 opacity-10 pointer-events-none overflow-hidden">
+               <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-[#0D9488] rounded-full blur-3xl"></div>
+               <div className="absolute -bottom-16 -right-16 w-64 h-64 bg-[#0D9488] rounded-full blur-3xl"></div>
+            </div>
           </div>
         </div>
       )}
