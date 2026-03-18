@@ -102,6 +102,8 @@ export interface ContactConfig {
   email: string;
   phone: string;
   policyUrl?: string;
+  maintenanceMode?: boolean;
+  disableRegistration?: boolean;
 }
 
 export interface TimelineEvent {

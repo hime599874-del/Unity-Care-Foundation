@@ -13,7 +13,7 @@ import {
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
   Download, Smartphone, Landmark, Award, Activity, QrCode, Edit,
   FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket,
-  MessageSquare, ChevronDown
+  MessageSquare, ChevronDown, Zap
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { QRCodeSVG } from 'qrcode.react';
@@ -26,7 +26,7 @@ const toBengaliNumber = (num: number | string | undefined | null) => {
 };
 
 const isUnicode = (text: string) => /[^\u0000-\u007f]/.test(text);
-const getSmsLimit = (text: string) => isUnicode(text) ? 50 : 140;
+const getSmsLimit = (text: string) => isUnicode(text) ? 65 : 150;
 
 const getAssistanceStatusLabel = (status: AssistanceStatus) => {
   switch (status) {
@@ -520,6 +520,7 @@ const AdminDashboard: React.FC = () => {
 
     for (let i = 0; i < targetUsers.length; i++) {
       const user = targetUsers[i];
+      // Automatically prepend name if not present, as requested by user
       const personalizedMessage = bulkSmsMessage.includes('{name}') 
         ? bulkSmsMessage.replace(/{name}/g, user.name)
         : `${user.name} ${bulkSmsMessage}`;
@@ -1043,7 +1044,7 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SectionBox title="মেম্বার রিকোয়েস্ট" count={users.filter(u=>u.status===UserStatus.PENDING).length} color="bg-indigo-600">
                 {users.filter(u=>u.status===UserStatus.PENDING).map(u => (
-                  <div key={u.id} className="p-4 glass-card rounded-[1.8rem] flex items-center justify-between hover:border-indigo-200 transition-colors">
+                  <div key={u.id} className="p-4 glass-card rounded-[1.8rem] flex items-center justify-between hover:border-indigo-200 transition-colors cursor-pointer" onClick={() => setViewingUser(u)}>
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shrink-0 overflow-hidden border border-slate-100">
                         {u.profilePic ? (
@@ -1057,7 +1058,7 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-[9px] text-slate-400 font-bold uppercase">{u.phone}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                        <button onClick={() => handleUpdateStatus(u.id, 'user', UserStatus.APPROVED)} className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><Check className="w-5 h-5" /></button>
                        <button onClick={() => setUserToDelete(u)} className="p-2.5 bg-rose-600 text-white rounded-xl shadow-md active:scale-90 transition-all"><X className="w-5 h-5" /></button>
                     </div>
@@ -2300,45 +2301,22 @@ const AdminDashboard: React.FC = () => {
                     <div className="relative">
                       <textarea 
                         placeholder="আপনার মূল মেসেজটি এখানে লিখুন..." 
-                        className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-sm font-bold h-32 focus:ring-2 focus:ring-teal-500/20 transition-all"
                         value={bulkSmsMessage}
-                        onChange={(e) => {
-                          const limit = getSmsLimit(e.target.value);
-                          if (e.target.value.length <= limit) {
-                            setBulkSmsMessage(e.target.value);
-                          }
-                        }}
-                        maxLength={getSmsLimit(bulkSmsMessage)}
+                        onChange={(e) => setBulkSmsMessage(e.target.value)}
+                        className="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] outline-none text-xs font-bold focus:ring-4 focus:ring-indigo-500/10 min-h-[150px] resize-none placeholder:text-slate-300"
                       />
-                      <div className="absolute bottom-3 right-4 flex items-center gap-2">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isUnicode(bulkSmsMessage) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {isUnicode(bulkSmsMessage) ? 'বাংলা (Unicode)' : 'English (GSM)'}
-                        </span>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${bulkSmsMessage.length >= getSmsLimit(bulkSmsMessage) * 0.9 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
+                      <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                        <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${bulkSmsMessage.length > getSmsLimit(bulkSmsMessage) ? 'bg-rose-100 text-rose-600' : 'bg-indigo-100 text-indigo-600'}`}>
                           {toBengaliNumber(bulkSmsMessage.length)} / {toBengaliNumber(getSmsLimit(bulkSmsMessage))}
-                        </span>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-bold italic px-1">
-                      টিপস: আপনি শুধু মূল কথাটুকু লিখুন, নাম অটোমেটিক যোগ হবে।
-                    </p>
 
-                    {isSendingBulkSms && (
-                      <div className="bg-teal-50 p-4 rounded-2xl border border-teal-100 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <p className="text-[10px] font-black text-teal-800 uppercase">পাঠানো হচ্ছে...</p>
-                          <p className="text-[10px] font-black text-teal-600 uppercase">
-                            {toBengaliNumber(bulkSmsProgress.current)} / {toBengaliNumber(bulkSmsProgress.total)}
-                          </p>
-                        </div>
-                        <div className="w-full bg-white h-2 rounded-full overflow-hidden shadow-inner">
-                          <div 
-                            className="bg-teal-600 h-full transition-all duration-300" 
-                            style={{ width: `${(bulkSmsProgress.current / bulkSmsProgress.total) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                      <p className="text-[9px] font-bold text-amber-700 leading-relaxed">
+                        <span className="font-black">নোট:</span> মেসেজের ভেতর <code className="bg-amber-100 px-1 rounded">{"{name}"}</code> লিখলে সেটি অটোমেটিক ইউজারের নাম দিয়ে রিপ্লেস হয়ে যাবে। যেমন: "প্রিয় {"{name}"}, আপনার..."
+                      </p>
+                    </div>
 
                     <button 
                       onClick={handleSendBulkSms}
@@ -2349,7 +2327,7 @@ const AdminDashboard: React.FC = () => {
                     </button>
                   </div>
                 </div>
-             </div>
+              </div>
 
              {/* SMS History Section */}
              <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6">
@@ -2378,51 +2356,101 @@ const AdminDashboard: React.FC = () => {
                             {record.status === 'Success' ? 'সফল' : record.status === 'Partial' ? 'আংশিক' : 'ব্যর্থ'}
                           </div>
                         </div>
-                        <div className="flex gap-4 pt-2 border-t border-slate-200/50">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                            <p className="text-[9px] font-black text-slate-500 uppercase">মোট: {toBengaliNumber(record.recipientCount)}</p>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                            <p className="text-[9px] font-black text-slate-500 uppercase">সফল: {toBengaliNumber(record.successCount)}</p>
-                          </div>
-                          {record.failCount > 0 && (
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-rose-400"></div>
-                              <p className="text-[9px] font-black text-slate-500 uppercase">ব্যর্থ: {toBengaliNumber(record.failCount)}</p>
-                            </div>
+                        <div className="flex items-center gap-4 text-[9px] font-bold text-slate-500">
+                          <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {toBengaliNumber(record.recipientCount)} জন</span>
+                          {record.successCount !== undefined && (
+                            <span className="flex items-center gap-1 text-emerald-600"><Check className="w-3 h-3" /> {toBengaliNumber(record.successCount)} সফল</span>
+                          )}
+                          {record.failureCount !== undefined && (
+                            <span className="flex items-center gap-1 text-rose-600"><X className="w-3 h-3" /> {toBengaliNumber(record.failureCount)} ব্যর্থ</span>
                           )}
                         </div>
                       </div>
                     ))
                   )}
                 </div>
-             </div>
-          </div>
-        )}
+              </div>
+            </div>
+          )}
 
-        {activeTab === 'settings' && (
-          <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
-             <div className="space-y-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">কন্টাক্ট সেটিংস</p>
-                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="WhatsApp Group Link" value={settingsForm.whatsapp} onChange={e => setSettingsForm({...settingsForm, whatsapp: e.target.value})} />
-                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Facebook Page Link" value={settingsForm.facebook} onChange={e => setSettingsForm({...settingsForm, facebook: e.target.value})} />
-                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Messenger Link" value={settingsForm.messenger} onChange={e => setSettingsForm({...settingsForm, messenger: e.target.value})} />
-                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Official Email" value={settingsForm.email} onChange={e => setSettingsForm({...settingsForm, email: e.target.value})} />
-                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="Phone Number" value={settingsForm.phone} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})} />
-                <input type="text" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-bold" placeholder="নীতিমালা লিঙ্ক (Google Drive PDF)" value={settingsForm.policyUrl || ''} onChange={e => setSettingsForm({...settingsForm, policyUrl: e.target.value})} />
-             </div>
-             <button 
-               onClick={handleUpdateContactConfig} 
-               disabled={isSubmitting}
-               className="w-full py-5 bg-[#0D9488] text-white rounded-3xl font-black uppercase text-xs shadow-lg active:scale-95 border-b-4 border-teal-800 disabled:opacity-50 disabled:scale-100"
-             >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'সেটিংস সেভ করুন'}
-             </button>
-             <button onClick={() => db.recalculateStats()} className="w-full py-5 bg-indigo-50 text-indigo-600 rounded-3xl font-black uppercase text-[10px] flex items-center justify-center gap-3 active:scale-95 border border-indigo-100"><RefreshCw className="w-5 h-5" /> ডাটা হিসাব রিসেট করুন</button>
-          </div>
-        )}
+          {activeTab === 'settings' && (
+            <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 ml-1">
+                  <Settings className="w-4 h-4 text-slate-400" />
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">কন্টাক্ট সেটিংস</p>
+                </div>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="WhatsApp Group Link" value={settingsForm.whatsapp} onChange={e => setSettingsForm({...settingsForm, whatsapp: e.target.value})} />
+                    <Phone className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+                  <div className="relative">
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Facebook Page Link" value={settingsForm.facebook} onChange={e => setSettingsForm({...settingsForm, facebook: e.target.value})} />
+                    <LucideImageIcon className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+                  <div className="relative">
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Messenger Link" value={settingsForm.messenger} onChange={e => setSettingsForm({...settingsForm, messenger: e.target.value})} />
+                    <MessageCircle className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+                  <div className="relative">
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Official Email" value={settingsForm.email} onChange={e => setSettingsForm({...settingsForm, email: e.target.value})} />
+                    <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+                  <div className="relative">
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Phone Number" value={settingsForm.phone} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})} />
+                    <Smartphone className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+                  <div className="relative">
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="নীতিমালা লিঙ্ক (Google Drive PDF)" value={settingsForm.policyUrl || ''} onChange={e => setSettingsForm({...settingsForm, policyUrl: e.target.value})} />
+                    <FileText className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+
+                  <div className="pt-4 space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-rose-50 text-rose-600 rounded-xl"><AlertCircle className="w-4 h-4" /></div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-800">মেইনটেন্যান্স মোড</p>
+                          <p className="text-[8px] font-bold text-slate-400">অ্যাপ সাময়িক বন্ধ রাখতে</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setSettingsForm({...settingsForm, maintenanceMode: !settingsForm.maintenanceMode})}
+                        className={`w-12 h-6 rounded-full transition-all relative ${settingsForm.maintenanceMode ? 'bg-rose-500' : 'bg-slate-200'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settingsForm.maintenanceMode ? 'left-7' : 'left-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-50 text-amber-600 rounded-xl"><ShieldCheck className="w-4 h-4" /></div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-800">নিবন্ধন বন্ধ করুন</p>
+                          <p className="text-[8px] font-bold text-slate-400">নতুন ইউজার রেজিস্ট্রেশন বন্ধ রাখতে</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setSettingsForm({...settingsForm, disableRegistration: !settingsForm.disableRegistration})}
+                        className={`w-12 h-6 rounded-full transition-all relative ${settingsForm.disableRegistration ? 'bg-amber-500' : 'bg-slate-200'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settingsForm.disableRegistration ? 'left-7' : 'left-1'}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={handleUpdateContactConfig} 
+                disabled={isSubmitting}
+                className="w-full py-5 bg-[#0D9488] text-white rounded-3xl font-black uppercase text-xs shadow-lg active:scale-95 border-b-4 border-teal-800 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-4 h-4" /> সেটিংস সেভ করুন</>}
+              </button>
+              <button onClick={() => db.recalculateStats()} className="w-full py-5 bg-indigo-50 text-indigo-600 rounded-3xl font-black uppercase text-[10px] flex items-center justify-center gap-3 active:scale-95 border border-indigo-100"><RefreshCw className="w-5 h-5" /> ডাটা হিসাব রিসেট করুন</button>
+            </div>
+          )}
       </main>
 
       {viewingUser && (
@@ -2461,11 +2489,37 @@ const AdminDashboard: React.FC = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* Accept Button for Pending Users */}
+                    {viewingUser.status === UserStatus.PENDING && (
+                      <button 
+                        onClick={() => handleUpdateStatus(viewingUser.id, 'user', UserStatus.APPROVED)}
+                        disabled={isSubmitting}
+                        className="mt-6 px-8 py-3 bg-white text-[#0D9488] rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all flex items-center gap-2 mx-auto"
+                      >
+                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> রিকোয়েস্ট একসেপ্ট করুন</>}
+                      </button>
+                    )}
                  </div>
               </div>
 
               <div className="flex-grow overflow-y-auto bg-[#F8FAFC] p-6 space-y-5 no-scrollbar">
+                 {/* Basic Info Grid */}
                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
+                       <div className="p-2 bg-rose-50 text-rose-600 rounded-xl"><Droplets className="w-4 h-4" /></div>
+                       <div>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">রক্তের গ্রুপ</p>
+                         <p className="text-[11px] font-black text-slate-800">{viewingUser.bloodGroup}</p>
+                       </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
+                       <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Calendar className="w-4 h-4" /></div>
+                       <div>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">জন্ম সাল</p>
+                         <p className="text-[11px] font-black text-slate-800">{toBengaliNumber(viewingUser.birthYear)}</p>
+                       </div>
+                    </div>
                     <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Briefcase className="w-4 h-4" /></div>
                        <div>
@@ -2488,14 +2542,29 @@ const AdminDashboard: React.FC = () => {
                        </div>
                     </div>
                     <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
-                       <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Calendar className="w-4 h-4" /></div>
+                       <div className="p-2 bg-purple-50 text-purple-600 rounded-xl"><Clock className="w-4 h-4" /></div>
                        <div>
-                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">যোগদান</p>
-                         <p className="text-[11px] font-black text-slate-800">{new Date(viewingUser.registeredAt).toLocaleDateString('en-US')}</p>
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">নিবন্ধন</p>
+                         <p className="text-[11px] font-black text-slate-800">{new Date(viewingUser.registeredAt).toLocaleDateString('bn-BD')}</p>
                        </div>
                     </div>
                  </div>
 
+                 {/* Student Info if applicable */}
+                 {viewingUser.isStudent && viewingUser.studentInfo && (
+                   <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-blue-500" />
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">শিক্ষাপ্রতিষ্ঠান</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[12px] font-bold text-slate-800">{viewingUser.studentInfo.institution}</p>
+                        <p className="text-[10px] font-medium text-slate-500">শ্রেণী/বিভাগ: {viewingUser.studentInfo.className}</p>
+                      </div>
+                   </div>
+                 )}
+
+                 {/* Address */}
                  <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="w-4 h-4 text-rose-500" />
@@ -2506,146 +2575,194 @@ const AdminDashboard: React.FC = () => {
                     </p>
                  </div>
 
-                  <div className="bg-amber-50/50 p-5 rounded-[2.5rem] border border-amber-100 flex items-center justify-between mb-4">
-                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-white rounded-2xl shadow-sm">
-                           <Award className="w-5 h-5 text-amber-600" />
+                 {/* Motivation & Interests */}
+                 <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                    {viewingUser.motivation && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Heart className="w-4 h-4 text-rose-500" />
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">অনুপ্রেরণা</p>
                         </div>
-                        <div>
-                           <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest leading-none">স্থায়ী সদস্য</p>
-                           <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-1">হোমপেজে প্রদর্শিত হবে</p>
+                        <p className="text-[11px] font-medium text-slate-600 italic">"{viewingUser.motivation}"</p>
+                      </div>
+                    )}
+                    
+                    {viewingUser.interests && viewingUser.interests.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Zap className="w-4 h-4 text-amber-500" />
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">আগ্রহের বিষয়</p>
                         </div>
-                     </div>
-                     <button 
-                        onClick={handleTogglePermanentMember}
-                        disabled={isSubmitting}
-                        className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isPermanentMember ? 'bg-amber-500' : 'bg-slate-200'}`}
-                     >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isPermanentMember ? 'left-7' : 'left-1'}`}></div>
-                     </button>
-                  </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {viewingUser.interests.map((interest, i) => (
+                            <span key={i} className="px-2.5 py-1 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-bold border border-slate-100">
+                              {interest}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="bg-blue-50/50 p-5 rounded-[2.5rem] border border-blue-100 flex items-center justify-between mb-4">
-                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-white rounded-2xl shadow-sm">
-                           <Users className="w-5 h-5 text-blue-600" />
+                    {viewingUser.specialSkills && viewingUser.specialSkills.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Rocket className="w-4 h-4 text-indigo-500" />
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">বিশেষ দক্ষতা</p>
                         </div>
-                        <div>
-                           <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest leading-none">গৃহীতার তথ্য এডিট</p>
-                           <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-1">তথ্য এডিট করার অনুমতি</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {viewingUser.specialSkills.map((skill, i) => (
+                            <span key={i} className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-bold border border-indigo-100">
+                              {skill}
+                            </span>
+                          ))}
                         </div>
-                     </div>
-                     <button 
-                        onClick={handleToggleRecipientPermission}
-                        disabled={isSubmitting}
-                        className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.canManageRecipients ? 'bg-blue-500' : 'bg-slate-200'}`}
-                     >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.canManageRecipients ? 'left-7' : 'left-1'}`}></div>
-                     </button>
-                  </div>
-
-                 <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
-                     <div className="flex items-center gap-2 ml-1">
-                      <ShieldCheck className="w-4 h-4 text-teal-600" />
-                      <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">সদস্য পদবী (Designation)</p>
-                    </div>
-                    <div className="flex gap-2">
-                       <input type="text" className="flex-grow p-4 bg-white border border-teal-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="যেমন: চেয়ারম্যান, সদস্য..." value={userDesignation} onChange={e => setUserDesignation(e.target.value)} />
-                       <button onClick={handleUpdateDesignation} disabled={isSubmitting} className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center">
-                         {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                       </button>
-                    </div>
+                      </div>
+                    )}
                  </div>
 
-                 <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-3">
-                    <div className="flex items-center gap-2 ml-1">
-                      <MessageCircle className="w-4 h-4 text-indigo-600" />
-                      <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">বার্তা পাঠান (অ্যাপে)</p>
-                    </div>
-                    <div className="flex gap-2">
-                       <input type="text" className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="বার্তা লিখুন..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} />
-                       <button onClick={handleSendMessage} className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all"><Send className="w-5 h-5" /></button>
-                    </div>
-                 </div>
-
-                 <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
-                    <div className="flex items-center gap-2 ml-1">
-                      <MessageSquare className="w-4 h-4 text-teal-600" />
-                      <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">এসএমএস পাঠান (মোবাইলে)</p>
-                    </div>
-                    <div className="flex gap-2">
-                       <div className="relative flex-grow">
-                          <input 
-                            type="text" 
-                            className="w-full p-4 bg-white border border-teal-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm pr-16" 
-                            placeholder="এসএমএস লিখুন..." 
-                            value={manualSmsMessage} 
-                            onChange={e => {
-                              const limit = getSmsLimit(e.target.value);
-                              if (e.target.value.length <= limit) {
-                                setManualSmsMessage(e.target.value);
-                              }
-                            }} 
-                            maxLength={getSmsLimit(manualSmsMessage)}
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border">
-                            {toBengaliNumber(manualSmsMessage.length)}/{toBengaliNumber(getSmsLimit(manualSmsMessage))}
+                 {/* Admin Controls */}
+                 <div className="space-y-4 pt-2">
+                    <div className="bg-amber-50/50 p-5 rounded-[2.5rem] border border-amber-100 flex items-center justify-between">
+                       <div className="flex items-center gap-3">
+                          <div className="p-3 bg-white rounded-2xl shadow-sm">
+                             <Award className="w-5 h-5 text-amber-600" />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest leading-none">স্থায়ী সদস্য</p>
+                             <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-1">হোমপেজে প্রদর্শিত হবে</p>
                           </div>
                        </div>
                        <button 
-                         onClick={async () => {
-                           if (!viewingUser || !manualSmsMessage.trim()) return;
-                           setIsSendingSms('sending');
-                           try {
-                             const personalizedMessage = `${viewingUser.name} ${manualSmsMessage.trim()}`;
-                             await db.sendGenericSms(viewingUser.phone, personalizedMessage);
-                             await db.logSmsHistory({
-                               message: personalizedMessage,
-                               recipientCount: 1,
-                               successCount: 1,
-                               failCount: 0,
-                               timestamp: Date.now(),
-                               status: 'Success'
-                             });
-                             setManualSmsMessage('');
-                             alert('এসএমএস পাঠানো হয়েছে।');
-                           } catch (e: any) { alert(e.message); }
-                           finally { setIsSendingSms(null); }
-                         }} 
-                         disabled={isSendingSms !== null}
-                         className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center"
+                          onClick={handleTogglePermanentMember}
+                          disabled={isSubmitting}
+                          className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isPermanentMember ? 'bg-amber-500' : 'bg-slate-200'}`}
                        >
-                         {isSendingSms === 'sending' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isPermanentMember ? 'left-7' : 'left-1'}`}></div>
                        </button>
                     </div>
-                 </div>
 
-                 <div className="bg-emerald-50/50 p-5 rounded-[2.5rem] border border-emerald-100 space-y-4">
-                    <div className="flex items-center gap-2 ml-1">
-                      <Plus className="w-4 h-4 text-emerald-600" />
-                      <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">ফান্ড যোগ করুন</p>
+                    <div className="bg-blue-50/50 p-5 rounded-[2.5rem] border border-blue-100 flex items-center justify-between">
+                       <div className="flex items-center gap-3">
+                          <div className="p-3 bg-white rounded-2xl shadow-sm">
+                             <Users className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest leading-none">গৃহীতার তথ্য এডিট</p>
+                             <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-1">তথ্য এডিট করার অনুমতি</p>
+                          </div>
+                       </div>
+                       <button 
+                          onClick={handleToggleRecipientPermission}
+                          disabled={isSubmitting}
+                          className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.canManageRecipients ? 'bg-blue-500' : 'bg-slate-200'}`}
+                       >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.canManageRecipients ? 'left-7' : 'left-1'}`}></div>
+                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                       <input type="number" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-black text-sm shadow-sm" placeholder="টাকা..." value={manualAmount} onChange={e => setManualAmount(e.target.value)} />
-                       <input type="date" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-bold text-[10px] shadow-sm" value={manualDate} onChange={e => setManualDate(e.target.value)} />
-                    </div>
-                    <select 
-                      className="w-full p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-bold text-xs shadow-sm"
-                      value={manualFundType}
-                      onChange={e => setManualFundType(e.target.value as FundType)}
-                    >
-                      <option value="General">General</option>
-                      <option value="AppProblem">App Problem (অ্যাপ প্রবলেম)</option>
-                      <option value="Special">Special</option>
-                      <option value="Emergency">Emergency</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    <button onClick={handleAddManualFunds} className="w-full py-4 bg-[#0D9488] text-white rounded-2xl font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all">টাকা যোগ করুন</button>
-                 </div>
 
-                 <button onClick={() => setUserToDelete(viewingUser)} className="w-full py-4 bg-rose-50 text-rose-600 rounded-[2rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 border border-rose-100 active:scale-95 transition-all">
-                    <Trash2 className="w-4 h-4" /> ডিলিট মেম্বার
-                 </button>
+                    <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
+                       <div className="flex items-center gap-2 ml-1">
+                        <ShieldCheck className="w-4 h-4 text-teal-600" />
+                        <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">সদস্য পদবী (Designation)</p>
+                      </div>
+                      <div className="flex gap-2">
+                         <input type="text" className="flex-grow p-4 bg-white border border-teal-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="যেমন: চেয়ারম্যান, সদস্য..." value={userDesignation} onChange={e => setUserDesignation(e.target.value)} />
+                         <button onClick={handleUpdateDesignation} disabled={isSubmitting} className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center">
+                           {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                         </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-3">
+                       <div className="flex items-center gap-2 ml-1">
+                         <MessageCircle className="w-4 h-4 text-indigo-600" />
+                         <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">বার্তা পাঠান (অ্যাপে)</p>
+                       </div>
+                       <div className="flex gap-2">
+                          <input type="text" className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="বার্তা লিখুন..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} />
+                          <button onClick={handleSendMessage} className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all"><Send className="w-5 h-5" /></button>
+                       </div>
+                    </div>
+
+                    <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
+                       <div className="flex items-center gap-2 ml-1">
+                         <MessageSquare className="w-4 h-4 text-teal-600" />
+                         <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">এসএমএস পাঠান (মোবাইলে)</p>
+                       </div>
+                       <div className="flex gap-2">
+                          <div className="relative flex-grow">
+                             <input 
+                               type="text" 
+                               className="w-full p-4 bg-white border border-teal-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm pr-16" 
+                               placeholder="এসএমএস লিখুন..." 
+                               value={manualSmsMessage} 
+                               onChange={e => {
+                                 const limit = getSmsLimit(e.target.value);
+                                 if (e.target.value.length <= limit) {
+                                   setManualSmsMessage(e.target.value);
+                                 }
+                               }} 
+                               maxLength={getSmsLimit(manualSmsMessage)}
+                             />
+                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border">
+                               {toBengaliNumber(manualSmsMessage.length)}/{toBengaliNumber(getSmsLimit(manualSmsMessage))}
+                             </div>
+                          </div>
+                          <button 
+                            onClick={async () => {
+                              if (!viewingUser || !manualSmsMessage.trim()) return;
+                              setIsSendingSms('sending');
+                              try {
+                                const personalizedMessage = `${viewingUser.name} ${manualSmsMessage.trim()}`;
+                                await db.sendGenericSms(viewingUser.phone, personalizedMessage);
+                                await db.logSmsHistory({
+                                  message: personalizedMessage,
+                                  recipientCount: 1,
+                                  successCount: 1,
+                                  failCount: 0,
+                                  timestamp: Date.now(),
+                                  status: 'Success'
+                                });
+                                setManualSmsMessage('');
+                                alert('এসএমএস পাঠানো হয়েছে।');
+                              } catch (e: any) { alert(e.message); }
+                              finally { setIsSendingSms(null); }
+                            }} 
+                            disabled={isSendingSms !== null}
+                            className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center"
+                          >
+                            {isSendingSms === 'sending' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                          </button>
+                       </div>
+                    </div>
+
+                    <div className="bg-emerald-50/50 p-5 rounded-[2.5rem] border border-emerald-100 space-y-4">
+                       <div className="flex items-center gap-2 ml-1">
+                         <Plus className="w-4 h-4 text-emerald-600" />
+                         <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">ফান্ড যোগ করুন</p>
+                       </div>
+                       <div className="grid grid-cols-2 gap-2">
+                          <input type="number" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-black text-sm shadow-sm" placeholder="টাকা..." value={manualAmount} onChange={e => setManualAmount(e.target.value)} />
+                          <input type="date" className="p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-bold text-[10px] shadow-sm" value={manualDate} onChange={e => setManualDate(e.target.value)} />
+                       </div>
+                       <select 
+                         className="w-full p-4 bg-white border border-emerald-100 rounded-2xl outline-none font-bold text-xs shadow-sm"
+                         value={manualFundType}
+                         onChange={e => setManualFundType(e.target.value as FundType)}
+                       >
+                         <option value="General">General</option>
+                         <option value="AppProblem">App Problem (অ্যাপ প্রবলেম)</option>
+                         <option value="Special">Special</option>
+                         <option value="Emergency">Emergency</option>
+                         <option value="Other">Other</option>
+                       </select>
+                       <button onClick={handleAddManualFunds} className="w-full py-4 bg-[#0D9488] text-white rounded-2xl font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all">টাকা যোগ করুন</button>
+                    </div>
+
+                    <button onClick={() => setUserToDelete(viewingUser)} className="w-full py-4 bg-rose-50 text-rose-600 rounded-[2rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 border border-rose-100 active:scale-95 transition-all">
+                       <Trash2 className="w-4 h-4" /> ডিলিট মেম্বার
+                    </button>
+                 </div>
               </div>
            </div>
         </div>

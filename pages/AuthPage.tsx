@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { BD_LOCATION_DATA, PROFESSIONS, COUNTRY_DIAL_CODES, BLOOD_GROUPS } from '../src/constants/locationData';
+import ImageCropper from '../src/components/ImageCropper';
 
 const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
   return new Promise((resolve) => {
@@ -56,6 +57,20 @@ const AuthPage: React.FC = () => {
   const [showDistrictModal, setShowDistrictModal] = useState(false);
   const [showUpazilaModal, setShowUpazilaModal] = useState(false);
   const [showProfessionModal, setShowProfessionModal] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+
+  // Debug logs to help identify if modals are being triggered
+  const openProfessionModal = () => {
+    console.log('Opening Profession Modal');
+    setShowProfessionModal(true);
+    setProfessionSearch('');
+  };
+
+  const openBloodModal = () => {
+    console.log('Opening Blood Modal');
+    setShowBloodModal(true);
+  };
   
   const [locationSearch, setLocationSearch] = useState('');
   const [professionSearch, setProfessionSearch] = useState('');
@@ -216,15 +231,22 @@ const AuthPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const compressed = await compressImage(reader.result as string);
-          setFormData(prev => ({ ...prev, [field]: compressed }));
-        } catch (e) {
-          setError(t('image_process_error'));
-        }
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+        setShowCropper(true);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = async (croppedImage: string) => {
+    try {
+      const compressed = await compressImage(croppedImage);
+      setFormData(prev => ({ ...prev, profilePic: compressed }));
+      setShowCropper(false);
+      setImageToCrop(null);
+    } catch (e) {
+      setError(t('image_process_error'));
     }
   };
 
@@ -329,7 +351,7 @@ const AuthPage: React.FC = () => {
                    </div>
                    
                    <div className="grid grid-cols-2 gap-3">
-                      <button type="button" onClick={() => { setShowProfessionModal(true); setProfessionSearch(''); }} className={selectBtnClass}>
+                      <button type="button" onClick={openProfessionModal} className={selectBtnClass}>
                          <span className={`text-[11px] truncate ${formData.profession ? 'text-black' : 'text-slate-400'}`}>{formData.profession || t('select_profession')}</span>
                          <Briefcase className="w-4 h-4 text-slate-400" />
                       </button>
@@ -339,7 +361,7 @@ const AuthPage: React.FC = () => {
                       </div>
                    </div>
 
-                   <button type="button" onClick={() => setShowBloodModal(true)} className={`${selectBtnClass} py-5 border-rose-100 bg-rose-50/20`}>
+                   <button type="button" onClick={openBloodModal} className={`${selectBtnClass} py-5 border-rose-100 bg-rose-50/20`}>
                      <div className="flex items-center gap-3">
                         <Droplets className="w-7 h-7 text-rose-500 fill-rose-500/10" />
                         <span className={`text-base font-black ${formData.bloodGroup ? 'text-black' : 'text-slate-500'}`}>{formData.bloodGroup || t('blood_group')}</span>
@@ -429,11 +451,14 @@ const AuthPage: React.FC = () => {
                     </div>
 
                     <div className="mt-8">
-                       <label className="flex items-start gap-4 p-5 bg-teal-600 rounded-3xl cursor-pointer shadow-xl shadow-teal-100 active:scale-[0.98] transition-all border-b-4 border-teal-800 group">
+                       <label className={`flex items-start gap-4 p-5 rounded-3xl cursor-pointer shadow-xl transition-all border-b-4 group ${formData.policyConsent ? 'bg-emerald-600 border-emerald-800 shadow-emerald-100' : 'bg-teal-600 border-teal-800 shadow-teal-100'}`}>
                           <div className="pt-1">
+                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${formData.policyConsent ? 'bg-white border-white' : 'bg-transparent border-white/40'}`}>
+                              {formData.policyConsent && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                            </div>
                             <input 
                               type="checkbox" 
-                              className="w-6 h-6 rounded-lg accent-white cursor-pointer ring-2 ring-white/20" 
+                              className="hidden" 
                               checked={formData.policyConsent} 
                               onChange={e => setFormData({...formData, policyConsent: e.target.checked})} 
                             />
@@ -447,7 +472,11 @@ const AuthPage: React.FC = () => {
                   
                   <div className="flex gap-4 pt-2">
                     <button onClick={() => setStep(2)} className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-8 h-8" /></button>
-                    <button onClick={handleRegister} disabled={isSubmitting || !formData.policyConsent} className="flex-grow py-5 bg-slate-900 text-white rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 border-black tracking-widest disabled:opacity-50">
+                    <button 
+                      onClick={handleRegister} 
+                      disabled={isSubmitting || !formData.policyConsent} 
+                      className={`flex-grow py-5 rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 tracking-widest disabled:opacity-50 ${formData.policyConsent ? 'bg-emerald-600 border-emerald-800 text-white shadow-emerald-100' : 'bg-slate-900 border-black text-white'}`}
+                    >
                       {isSubmitting ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : t('complete_registration')}
                     </button>
                   </div>
@@ -467,13 +496,13 @@ const AuthPage: React.FC = () => {
                 <button onClick={() => setShowCountryModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="max-h-96 overflow-y-auto p-4 space-y-2">
-                {COUNTRY_DIAL_CODES.map(c => (
+                {COUNTRY_DIAL_CODES.length > 0 ? COUNTRY_DIAL_CODES.map(c => (
                   <button key={c.code} onClick={() => { setSelectedDialCode(c); setShowCountryModal(false); }} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl transition-all font-black text-xs text-slate-700">
                     <img src={c.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${c.flag}.png`} className="w-7 h-auto rounded-sm border border-slate-200" alt={c.name} />
                     <span>{language === 'bn' ? c.name : (c.name === 'বাংলাদেশ' ? 'Bangladesh' : c.name === 'ভারত' ? 'India' : c.name === 'সৌদি আরব' ? 'Saudi Arabia' : c.name === 'ইউএই' ? 'UAE' : c.name === 'যুক্তরাজ্য' ? 'UK' : c.name === 'যুক্তরাষ্ট্র' ? 'USA' : c.name === 'মালয়েশিয়া' ? 'Malaysia' : c.name === 'ইতালি' ? 'Italy' : c.name === 'কাতার' ? 'Qatar' : c.name === 'কুয়েত' ? 'Kuwait' : c.name === 'সিঙ্গাপুর' ? 'Singapore' : c.name === 'ওমান' ? 'Oman' : 'Other')}</span>
                     <span className="ml-auto text-teal-600">{c.code}</span>
                   </button>
-                ))}
+                )) : <p className="text-center p-4 text-slate-400">No countries found</p>}
              </div>
           </div>
         </div>
@@ -487,11 +516,11 @@ const AuthPage: React.FC = () => {
                 <button onClick={() => setShowBloodModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="p-6 grid grid-cols-4 gap-3">
-                {BLOOD_GROUPS.map(bg => (
+                {BLOOD_GROUPS.length > 0 ? BLOOD_GROUPS.map(bg => (
                   <button key={bg} onClick={() => { setFormData({...formData, bloodGroup: bg}); setShowBloodModal(false); }} className={`p-4 rounded-xl font-black text-sm border-2 transition-all ${formData.bloodGroup === bg ? 'bg-rose-50 border-rose-500 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
                     {bg}
                   </button>
-                ))}
+                )) : <p className="col-span-4 text-center p-4 text-slate-400">No blood groups found</p>}
              </div>
           </div>
         </div>
@@ -559,14 +588,22 @@ const AuthPage: React.FC = () => {
                 </div>
              </div>
              <div className="overflow-y-auto p-4 space-y-1">
-                {PROFESSIONS.filter(p => p.includes(professionSearch)).map(p => (
+                {PROFESSIONS.filter(p => p.includes(professionSearch)).length > 0 ? PROFESSIONS.filter(p => p.includes(professionSearch)).map(p => (
                   <button key={p} onClick={() => { setFormData({...formData, profession: p}); setShowProfessionModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 rounded-xl font-black text-xs text-slate-700">
                     {p}
                   </button>
-                ))}
+                )) : <p className="text-center p-4 text-slate-400">No professions found</p>}
              </div>
           </div>
         </div>
+      )}
+
+      {showCropper && imageToCrop && (
+        <ImageCropper 
+          image={imageToCrop} 
+          onCropComplete={handleCropComplete} 
+          onCancel={() => { setShowCropper(false); setImageToCrop(null); }} 
+        />
       )}
     </div>
   );

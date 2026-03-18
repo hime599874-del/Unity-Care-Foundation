@@ -191,7 +191,9 @@ class FirebaseDB {
     messenger: 'https://m.me/unitycarefoundation',
     email: 'unitycarefoundation07@gmail.com',
     phone: '01777599874',
-    policyUrl: 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk'
+    policyUrl: 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk',
+    maintenanceMode: false,
+    disableRegistration: false
   };
   private listeners: (() => void)[] = [];
   private isReady: boolean = false;
