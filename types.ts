@@ -203,3 +203,13 @@ export interface RecipientInfo {
   addedBy: string;
   timestamp: number;
 }
+
+export interface SmsRecord {
+  id: string;
+  recipientCount: number;
+  message: string;
+  timestamp: number;
+  status: 'Success' | 'Partial' | 'Failed';
+  successCount: number;
+  failCount: number;
+}

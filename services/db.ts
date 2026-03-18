@@ -22,7 +22,7 @@ import {
   getDoc,
   getDocFromServer
 } from "firebase/firestore";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo, FundType } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo, FundType, SmsRecord } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
@@ -183,6 +183,7 @@ class FirebaseDB {
   private complaints: Complaint[] = [];
   private activities: MemberActivity[] = [];
   private recipients: RecipientInfo[] = [];
+  private smsHistory: SmsRecord[] = [];
   private stats: AppStats = { totalCollection: 0, totalExpense: 0, totalUsers: 0, pendingRequests: 0, totalSmsSent: 0 };
   private contactConfig: ContactConfig = {
     whatsapp: 'https://chat.whatsapp.com/C39euDOPaskI3KoeNZMW2H?mode=gi_t',
@@ -267,6 +268,11 @@ class FirebaseDB {
         this.notify();
       }, (error) => safeError("Firestore: Recipients sync error:", error));
 
+      onSnapshot(query(collection(firestore, "sms_history"), orderBy("timestamp", "desc"), limit(50)), (snapshot) => {
+        this.smsHistory = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as SmsRecord[];
+        this.notify();
+      }, (error) => safeError("Firestore: SMS History sync error:", error));
+
       onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
         if (snapshot.exists()) {
           const data = toPlainObject(snapshot.data());
@@ -319,6 +325,7 @@ class FirebaseDB {
   getComplaints(): Complaint[] { return this.complaints; }
   getActivities(): MemberActivity[] { return this.activities; }
   getRecipients(): RecipientInfo[] { return this.recipients; }
+  getSmsHistory(): SmsRecord[] { return this.smsHistory; }
   getStats(): AppStats { return this.stats; }
   getContactConfig(): ContactConfig { return this.contactConfig; }
   whenReady(): Promise<void> { return this.readyPromise; }
@@ -442,6 +449,10 @@ class FirebaseDB {
       console.error('Error sending SMS:', error);
       throw new Error('এসএমএস পাঠানো সম্ভব হয়নি।');
     }
+  }
+
+  async logSmsHistory(record: Omit<SmsRecord, 'id'>) {
+    await addDoc(collection(firestore, "sms_history"), sanitizeForUpload(record));
   }
 
   async sendManualSms(txId: string) {

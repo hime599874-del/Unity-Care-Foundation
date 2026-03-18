@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType, SmsRecord } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
@@ -12,7 +12,8 @@ import {
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
   Download, Smartphone, Landmark, Award, Activity, QrCode, Edit,
-  FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket
+  FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket,
+  MessageSquare, ChevronDown
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { QRCodeSVG } from 'qrcode.react';
@@ -23,6 +24,9 @@ const toBengaliNumber = (num: number | string | undefined | null) => {
   if (num === undefined || num === null) return '';
   return num.toString();
 };
+
+const isUnicode = (text: string) => /[^\u0000-\u007f]/.test(text);
+const getSmsLimit = (text: string) => isUnicode(text) ? 50 : 140;
 
 const getAssistanceStatusLabel = (status: AssistanceStatus) => {
   switch (status) {
@@ -118,6 +122,11 @@ const AdminDashboard: React.FC = () => {
   const [isSendingSms, setIsSendingSms] = useState<string | null>(null);
   const [manualSmsPhone, setManualSmsPhone] = useState('');
   const [manualSmsMessage, setManualSmsMessage] = useState('');
+  const [selectedSmsUserIds, setSelectedSmsUserIds] = useState<string[]>([]);
+  const [smsHistory, setSmsHistory] = useState<SmsRecord[]>([]);
+  const [bulkSmsMessage, setBulkSmsMessage] = useState('');
+  const [isSendingBulkSms, setIsSendingBulkSms] = useState(false);
+  const [bulkSmsProgress, setBulkSmsProgress] = useState({ current: 0, total: 0 });
   const [fundFilter, setFundFilter] = useState<FundType | 'All'>('AppProblem');
 
   useEffect(() => {
@@ -152,6 +161,7 @@ const AdminDashboard: React.FC = () => {
       if (!editingRecipient) {
         setRecipientDonationNo(getNextDonationNo(allRecipients));
       }
+      setSmsHistory(db.getSmsHistory());
       setStats(db.getStats());
       const latestConfig = db.getContactConfig();
       setContactConfig(latestConfig);
@@ -483,19 +493,67 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleSendGenericSms = async () => {
-    if (!manualSmsPhone || !manualSmsMessage || isSendingSms !== null) return;
-    setIsSendingSms('sending');
-    try {
-      await db.sendGenericSms(manualSmsPhone, manualSmsMessage);
-      alert('SMS সফলভাবে পাঠানো হয়েছে।');
-      setManualSmsPhone('');
-      setManualSmsMessage('');
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
-      setIsSendingSms(null);
+  const handleSendBulkSms = async () => {
+    if (!bulkSmsMessage || isSendingBulkSms) return;
+    
+    const targetUsers = users.filter(u => 
+      u.status === UserStatus.APPROVED && 
+      (selectedSmsUserIds.length === 0 || selectedSmsUserIds.includes(u.id))
+    );
+
+    if (targetUsers.length === 0) {
+      alert('কোন সদস্য নির্বাচন করা হয়নি।');
+      return;
     }
+
+    const confirmMsg = selectedSmsUserIds.length > 0 
+      ? `${targetUsers.length} জন নির্বাচিত সদস্যকে এসএমএস পাঠানো হবে। আপনি কি নিশ্চিত?`
+      : `সকল অনুমোদিত (${targetUsers.length} জন) সদস্যকে এসএমএস পাঠানো হবে। আপনি কি নিশ্চিত?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsSendingBulkSms(true);
+    setBulkSmsProgress({ current: 0, total: targetUsers.length });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < targetUsers.length; i++) {
+      const user = targetUsers[i];
+      const personalizedMessage = bulkSmsMessage.includes('{name}') 
+        ? bulkSmsMessage.replace(/{name}/g, user.name)
+        : `${user.name} ${bulkSmsMessage}`;
+      
+      try {
+        await db.sendGenericSms(user.phone, personalizedMessage);
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to send SMS to ${user.name}:`, err);
+        failCount++;
+      }
+      
+      setBulkSmsProgress(prev => ({ ...prev, current: i + 1 }));
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    // Log to history
+    try {
+      await db.logSmsHistory({
+        message: bulkSmsMessage,
+        recipientCount: targetUsers.length,
+        successCount,
+        failCount,
+        timestamp: Date.now(),
+        status: failCount === 0 ? 'Success' : (successCount > 0 ? 'Partial' : 'Failed')
+      });
+    } catch (e) {
+      console.error("Failed to log SMS history:", e);
+    }
+
+    setIsSendingBulkSms(false);
+    alert(`এসএমএস পাঠানো সম্পন্ন হয়েছে।\nসফল: ${successCount}\nব্যর্থ: ${failCount}`);
+    setBulkSmsMessage('');
+    setSelectedSmsUserIds([]);
   };
 
   const handleSendTransactionSms = async (tx: Transaction) => {
@@ -2152,8 +2210,8 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {activeTab === 'sms' && (
-          <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
-             <div className="space-y-4">
+          <div className="space-y-6 animate-in fade-in max-w-2xl mx-auto">
+             <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6">
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SMS API প্রোফাইল</p>
                   <button onClick={fetchSmsBalance} className="text-[#0D9488] hover:bg-teal-50 p-2 rounded-full transition-colors">
@@ -2161,60 +2219,184 @@ const AdminDashboard: React.FC = () => {
                   </button>
                 </div>
                 
-                <div className="bg-slate-50 p-6 rounded-3xl border space-y-4">
-                  <div className="flex items-center gap-3 text-slate-600 mb-2">
-                    <MessageCircle className="w-5 h-5 text-[#0D9488]" />
-                    <h3 className="font-bold text-sm">SMS Bangladesh API</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-5 rounded-3xl border flex items-center gap-4">
+                    <div className="p-3 bg-white rounded-2xl shadow-sm text-[#0D9488]">
+                      <Wallet className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">বর্তমান ব্যালেন্স</p>
+                      <p className="text-sm font-black text-slate-800">{isSmsLoading ? 'লোড হচ্ছে...' : (smsBalance || 'অজানা')}</p>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-slate-200">
-                      <span className="text-xs font-semibold text-slate-500">বর্তমান ব্যালেন্স</span>
-                      <span className="text-sm font-black text-[#0D9488]">
-                        {isSmsLoading ? 'লোড হচ্ছে...' : (smsBalance || 'অজানা')}
-                      </span>
+                  <div className="bg-slate-50 p-5 rounded-3xl border flex items-center gap-4">
+                    <div className="p-3 bg-white rounded-2xl shadow-sm text-indigo-600">
+                      <Send className="w-5 h-5" />
                     </div>
-                    
-                    <div className="flex justify-between items-center py-2 border-b border-slate-200">
-                      <span className="text-xs font-semibold text-slate-500">মোট SMS পাঠানো হয়েছে</span>
-                      <span className="text-sm font-black text-slate-700">
-                        {stats.totalSmsSent || 0} টি
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center py-2">
-                       <span className="text-xs font-semibold text-slate-500">ম্যানুয়াল SMS পাঠান</span>
-                    </div>
-                    <div className="space-y-3 mt-4">
-                      <input 
-                        type="tel" 
-                        placeholder="ফোন নম্বর (যেমন: 017...)" 
-                        className="w-full p-3 bg-white border rounded-xl text-sm font-bold"
-                        value={manualSmsPhone}
-                        onChange={(e) => setManualSmsPhone(e.target.value)}
-                      />
-                      <textarea 
-                        placeholder="আপনার মেসেজ লিখুন..." 
-                        className="w-full p-3 bg-white border rounded-xl text-sm font-bold h-24"
-                        value={manualSmsMessage}
-                        onChange={(e) => setManualSmsMessage(e.target.value)}
-                      />
-                      <button 
-                        onClick={handleSendGenericSms}
-                        disabled={isSendingSms !== null}
-                        className="w-full py-3 bg-teal-600 text-white rounded-xl font-black text-sm hover:bg-teal-700 disabled:opacity-50"
-                      >
-                        {isSendingSms ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'SMS পাঠান'}
-                      </button>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">মোট পাঠানো হয়েছে</p>
+                      <p className="text-sm font-black text-slate-800">{toBengaliNumber(stats.totalSmsSent || 0)} টি</p>
                     </div>
                   </div>
                 </div>
-                
-                <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                  <p className="text-xs text-blue-800 font-medium leading-relaxed">
-                    <Info className="w-4 h-4 inline mr-1 mb-0.5" />
-                    SMS ব্যালেন্স শেষ হলে panel2.smsbangladesh.com এ লগইন করে রিচার্জ করুন।
-                  </p>
+
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-[#0D9488]" />
+                      <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">সদস্য নির্বাচন করুন</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-[10px] font-black text-teal-600 uppercase">নির্বাচিত: {toBengaliNumber(selectedSmsUserIds.length)} জন</p>
+                      <button 
+                        onClick={() => {
+                          const approved = users.filter(u => u.status === UserStatus.APPROVED).map(u => u.id);
+                          if (selectedSmsUserIds.length === approved.length) {
+                            setSelectedSmsUserIds([]);
+                          } else {
+                            setSelectedSmsUserIds(approved);
+                          }
+                        }}
+                        className="text-[10px] font-black text-indigo-600 uppercase hover:underline"
+                      >
+                        {selectedSmsUserIds.length === users.filter(u => u.status === UserStatus.APPROVED).length ? 'সব বাদ দিন' : 'সবাইকে সিলেক্ট করুন'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto border rounded-2xl p-2 space-y-1 bg-slate-50/50 no-scrollbar">
+                    {users.filter(u => u.status === UserStatus.APPROVED).sort((a,b) => a.name.localeCompare(b.name)).map(u => (
+                      <label key={u.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                          checked={selectedSmsUserIds.includes(u.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSmsUserIds([...selectedSmsUserIds, u.id]);
+                            } else {
+                              setSelectedSmsUserIds(selectedSmsUserIds.filter(id => id !== u.id));
+                            }
+                          }}
+                        />
+                        <div className="flex-grow">
+                          <p className="text-xs font-bold text-slate-800">{u.name}</p>
+                          <p className="text-[10px] font-medium text-slate-500">{u.phone}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3 pt-4">
+                    <div className="flex items-center justify-between ml-1">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-[#0D9488]" />
+                        <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">বার্তা লিখুন</p>
+                      </div>
+                      <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-100 italic">
+                        [সদস্যের নাম] (অটোমেটিক যোগ হবে)
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <textarea 
+                        placeholder="আপনার মূল মেসেজটি এখানে লিখুন..." 
+                        className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-sm font-bold h-32 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                        value={bulkSmsMessage}
+                        onChange={(e) => {
+                          const limit = getSmsLimit(e.target.value);
+                          if (e.target.value.length <= limit) {
+                            setBulkSmsMessage(e.target.value);
+                          }
+                        }}
+                        maxLength={getSmsLimit(bulkSmsMessage)}
+                      />
+                      <div className="absolute bottom-3 right-4 flex items-center gap-2">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isUnicode(bulkSmsMessage) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {isUnicode(bulkSmsMessage) ? 'বাংলা (Unicode)' : 'English (GSM)'}
+                        </span>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${bulkSmsMessage.length >= getSmsLimit(bulkSmsMessage) * 0.9 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {toBengaliNumber(bulkSmsMessage.length)} / {toBengaliNumber(getSmsLimit(bulkSmsMessage))}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-bold italic px-1">
+                      টিপস: আপনি শুধু মূল কথাটুকু লিখুন, নাম অটোমেটিক যোগ হবে।
+                    </p>
+
+                    {isSendingBulkSms && (
+                      <div className="bg-teal-50 p-4 rounded-2xl border border-teal-100 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <p className="text-[10px] font-black text-teal-800 uppercase">পাঠানো হচ্ছে...</p>
+                          <p className="text-[10px] font-black text-teal-600 uppercase">
+                            {toBengaliNumber(bulkSmsProgress.current)} / {toBengaliNumber(bulkSmsProgress.total)}
+                          </p>
+                        </div>
+                        <div className="w-full bg-white h-2 rounded-full overflow-hidden shadow-inner">
+                          <div 
+                            className="bg-teal-600 h-full transition-all duration-300" 
+                            style={{ width: `${(bulkSmsProgress.current / bulkSmsProgress.total) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    <button 
+                      onClick={handleSendBulkSms}
+                      disabled={isSendingBulkSms || !bulkSmsMessage || (selectedSmsUserIds.length === 0 && users.filter(u => u.status === UserStatus.APPROVED).length === 0)}
+                      className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                    >
+                      {isSendingBulkSms ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-5 h-5" /> {selectedSmsUserIds.length > 0 ? `${toBengaliNumber(selectedSmsUserIds.length)} জনকে পাঠান` : 'সবাইকে পাঠান'}</>}
+                    </button>
+                  </div>
+                </div>
+             </div>
+
+             {/* SMS History Section */}
+             <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-slate-400" />
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">এসএমএস হিস্ট্রি (সাম্প্রতিক)</p>
+                </div>
+
+                <div className="space-y-4">
+                  {smsHistory.length === 0 ? (
+                    <div className="text-center py-10 bg-slate-50 rounded-3xl border border-dashed">
+                      <p className="text-xs font-bold text-slate-400">এখনো কোনো এসএমএস পাঠানো হয়নি।</p>
+                    </div>
+                  ) : (
+                    smsHistory.map((record) => (
+                      <div key={record.id} className="p-5 bg-slate-50 rounded-3xl border border-slate-100 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-bold text-slate-800 line-clamp-2 italic">"{record.message}"</p>
+                            <p className="text-[9px] text-slate-400 font-bold">{new Date(record.timestamp).toLocaleString()}</p>
+                          </div>
+                          <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${
+                            record.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 
+                            record.status === 'Partial' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+                          }`}>
+                            {record.status === 'Success' ? 'সফল' : record.status === 'Partial' ? 'আংশিক' : 'ব্যর্থ'}
+                          </div>
+                        </div>
+                        <div className="flex gap-4 pt-2 border-t border-slate-200/50">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                            <p className="text-[9px] font-black text-slate-500 uppercase">মোট: {toBengaliNumber(record.recipientCount)}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                            <p className="text-[9px] font-black text-slate-500 uppercase">সফল: {toBengaliNumber(record.successCount)}</p>
+                          </div>
+                          {record.failCount > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-rose-400"></div>
+                              <p className="text-[9px] font-black text-slate-500 uppercase">ব্যর্থ: {toBengaliNumber(record.failCount)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
              </div>
           </div>
@@ -2378,11 +2560,63 @@ const AdminDashboard: React.FC = () => {
                  <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-3">
                     <div className="flex items-center gap-2 ml-1">
                       <MessageCircle className="w-4 h-4 text-indigo-600" />
-                      <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">বার্তা পাঠান</p>
+                      <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">বার্তা পাঠান (অ্যাপে)</p>
                     </div>
                     <div className="flex gap-2">
                        <input type="text" className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="বার্তা লিখুন..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} />
                        <button onClick={handleSendMessage} className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all"><Send className="w-5 h-5" /></button>
+                    </div>
+                 </div>
+
+                 <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
+                    <div className="flex items-center gap-2 ml-1">
+                      <MessageSquare className="w-4 h-4 text-teal-600" />
+                      <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">এসএমএস পাঠান (মোবাইলে)</p>
+                    </div>
+                    <div className="flex gap-2">
+                       <div className="relative flex-grow">
+                          <input 
+                            type="text" 
+                            className="w-full p-4 bg-white border border-teal-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm pr-16" 
+                            placeholder="এসএমএস লিখুন..." 
+                            value={manualSmsMessage} 
+                            onChange={e => {
+                              const limit = getSmsLimit(e.target.value);
+                              if (e.target.value.length <= limit) {
+                                setManualSmsMessage(e.target.value);
+                              }
+                            }} 
+                            maxLength={getSmsLimit(manualSmsMessage)}
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border">
+                            {toBengaliNumber(manualSmsMessage.length)}/{toBengaliNumber(getSmsLimit(manualSmsMessage))}
+                          </div>
+                       </div>
+                       <button 
+                         onClick={async () => {
+                           if (!viewingUser || !manualSmsMessage.trim()) return;
+                           setIsSendingSms('sending');
+                           try {
+                             const personalizedMessage = `${viewingUser.name} ${manualSmsMessage.trim()}`;
+                             await db.sendGenericSms(viewingUser.phone, personalizedMessage);
+                             await db.logSmsHistory({
+                               message: personalizedMessage,
+                               recipientCount: 1,
+                               successCount: 1,
+                               failCount: 0,
+                               timestamp: Date.now(),
+                               status: 'Success'
+                             });
+                             setManualSmsMessage('');
+                             alert('এসএমএস পাঠানো হয়েছে।');
+                           } catch (e: any) { alert(e.message); }
+                           finally { setIsSendingSms(null); }
+                         }} 
+                         disabled={isSendingSms !== null}
+                         className="p-4 bg-teal-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center"
+                       >
+                         {isSendingSms === 'sending' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                       </button>
                     </div>
                  </div>
 
