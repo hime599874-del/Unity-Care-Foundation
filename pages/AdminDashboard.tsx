@@ -37,8 +37,9 @@ const getAssistanceStatusLabel = (status: AssistanceStatus) => {
 };
 
 const AdminDashboard: React.FC = () => {
-  const { currentUser, setCurrentUser, isAdmin } = useAuth();
+  const { currentUser, setCurrentUser, adminUser, setAdminUser, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const effectiveUser = adminUser || currentUser;
   const reportRef = useRef<HTMLDivElement>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
   
@@ -176,52 +177,57 @@ const AdminDashboard: React.FC = () => {
 
   const fetchSmsBalance = async () => {
     setIsSmsLoading(true);
-    try {
-      const targetUrl = `https://panel2.smsbangladesh.com/balance?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}`;
-      // Using codetabs proxy as an alternative
-      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
-      const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error('Proxy response not ok');
-      const text = await response.text();
+    const targetUrl = `https://panel2.smsbangladesh.com/balance?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}`;
+    
+    const proxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+    ];
+
+    let success = false;
+    for (const proxy of proxies) {
       try {
-        const json = JSON.parse(text);
-        if (json["AVAILABLE BALANCE ="]) {
-          setSmsBalance(json["AVAILABLE BALANCE ="] + ' ৳');
-        } else {
-          setSmsBalance(text);
-        }
-      } catch (e) {
-        setSmsBalance(text);
-      }
-    } catch (error) {
-      console.error('Failed to fetch SMS balance:', error);
-      // Fallback to allorigins get endpoint if codetabs fails
-      try {
-        const targetUrl = `https://panel2.smsbangladesh.com/balance?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}`;
-        const fallbackUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-        const fallbackResponse = await fetch(fallbackUrl);
-        const data = await fallbackResponse.json();
-        if (data.contents) {
-          try {
-            const json = JSON.parse(data.contents);
-            if (json["AVAILABLE BALANCE ="]) {
-              setSmsBalance(json["AVAILABLE BALANCE ="] + ' ৳');
-            } else {
-              setSmsBalance(data.contents);
-            }
-          } catch (e) {
-            setSmsBalance(data.contents);
+        const response = await fetch(proxy);
+        if (!response.ok) continue;
+        const text = await response.text();
+        
+        // Basic validation: the response should be short and contain balance info or numbers
+        if (!text || text.length > 1000) continue;
+
+        try {
+          const json = JSON.parse(text);
+          if (json["AVAILABLE BALANCE ="]) {
+            setSmsBalance(json["AVAILABLE BALANCE ="] + ' ৳');
+            success = true;
+            break;
           }
-        } else {
-          throw new Error('No contents in fallback response');
+        } catch (e) {
+          // If not JSON, check if it contains the balance string or is just the balance
+          if (text.includes('AVAILABLE BALANCE =')) {
+            const match = text.match(/AVAILABLE BALANCE =\s*([\d.]+)/);
+            if (match) {
+              setSmsBalance(match[1] + ' ৳');
+              success = true;
+              break;
+            }
+          }
+          // If it's just a number or a short string, use it
+          if (text.length < 50) {
+            setSmsBalance(text.trim() + (text.includes('৳') ? '' : ' ৳'));
+            success = true;
+            break;
+          }
         }
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-        setSmsBalance('Error fetching balance. Please try again later.');
+      } catch (err) {
+        console.warn(`Proxy failed: ${proxy}`, err);
       }
-    } finally {
-      setIsSmsLoading(false);
     }
+
+    if (!success) {
+      setSmsBalance('ব্যালেন্স পাওয়া যায়নি');
+    }
+    setIsSmsLoading(false);
   };
 
   useEffect(() => {
@@ -285,10 +291,15 @@ const AdminDashboard: React.FC = () => {
         amount: amount,
         reason: recipientReason,
         note: recipientNote,
-        addedBy: currentUser?.name || 'Admin'
+        addedBy: effectiveUser?.name || 'Admin'
       };
 
       if (editingRecipient) {
+        if (effectiveUser?.canManageRecipients && effectiveUser?.designation !== 'Admin') {
+          alert('আপনার তথ্য এডিট করার অনুমতি নেই। আপনি শুধুমাত্র নতুন তথ্য যোগ করতে পারবেন।');
+          setIsSubmitting(false);
+          return;
+        }
         await db.updateRecipient(editingRecipient.id, data);
         alert('তথ্য সফলভাবে আপডেট করা হয়েছে।');
       } else {
@@ -464,8 +475,8 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleLogout = () => { 
-    if (isAdmin) {
-      setCurrentUser(null); 
+    if (adminUser) {
+      setAdminUser(null); 
       navigate('/'); 
     } else {
       navigate('/dashboard');
@@ -943,7 +954,7 @@ const AdminDashboard: React.FC = () => {
           { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" />, adminOnly: true },
           { id: 'sms', label: 'SMS সেটিংস', icon: <MessageCircle className="w-4 h-4" />, adminOnly: true },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" />, adminOnly: true }
-        ].filter(tab => isAdmin || (!tab.adminOnly && currentUser?.canManageRecipients)).map(tab => (
+        ].filter(tab => isAdmin || (!tab.adminOnly && effectiveUser?.canManageRecipients)).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`py-5 px-1 border-b-[3px] text-[10px] font-black uppercase flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id ? 'border-[#0D9488] text-[#0D9488]' : 'border-transparent text-slate-400'}`}>
             {tab.icon} {tab.label}
           </button>
@@ -1545,7 +1556,8 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex-grow overflow-hidden">
                       <div className="flex justify-between items-start">
                         <p className="text-sm font-black text-slate-800 truncate">{act.userName}</p>
-                        <p className="text-[9px] font-bold text-slate-400 whitespace-nowrap ml-2">
+                        <p className="text-[9px] font-bold text-slate-400 whitespace-nowrap ml-2 text-right">
+                          {new Date(act.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}<br/>
                           {new Date(act.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -2104,12 +2116,16 @@ const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => handleEditRecipient(r)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteRecipient(r.id)} className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {effectiveUser?.designation === 'Admin' && (
+                          <>
+                            <button onClick={() => handleEditRecipient(r)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDeleteRecipient(r.id)} className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                     

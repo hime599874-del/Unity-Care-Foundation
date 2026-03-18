@@ -16,9 +16,10 @@ const toBengaliNumber = (num: number | string | undefined | null) => {
 };
 
 const RecipientManagementPage: React.FC = () => {
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, adminUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const effectiveUser = adminUser || currentUser;
   
   const [recipients, setRecipients] = useState<RecipientInfo[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +54,7 @@ const RecipientManagementPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!currentUser?.canManageRecipients && !isAdmin) {
+    if (!effectiveUser?.canManageRecipients && !isAdmin) {
       navigate('/dashboard');
       return;
     }
@@ -110,10 +111,15 @@ const RecipientManagementPage: React.FC = () => {
         amount: amount,
         reason: recipientReason,
         note: recipientNote,
-        addedBy: currentUser?.name || 'Admin'
+        addedBy: effectiveUser?.name || 'Admin'
       };
 
       if (editingRecipient) {
+        if (effectiveUser?.canManageRecipients && effectiveUser?.designation !== 'Admin') {
+          alert('আপনার তথ্য এডিট করার অনুমতি নেই। আপনি শুধুমাত্র নতুন তথ্য যোগ করতে পারবেন।');
+          setIsSubmitting(false);
+          return;
+        }
         await db.updateRecipient(editingRecipient.id, data);
         alert('তথ্য সফলভাবে আপডেট করা হয়েছে।');
       } else {
@@ -373,7 +379,7 @@ const RecipientManagementPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {isAdmin && (
+                    {currentUser?.designation === 'Admin' && (
                       <>
                         <button onClick={() => handleEditRecipient(r)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all">
                           <Edit className="w-4 h-4" />

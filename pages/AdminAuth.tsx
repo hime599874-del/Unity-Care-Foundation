@@ -9,7 +9,7 @@ import { User, UserStatus } from '../types';
 const AdminAuth: React.FC = () => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const { setCurrentUser } = useAuth();
+  const { setAdminUser } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
@@ -41,7 +41,7 @@ const AdminAuth: React.FC = () => {
         registeredAt: Date.now(),
         designation: 'Admin'
       };
-      setCurrentUser(adminUser);
+      setAdminUser(adminUser);
       navigate('/admin-dashboard');
     } else {
       setError('ভুল পিন কোড। আবার চেষ্টা করুন।');

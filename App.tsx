@@ -84,10 +84,11 @@ const ActivityTracker: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, adminUser, isAdmin } = useAuth();
   const location = useLocation();
   const isDashboard = location.pathname === '/dashboard';
   const showNav = currentUser && isDashboard;
+  const effectiveUser = adminUser || currentUser;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -106,7 +107,7 @@ const AppContent: React.FC = () => {
             <Route path="/expenses" element={currentUser ? <ExpensePage /> : <Navigate to="/" replace />} />
             <Route path="/vouchers" element={currentUser ? <VoucherPage /> : <Navigate to="/" replace />} />
             <Route path="/recipients" element={currentUser ? <RecipientListPage /> : <Navigate to="/" replace />} />
-            <Route path="/manage-recipients" element={currentUser && (isAdmin || currentUser?.canManageRecipients) ? <RecipientManagementPage /> : <Navigate to="/" replace />} />
+            <Route path="/manage-recipients" element={isAdmin ? <RecipientManagementPage /> : <Navigate to="/" replace />} />
             <Route path="/progress" element={currentUser ? <ProgressPage /> : <Navigate to="/" replace />} />
             <Route path="/admin-auth" element={isAdmin ? <Navigate to="/admin-dashboard" replace /> : <AdminAuth />} />
             <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin-auth" replace />} />
