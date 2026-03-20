@@ -9,15 +9,15 @@ const WelcomePage: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center overflow-hidden relative font-['Hind_Siliguri']">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col items-center justify-center overflow-hidden relative font-['Hind_Siliguri'] transition-colors duration-300">
       {/* Background blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-teal-100/20 rounded-full blur-[120px] -z-10 animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-100/20 rounded-full blur-[120px] -z-10"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-teal-100/20 dark:bg-teal-900/10 rounded-full blur-[120px] -z-10 animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-100/20 dark:bg-blue-900/10 rounded-full blur-[120px] -z-10"></div>
       
       <div className="w-full max-w-md px-8 flex flex-col items-center">
         <div className="relative mb-10 animate-in fade-in zoom-in duration-1000">
-           <div className="relative bg-white p-8 rounded-[3.5rem] shadow-xl border-2 border-white flex items-center justify-center">
-              <div className="bg-teal-600 p-6 rounded-[2.5rem]">
+           <div className="relative bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] shadow-xl border-2 border-white dark:border-slate-800 flex items-center justify-center">
+              <div className="bg-teal-600 dark:bg-teal-700 p-6 rounded-[2.5rem]">
                 <Heart className="w-14 h-14 text-white" />
               </div>
               <Sparkles className="absolute -top-3 -right-3 w-10 h-10 text-amber-400" />
@@ -25,25 +25,25 @@ const WelcomePage: React.FC = () => {
         </div>
 
         <div className="text-center space-y-4 mb-12 animate-in slide-in-from-bottom duration-1000 delay-200">
-           <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
-             Unity Care <span className="text-teal-600">{t('foundation')}</span>
+           <h1 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+             Unity Care <span className="text-teal-600 dark:text-teal-400">{t('foundation')}</span>
            </h1>
-           <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.4em]">
+           <p className="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-[0.4em]">
              {t('slogan')}
            </p>
         </div>
 
         <div className="grid grid-cols-3 gap-4 w-full mb-12 animate-in slide-in-from-bottom duration-1000 delay-400">
            {[
-             { title: t('transparency'), icon: <ShieldCheck className="w-6 h-6" />, color: 'bg-emerald-50 text-emerald-600' },
-             { title: t('service'), icon: <Globe2 className="w-6 h-6" />, color: 'bg-blue-50 text-blue-600' },
-             { title: t('humanity'), icon: <Users className="w-6 h-6" />, color: 'bg-amber-50 text-amber-600' }
+             { title: t('transparency'), icon: <ShieldCheck className="w-6 h-6" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' },
+             { title: t('service'), icon: <Globe2 className="w-6 h-6" />, color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
+             { title: t('humanity'), icon: <Users className="w-6 h-6" />, color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' }
            ].map((card, i) => (
-             <div key={i} className="bg-white p-4 rounded-[2rem] shadow-sm flex flex-col items-center text-center">
+             <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-[2rem] shadow-sm flex flex-col items-center text-center border border-transparent dark:border-slate-800">
                 <div className={`${card.color} p-3 rounded-xl mb-2`}>
                    {card.icon}
                 </div>
-                <h3 className="text-[9px] font-black text-slate-800 uppercase">{card.title}</h3>
+                <h3 className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase">{card.title}</h3>
              </div>
            ))}
         </div>

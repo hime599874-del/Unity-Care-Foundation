@@ -256,31 +256,31 @@ const AuthPage: React.FC = () => {
     return d ? BD_LOCATION_DATA[d].filter(u => u.includes(locationSearch)).sort() : [];
   }, [locationSearch, formData.address?.district]);
 
-  const inputClass = "w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold text-sm text-black transition-all shadow-sm";
-  const selectBtnClass = "w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-left flex justify-between items-center hover:border-teal-500 transition-all active:scale-95 shadow-sm";
+  const inputClass = "w-full p-4 bg-slate-50 dark:bg-slate-900/40 border-2 border-slate-100 dark:border-slate-800/50 rounded-2xl outline-none focus:border-teal-500 font-bold text-sm text-black dark:text-white transition-all shadow-sm";
+  const selectBtnClass = "w-full p-4 bg-slate-50 dark:bg-slate-900/40 border-2 border-slate-100 dark:border-slate-800/50 rounded-2xl font-bold text-xs text-left flex justify-between items-center hover:border-teal-500 transition-all active:scale-95 shadow-sm text-slate-700 dark:text-slate-300";
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 py-10 font-['Hind_Siliguri']">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 py-10 font-['Hind_Siliguri'] transition-colors duration-300">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-           <div className="w-16 h-16 bg-teal-600 rounded-[1.5rem] shadow-xl flex items-center justify-center mx-auto mb-4 border-4 border-white rotate-3">
+           <div className="w-16 h-16 bg-teal-600 dark:bg-teal-700 rounded-[1.5rem] shadow-xl flex items-center justify-center mx-auto mb-4 border-4 border-white dark:border-slate-800 rotate-3">
               <Package className="w-8 h-8 text-white" />
            </div>
-           <h1 className="text-2xl font-black text-slate-900 premium-text italic leading-none">Unity Care {t('foundation')}</h1>
-           <p className="text-slate-400 font-bold text-[10px] mt-2 uppercase tracking-[0.3em] leading-none">{isLogin ? t('member_login') : `${t('register')} - ${t('step')} ${step}/3`}</p>
+           <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 premium-text italic leading-none">Unity Care {t('foundation')}</h1>
+           <p className="text-slate-400 dark:text-slate-500 font-bold text-[10px] mt-2 uppercase tracking-[0.3em] leading-none">{isLogin ? t('member_login') : `${t('register')} - ${t('step')} ${step}/3`}</p>
         </div>
 
-        <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl border border-slate-100 relative overflow-hidden">
-          {error && <div className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-xs font-bold border border-rose-100 flex items-center gap-4 animate-in shake duration-500"><X className="w-5 h-5" /> {error}</div>}
-          {success && <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-bold border border-emerald-100 flex items-center gap-4"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+          {error && <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-2xl text-xs font-bold border border-rose-100 dark:border-rose-800/50 flex items-center gap-4 animate-in shake duration-500"><X className="w-5 h-5" /> {error}</div>}
+          {success && <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-bold border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-4"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
           {isLogin ? (
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-4">{t('phone')}</p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 ml-4">{t('phone')}</p>
                 <div className="flex gap-3">
-                   <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-xs shadow-sm hover:border-teal-300">
-                      <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200" alt="Flag" />
+                   <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl font-black text-xs shadow-sm hover:border-teal-300 dark:text-slate-300">
+                      <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200 dark:border-slate-700" alt="Flag" />
                       <span>{selectedDialCode.code}</span>
                       <ChevronDown className="w-4 h-4 text-slate-400" />
                    </button>
@@ -313,15 +313,15 @@ const AuthPage: React.FC = () => {
                 <div className="space-y-4 animate-in slide-in-from-right duration-300">
                    <div className="flex flex-col items-center">
                       <div className="relative">
-                        <div className="w-24 h-24 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shadow-inner ring-4 ring-slate-50">
-                          {formData.profilePic ? <img src={formData.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <User className="w-10 h-10 text-slate-200" />}
+                        <div className="w-24 h-24 rounded-[2rem] bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-inner ring-4 ring-slate-50 dark:ring-slate-800">
+                          {formData.profilePic ? <img src={formData.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <User className="w-10 h-10 text-slate-200 dark:text-slate-700" />}
                         </div>
-                        <label className="absolute -bottom-1 -right-1 bg-teal-600 p-2.5 rounded-xl text-white shadow-xl cursor-pointer border-2 border-white active:scale-90 transition-all">
+                        <label className="absolute -bottom-1 -right-1 bg-teal-600 dark:bg-teal-700 p-2.5 rounded-xl text-white shadow-xl cursor-pointer border-2 border-white dark:border-slate-800 active:scale-90 transition-all">
                           <Camera className="w-5 h-5" />
                           <input type="file" className="hidden" accept="image/*" onChange={e => handleImageUpload(e, 'profilePic')} />
                         </label>
                       </div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-4">{t('upload_photo')}</p>
+                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-4">{t('upload_photo')}</p>
                    </div>
                    
                    <input 
@@ -335,8 +335,8 @@ const AuthPage: React.FC = () => {
                    />
                    
                    <div className="flex gap-3">
-                      <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-xs active:scale-95 transition-all shadow-sm">
-                          <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200" alt="Flag" />
+                      <button type="button" onClick={() => setShowCountryModal(true)} className="flex items-center gap-3 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl font-black text-xs active:scale-95 transition-all shadow-sm dark:text-slate-300">
+                          <img src={selectedDialCode.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${selectedDialCode.flag}.png`} className="w-6 h-auto rounded-sm border border-slate-200 dark:border-slate-700" alt="Flag" />
                           <span>{selectedDialCode.code}</span>
                       </button>
                       <input 
@@ -352,19 +352,19 @@ const AuthPage: React.FC = () => {
                    
                    <div className="grid grid-cols-2 gap-3">
                       <button type="button" onClick={openProfessionModal} className={selectBtnClass}>
-                         <span className={`text-[11px] truncate ${formData.profession ? 'text-black' : 'text-slate-400'}`}>{formData.profession || t('select_profession')}</span>
+                         <span className={`text-[11px] truncate ${formData.profession ? 'text-black dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>{formData.profession || t('select_profession')}</span>
                          <Briefcase className="w-4 h-4 text-slate-400" />
                       </button>
                       <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 dark:text-slate-600 pointer-events-none" />
                         <input type="number" name="birth-year" autoComplete="bday-year" className={`${inputClass} pl-10 text-[11px]`} placeholder={t('birth_year')} value={formData.birthYear || ''} onChange={e => handleBirthYearChange(e.target.value)} />
                       </div>
                    </div>
 
-                   <button type="button" onClick={openBloodModal} className={`${selectBtnClass} py-5 border-rose-100 bg-rose-50/20`}>
+                   <button type="button" onClick={openBloodModal} className={`${selectBtnClass} py-5 border-rose-100 dark:border-rose-900/30 bg-rose-50/20 dark:bg-rose-900/10`}>
                      <div className="flex items-center gap-3">
                         <Droplets className="w-7 h-7 text-rose-500 fill-rose-500/10" />
-                        <span className={`text-base font-black ${formData.bloodGroup ? 'text-black' : 'text-slate-500'}`}>{formData.bloodGroup || t('blood_group')}</span>
+                        <span className={`text-base font-black ${formData.bloodGroup ? 'text-black dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{formData.bloodGroup || t('blood_group')}</span>
                      </div>
                      <ChevronDown className="w-6 h-6 text-slate-400" />
                    </button>
@@ -376,22 +376,22 @@ const AuthPage: React.FC = () => {
               {step === 2 && (
                 <div className="space-y-5 animate-in slide-in-from-right duration-300">
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setFormData({...formData, location: 'Bangladesh'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Bangladesh' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>{t('bangladesh')}</button>
-                    <button onClick={() => setFormData({...formData, location: 'Abroad'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Abroad' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>{t('abroad')}</button>
+                    <button onClick={() => setFormData({...formData, location: 'Bangladesh'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Bangladesh' ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500 text-teal-700 dark:text-teal-400' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-500'}`}>{t('bangladesh')}</button>
+                    <button onClick={() => setFormData({...formData, location: 'Abroad'})} className={`py-5 rounded-2xl font-black text-xs border-2 transition-all shadow-sm ${formData.location === 'Abroad' ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500 text-teal-700 dark:text-teal-400' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-500'}`}>{t('abroad')}</button>
                   </div>
                   <div className="space-y-3">
                     <button onClick={() => { setShowDistrictModal(true); setLocationSearch(''); }} className={selectBtnClass}>
-                       <span className={`text-base ${formData.address?.district ? 'text-black' : 'text-slate-400'}`}>{formData.address?.district || t('select_district')}</span>
+                       <span className={`text-base ${formData.address?.district ? 'text-black dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>{formData.address?.district || t('select_district')}</span>
                        <MapPin className="w-5 h-5 text-teal-500" />
                     </button>
                     <button onClick={() => { if (!formData.address?.district) return setError(t('select_district_first')); setShowUpazilaModal(true); setLocationSearch(''); }} className={selectBtnClass}>
-                       <span className={`text-base ${formData.address?.upazila ? 'text-black' : 'text-slate-400'}`}>{formData.address?.upazila || t('select_upazila')}</span>
+                       <span className={`text-base ${formData.address?.upazila ? 'text-black dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>{formData.address?.upazila || t('select_upazila')}</span>
                        <MapPin className="w-5 h-5 text-teal-500" />
                     </button>
                     <input type="text" className={inputClass} placeholder={t('village_area')} value={formData.address?.village} onChange={e => setFormData({...formData, address: {...formData.address!, village: e.target.value}})} />
                   </div>
                   <div className="flex gap-4 mt-8">
-                    <button onClick={() => setStep(1)} className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-7 h-7" /></button>
+                    <button onClick={() => setStep(1)} className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-all shadow-sm border-2 border-slate-100 dark:border-slate-700"><ArrowLeft className="w-7 h-7" /></button>
                     <button onClick={nextStep} className="flex-grow py-5 bg-teal-600 text-white rounded-2xl font-black shadow-2xl uppercase text-lg border-b-4 border-teal-800 active:scale-95 transition-all">{t('next_step')}</button>
                   </div>
                 </div>
@@ -399,14 +399,14 @@ const AuthPage: React.FC = () => {
               
               {step === 3 && (
                 <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
-                  <div className="bg-white rounded-[2rem] overflow-hidden">
+                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden">
                     <div className="flex items-center gap-4 mb-6">
-                      <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-100 shrink-0">
+                      <div className="w-14 h-14 bg-teal-600 dark:bg-teal-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-100 dark:shadow-teal-900/20 shrink-0">
                         <FileCheck className="w-7 h-7" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-black text-slate-900 premium-text leading-tight">{t('terms_conditions')}</h3>
-                        <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Unity Care Foundation Charter</p>
+                        <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 premium-text leading-tight">{t('terms_conditions')}</h3>
+                        <p className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest">Unity Care Foundation Charter</p>
                       </div>
                     </div>
                     
@@ -441,20 +441,20 @@ const AuthPage: React.FC = () => {
                           text: t('policy_7')
                         }
                       ].map((policy, i) => (
-                        <div key={i} className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-teal-50/30 transition-colors group">
-                           <div className="shrink-0 w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center text-teal-600 group-hover:scale-110 transition-transform">
+                        <div key={i} className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-teal-50/30 dark:hover:bg-teal-900/20 transition-colors group">
+                           <div className="shrink-0 w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform">
                               {policy.icon}
                            </div>
-                           <p className="text-[13px] font-bold text-slate-700 leading-relaxed pt-1">{policy.text}</p>
+                           <p className="text-[13px] font-bold text-slate-700 dark:text-slate-300 leading-relaxed pt-1">{policy.text}</p>
                         </div>
                       ))}
                     </div>
 
                     <div className="mt-8">
-                       <label className={`flex items-start gap-4 p-5 rounded-3xl cursor-pointer shadow-xl transition-all border-b-4 group ${formData.policyConsent ? 'bg-emerald-600 border-emerald-800 shadow-emerald-100' : 'bg-teal-600 border-teal-800 shadow-teal-100'}`}>
+                       <label className={`flex items-start gap-4 p-5 rounded-3xl cursor-pointer shadow-xl transition-all border-b-4 group ${formData.policyConsent ? 'bg-emerald-600 dark:bg-emerald-700 border-emerald-800 dark:border-emerald-900 shadow-emerald-100 dark:shadow-emerald-900/20' : 'bg-teal-600 dark:bg-teal-700 border-teal-800 dark:border-teal-900 shadow-teal-100 dark:shadow-teal-900/20'}`}>
                           <div className="pt-1">
                             <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${formData.policyConsent ? 'bg-white border-white' : 'bg-transparent border-white/40'}`}>
-                              {formData.policyConsent && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                              {formData.policyConsent && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />}
                             </div>
                             <input 
                               type="checkbox" 
@@ -471,11 +471,11 @@ const AuthPage: React.FC = () => {
                   </div>
                   
                   <div className="flex gap-4 pt-2">
-                    <button onClick={() => setStep(2)} className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all shadow-sm border-2 border-slate-100"><ArrowLeft className="w-8 h-8" /></button>
+                    <button onClick={() => setStep(2)} className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-all shadow-sm border-2 border-slate-100 dark:border-slate-700"><ArrowLeft className="w-8 h-8" /></button>
                     <button 
                       onClick={handleRegister} 
                       disabled={isSubmitting || !formData.policyConsent} 
-                      className={`flex-grow py-5 rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 tracking-widest disabled:opacity-50 ${formData.policyConsent ? 'bg-emerald-600 border-emerald-800 text-white shadow-emerald-100' : 'bg-slate-900 border-black text-white'}`}
+                      className={`flex-grow py-5 rounded-3xl font-black shadow-2xl text-xl uppercase active:scale-95 transition-all border-b-4 tracking-widest disabled:opacity-50 ${formData.policyConsent ? 'bg-emerald-600 dark:bg-emerald-700 border-emerald-800 dark:border-emerald-900 text-white shadow-emerald-100 dark:shadow-emerald-900/20' : 'bg-slate-900 dark:bg-slate-800 border-black dark:border-slate-700 text-white'}`}
                     >
                       {isSubmitting ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : t('complete_registration')}
                     </button>
@@ -490,19 +490,19 @@ const AuthPage: React.FC = () => {
       
       {showCountryModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
-             <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
+             <div className="p-6 bg-teal-600 dark:bg-teal-700 text-white flex justify-between items-center">
                 <h3 className="font-black uppercase tracking-widest text-sm">{t('select_country')}</h3>
                 <button onClick={() => setShowCountryModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="max-h-96 overflow-y-auto p-4 space-y-2">
                 {COUNTRY_DIAL_CODES.length > 0 ? COUNTRY_DIAL_CODES.map(c => (
-                  <button key={c.code} onClick={() => { setSelectedDialCode(c); setShowCountryModal(false); }} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 rounded-2xl transition-all font-black text-xs text-slate-700">
-                    <img src={c.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${c.flag}.png`} className="w-7 h-auto rounded-sm border border-slate-200" alt={c.name} />
+                  <button key={c.code} onClick={() => { setSelectedDialCode(c); setShowCountryModal(false); }} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all font-black text-xs text-slate-700 dark:text-slate-300">
+                    <img src={c.flag === 'un' ? 'https://flagcdn.com/w40/un.png' : `https://flagcdn.com/w40/${c.flag}.png`} className="w-7 h-auto rounded-sm border border-slate-200 dark:border-slate-700" alt={c.name} />
                     <span>{language === 'bn' ? c.name : (c.name === 'বাংলাদেশ' ? 'Bangladesh' : c.name === 'ভারত' ? 'India' : c.name === 'সৌদি আরব' ? 'Saudi Arabia' : c.name === 'ইউএই' ? 'UAE' : c.name === 'যুক্তরাজ্য' ? 'UK' : c.name === 'যুক্তরাষ্ট্র' ? 'USA' : c.name === 'মালয়েশিয়া' ? 'Malaysia' : c.name === 'ইতালি' ? 'Italy' : c.name === 'কাতার' ? 'Qatar' : c.name === 'কুয়েত' ? 'Kuwait' : c.name === 'সিঙ্গাপুর' ? 'Singapore' : c.name === 'ওমান' ? 'Oman' : 'Other')}</span>
-                    <span className="ml-auto text-teal-600">{c.code}</span>
+                    <span className="ml-auto text-teal-600 dark:text-teal-400">{c.code}</span>
                   </button>
-                )) : <p className="text-center p-4 text-slate-400">No countries found</p>}
+                )) : <p className="text-center p-4 text-slate-400 dark:text-slate-500">No countries found</p>}
              </div>
           </div>
         </div>
@@ -510,17 +510,17 @@ const AuthPage: React.FC = () => {
 
       {showBloodModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
-             <div className="p-6 bg-rose-600 text-white flex justify-between items-center">
+          <div className="bg-white dark:bg-slate-900 w-full max-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95">
+             <div className="p-6 bg-rose-600 dark:bg-rose-700 text-white flex justify-between items-center">
                 <h3 className="font-black uppercase tracking-widest text-sm">{t('blood_group')}</h3>
                 <button onClick={() => setShowBloodModal(false)}><X className="w-6 h-6" /></button>
              </div>
              <div className="p-6 grid grid-cols-4 gap-3">
                 {BLOOD_GROUPS.length > 0 ? BLOOD_GROUPS.map(bg => (
-                  <button key={bg} onClick={() => { setFormData({...formData, bloodGroup: bg}); setShowBloodModal(false); }} className={`p-4 rounded-xl font-black text-sm border-2 transition-all ${formData.bloodGroup === bg ? 'bg-rose-50 border-rose-500 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                  <button key={bg} onClick={() => { setFormData({...formData, bloodGroup: bg}); setShowBloodModal(false); }} className={`p-4 rounded-xl font-black text-sm border-2 transition-all ${formData.bloodGroup === bg ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-500 text-rose-600 dark:text-rose-400' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-500'}`}>
                     {bg}
                   </button>
-                )) : <p className="col-span-4 text-center p-4 text-slate-400">No blood groups found</p>}
+                )) : <p className="col-span-4 text-center p-4 text-slate-400 dark:text-slate-500">No blood groups found</p>}
              </div>
           </div>
         </div>
@@ -528,20 +528,20 @@ const AuthPage: React.FC = () => {
 
       {showDistrictModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
-             <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
+             <div className="p-6 bg-teal-600 dark:bg-teal-700 text-white flex justify-between items-center">
                 <h3 className="font-black uppercase tracking-widest text-sm">{t('select_district')}</h3>
                 <button onClick={() => setShowDistrictModal(false)}><X className="w-6 h-6" /></button>
              </div>
-             <div className="p-4 bg-slate-50 border-b">
-                <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
+             <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                    <Search className="w-4 h-4 text-slate-400" />
-                   <input type="text" placeholder={t('search_district')} className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
+                   <input type="text" placeholder={t('search_district')} className="w-full text-xs font-black outline-none bg-transparent dark:text-white" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
                 </div>
              </div>
              <div className="overflow-y-auto p-4 space-y-1">
                 {filteredDistricts.map(d => (
-                  <button key={d} onClick={() => { setFormData({...formData, address: {...formData.address!, district: d, upazila: ''}}); setShowDistrictModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 rounded-xl font-black text-xs text-slate-700">
+                  <button key={d} onClick={() => { setFormData({...formData, address: {...formData.address!, district: d, upazila: ''}}); setShowDistrictModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-black text-xs text-slate-700 dark:text-slate-300">
                     {d}
                   </button>
                 ))}
@@ -552,20 +552,20 @@ const AuthPage: React.FC = () => {
 
       {showUpazilaModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
-             <div className="p-6 bg-teal-600 text-white flex justify-between items-center">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
+             <div className="p-6 bg-teal-600 dark:bg-teal-700 text-white flex justify-between items-center">
                 <h3 className="font-black uppercase tracking-widest text-sm">{t('select_upazila')}</h3>
                 <button onClick={() => setShowUpazilaModal(false)}><X className="w-6 h-6" /></button>
              </div>
-             <div className="p-4 bg-slate-50 border-b">
-                <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
+             <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                    <Search className="w-4 h-4 text-slate-400" />
-                   <input type="text" placeholder={t('search_upazila')} className="w-full text-xs font-black outline-none" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
+                   <input type="text" placeholder={t('search_upazila')} className="w-full text-xs font-black outline-none bg-transparent dark:text-white" value={locationSearch} onChange={e => setLocationSearch(e.target.value)} />
                 </div>
              </div>
              <div className="overflow-y-auto p-4 space-y-1">
                 {filteredUpazilas.map(u => (
-                  <button key={u} onClick={() => { setFormData({...formData, address: {...formData.address!, upazila: u}}); setShowUpazilaModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 rounded-xl font-black text-xs text-slate-700">
+                  <button key={u} onClick={() => { setFormData({...formData, address: {...formData.address!, upazila: u}}); setShowUpazilaModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-black text-xs text-slate-700 dark:text-slate-300">
                     {u}
                   </button>
                 ))}
@@ -576,23 +576,23 @@ const AuthPage: React.FC = () => {
 
       {showProfessionModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
-             <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col h-[70vh]">
+             <div className="p-6 bg-indigo-600 dark:bg-indigo-700 text-white flex justify-between items-center">
                 <h3 className="font-black uppercase tracking-widest text-sm">{t('select_profession')}</h3>
                 <button onClick={() => setShowProfessionModal(false)}><X className="w-6 h-6" /></button>
              </div>
-             <div className="p-4 bg-slate-50 border-b">
-                <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
+             <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                    <Search className="w-4 h-4 text-slate-400" />
-                   <input type="text" placeholder={t('search_profession')} className="w-full text-xs font-black outline-none" value={professionSearch} onChange={e => setProfessionSearch(e.target.value)} />
+                   <input type="text" placeholder={t('search_profession')} className="w-full text-xs font-black outline-none bg-transparent dark:text-white" value={professionSearch} onChange={e => setProfessionSearch(e.target.value)} />
                 </div>
              </div>
              <div className="overflow-y-auto p-4 space-y-1">
                 {PROFESSIONS.filter(p => p.includes(professionSearch)).length > 0 ? PROFESSIONS.filter(p => p.includes(professionSearch)).map(p => (
-                  <button key={p} onClick={() => { setFormData({...formData, profession: p}); setShowProfessionModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 rounded-xl font-black text-xs text-slate-700">
+                  <button key={p} onClick={() => { setFormData({...formData, profession: p}); setShowProfessionModal(false); }} className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-black text-xs text-slate-700 dark:text-slate-300">
                     {p}
                   </button>
-                )) : <p className="text-center p-4 text-slate-400">No professions found</p>}
+                )) : <p className="text-center p-4 text-slate-400 dark:text-slate-500">No professions found</p>}
              </div>
           </div>
         </div>

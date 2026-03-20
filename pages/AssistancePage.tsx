@@ -101,19 +101,19 @@ const AssistancePage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
-      <div className="px-6 pt-8 pb-6 bg-white border-b border-slate-100 sticky top-0 z-30 flex items-center gap-4">
-        <button onClick={() => navigate('/dashboard')} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-slate-600 active:scale-90 transition-all">
+    <div className="bg-[#F8FAFC] dark:bg-slate-950 min-h-screen pb-20 font-['Hind_Siliguri'] transition-colors duration-300">
+      <div className="px-6 pt-8 pb-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-30 flex items-center gap-4 transition-colors duration-300">
+        <button onClick={() => navigate('/dashboard')} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 active:scale-90 transition-all">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">সাহায্যের আবেদন</h1>
-          <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mt-0.5">মানবিক প্রয়োজনে আমরা আপনার পাশে</p>
+          <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">সাহায্যের আবেদন</h1>
+          <p className="text-[9px] font-black text-teal-600 dark:text-teal-400 uppercase tracking-widest mt-0.5">মানবিক প্রয়োজনে আমরা আপনার পাশে</p>
         </div>
       </div>
 
       <div className="p-6 space-y-8">
-        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 transition-colors duration-300">
            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                  {CATEGORIES.map(cat => (
@@ -121,12 +121,12 @@ const AssistancePage: React.FC = () => {
                      key={cat.id} 
                      type="button" 
                      onClick={() => setCategory(cat.id)}
-                     className={`group flex flex-col items-center gap-3 p-4 rounded-[2rem] border-2 transition-all active:scale-95 ${category === cat.id ? 'border-slate-800 bg-slate-900 shadow-xl' : 'bg-slate-50 border-slate-100'}`}
+                     className={`group flex flex-col items-center gap-3 p-4 rounded-[2rem] border-2 transition-all active:scale-95 ${category === cat.id ? 'border-slate-800 dark:border-slate-600 bg-slate-900 dark:bg-slate-800 shadow-xl' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800'}`}
                    >
-                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-all ${category === cat.id ? 'bg-white/20 text-white ring-4 ring-white/10' : cat.color}`}>
+                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-all ${category === cat.id ? 'bg-white/20 text-white ring-4 ring-white/10' : cat.color + ' dark:bg-slate-700 dark:text-white'}`}>
                         {cat.icon}
                      </div>
-                     <span className={`font-black text-[10px] uppercase tracking-wider ${category === cat.id ? 'text-white' : 'text-slate-400'}`}>
+                     <span className={`font-black text-[10px] uppercase tracking-wider ${category === cat.id ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`}>
                         {cat.label}
                      </span>
                    </button>
@@ -134,10 +134,10 @@ const AssistancePage: React.FC = () => {
               </div>
 
               <div>
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">প্রয়োজনীয় টাকার পরিমাণ (ঐচ্ছিক)</p>
+                 <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-2">প্রয়োজনীয় টাকার পরিমাণ (ঐচ্ছিক)</p>
                  <input 
                    type="number" 
-                   className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-black text-xl text-teal-700 transition-all" 
+                   className="w-full p-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl outline-none focus:border-teal-500 dark:focus:border-teal-400 font-black text-xl text-teal-700 dark:text-teal-400 transition-all" 
                    placeholder="৳ 0.00" 
                    value={amount} 
                    onChange={e => setAmount(e.target.value)} 
@@ -145,10 +145,10 @@ const AssistancePage: React.FC = () => {
               </div>
 
               <div>
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">আবেদনের বিস্তারিত কারণ</p>
+                 <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-2">আবেদনের বিস্তারিত কারণ</p>
                  <textarea 
                    rows={4} 
-                   className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold text-xs text-slate-800 transition-all" 
+                   className="w-full p-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl outline-none focus:border-teal-500 dark:focus:border-teal-400 font-bold text-xs text-slate-800 dark:text-slate-200 transition-all" 
                    placeholder="আপনার সমস্যার কথা বিস্তারিতভাবে এখানে লিখুন যাতে আমাদের যাচাই করতে সুবিধা হয়..."
                    value={reason}
                    onChange={e => setReason(e.target.value)}
@@ -158,7 +158,7 @@ const AssistancePage: React.FC = () => {
               <button 
                 type="submit" 
                 disabled={!reason.trim() || isSubmitting}
-                className="w-full py-5 bg-teal-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-teal-100 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all border-b-4 border-teal-800"
+                className="w-full py-5 bg-teal-600 dark:bg-teal-700 text-white rounded-3xl font-black text-lg shadow-xl shadow-teal-100 dark:shadow-teal-900/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all border-b-4 border-teal-800 dark:border-teal-900"
               >
                 {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Send className="w-5 h-5" /> আবেদন জমা দিন</>}
               </button>
@@ -166,37 +166,37 @@ const AssistancePage: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-           <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+           <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
               <Clock className="w-4 h-4" /> আপনার পূর্ববর্তী আবেদনসমূহ
            </h3>
            <div className="space-y-4">
               {userRequests.map(req => (
-                <div key={req.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                <div key={req.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group transition-colors duration-300">
                    <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getStatusStyle(req.status)} border shadow-sm`}>
+                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getStatusStyle(req.status)} dark:bg-slate-800 dark:border-slate-700 border shadow-sm`}>
                             {req.status === AssistanceStatus.APPROVED ? <CheckCircle2 className="w-5 h-5" /> : req.status === AssistanceStatus.REJECTED ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                          </div>
                          <div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-800">{getStatusText(req.status)}</span>
-                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{toBengaliNumber(new Date(req.timestamp).toLocaleDateString('en-US'))}</p>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">{getStatusText(req.status)}</span>
+                            <p className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">{toBengaliNumber(new Date(req.timestamp).toLocaleDateString('en-US'))}</p>
                          </div>
                       </div>
-                      {req.amount > 0 && <p className="font-black text-slate-800 text-xl">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}
+                      {req.amount > 0 && <p className="font-black text-slate-800 dark:text-slate-100 text-xl">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}
                    </div>
-                   <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4">{req.reason}</p>
+                   <p className="text-sm font-bold text-slate-600 dark:text-slate-400 leading-relaxed mb-4">{req.reason}</p>
                    
                    <div className="flex flex-col gap-3">
                      {req.adminNote && (
-                       <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex gap-3 items-start">
-                          <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
-                          <p className="text-[11px] font-black text-blue-800 italic leading-snug">এডমিন নোট: {req.adminNote}</p>
+                       <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 flex gap-3 items-start">
+                          <Info className="w-5 h-5 text-blue-500 dark:text-blue-400 mt-0.5 shrink-0" />
+                          <p className="text-[11px] font-black text-blue-800 dark:text-blue-300 italic leading-snug">এডমিন নোট: {req.adminNote}</p>
                        </div>
                      )}
                      
                      <button 
                        onClick={() => setTrackingRequest(req)}
-                       className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border border-slate-100"
+                       className="w-full py-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border border-slate-100 dark:border-slate-700"
                      >
                         <Clock className="w-4 h-4" /> ট্র্যাক করুন
                      </button>
@@ -204,9 +204,9 @@ const AssistancePage: React.FC = () => {
                 </div>
               ))}
               {userRequests.length === 0 && (
-                <div className="text-center py-12 bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
-                   <AlertCircle className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                   <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">এখনো কোন আবেদন পাওয়া যায়নি</p>
+                <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-100 dark:border-slate-800 transition-colors duration-300">
+                   <AlertCircle className="w-10 h-10 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+                   <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em]">এখনো কোন আবেদন পাওয়া যায়নি</p>
                 </div>
               )}
            </div>
@@ -215,38 +215,38 @@ const AssistancePage: React.FC = () => {
 
       {trackingRequest && (
         <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-           <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[80vh] flex flex-col">
-              <div className="p-6 bg-teal-600 text-white flex justify-between items-center shrink-0">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[80vh] flex flex-col">
+              <div className="p-6 bg-teal-600 dark:bg-teal-700 text-white flex justify-between items-center shrink-0">
                  <h3 className="font-black uppercase text-xs tracking-widest">আবেদন ট্র্যাকিং</h3>
-                 <button onClick={() => setTrackingRequest(null)} className="p-2 bg-white/20 rounded-xl"><XCircle className="w-5 h-5" /></button>
+                 <button onClick={() => setTrackingRequest(null)} className="p-2 bg-white/20 dark:bg-slate-800 rounded-xl"><XCircle className="w-5 h-5" /></button>
               </div>
               <div className="p-6 overflow-y-auto no-scrollbar space-y-6">
                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-100"></div>
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-100 dark:bg-slate-800"></div>
                     <div className="space-y-8 relative">
                        {[...(trackingRequest.timeline || [])].reverse().map((event, idx) => (
                          <div key={idx} className="flex gap-4 items-start">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${idx === 0 ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' : 'bg-white border-2 border-slate-100 text-slate-400'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${idx === 0 ? 'bg-teal-600 dark:bg-teal-700 text-white shadow-lg shadow-teal-100 dark:shadow-teal-900/20' : 'bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500'}`}>
                                {getTimelineIcon(event.status)}
                             </div>
                             <div className="flex-1 pt-1">
                                <div className="flex justify-between items-center mb-1">
-                                  <p className={`text-[11px] font-black uppercase tracking-wider ${idx === 0 ? 'text-teal-600' : 'text-slate-500'}`}>
+                                  <p className={`text-[11px] font-black uppercase tracking-wider ${idx === 0 ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}>
                                      {getStatusText(event.status)}
                                   </p>
-                                  <p className="text-[8px] font-bold text-slate-400 uppercase">
+                                  <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                                      {new Date(event.timestamp).toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true, day: 'numeric', month: 'short' })}
                                   </p>
                                </div>
-                               {event.note && <p className="text-[10px] font-bold text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 italic">"{event.note}"</p>}
+                               {event.note && <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 italic">"{event.note}"</p>}
                             </div>
                          </div>
                        ))}
                     </div>
                  </div>
               </div>
-              <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
-                 <button onClick={() => setTrackingRequest(null)} className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-sm active:scale-95 transition-all">বন্ধ করুন</button>
+              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                 <button onClick={() => setTrackingRequest(null)} className="w-full py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-sm active:scale-95 transition-all">বন্ধ করুন</button>
               </div>
            </div>
         </div>

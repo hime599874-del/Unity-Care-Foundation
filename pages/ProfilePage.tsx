@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../services/LanguageContext';
+import { useTheme } from '../services/ThemeContext';
 import { toPng } from 'html-to-image';
+import { Moon, Sun } from 'lucide-react';
 
 const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
   return new Promise((resolve) => {
@@ -43,6 +45,7 @@ const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Prom
 const ProfilePage: React.FC = () => {
   const { currentUser, setCurrentUser } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
@@ -134,11 +137,11 @@ const ProfilePage: React.FC = () => {
     return num.toString();
   };
 
-  const inputClass = "w-full pl-12 p-4 bg-white/40 backdrop-blur-md border border-white/50 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-bold text-black transition-all";
+  const inputClass = "w-full pl-12 p-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/50 dark:border-slate-800/50 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-bold text-black dark:text-white transition-all";
 
   return (
-    <div className="bg-transparent min-h-screen pb-20 font-['Hind_Siliguri']">
-      <div className="bg-teal-600/90 backdrop-blur-xl text-white p-7 flex items-center justify-between rounded-b-[2.5rem] shadow-xl sticky top-0 z-50">
+    <div className="bg-transparent dark:bg-slate-950 min-h-screen pb-20 font-['Hind_Siliguri'] transition-colors duration-300">
+      <div className="bg-teal-600/90 dark:bg-teal-900/90 backdrop-blur-xl text-white p-7 flex items-center justify-between rounded-b-[2.5rem] shadow-xl sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/dashboard')} className="p-2 bg-white/20 rounded-xl backdrop-blur-md active:scale-90 transition-all">
             <ArrowLeft className="w-6 h-6" />
@@ -157,11 +160,11 @@ const ProfilePage: React.FC = () => {
 
       <div className="p-6 flex flex-col items-center">
         <div className="relative mb-6 mt-4">
-          <div className="w-36 h-36 rounded-[2.5rem] bg-white/40 backdrop-blur-md shadow-2xl border-4 border-white/50 overflow-hidden flex items-center justify-center relative">
+          <div className="w-36 h-36 rounded-[2.5rem] glass-card overflow-hidden flex items-center justify-center relative border-4 border-white/50 dark:border-slate-800/50">
             {currentUser?.profilePic ? (
               <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
             ) : (
-              <User className="w-16 h-16 text-gray-200" />
+              <User className="w-16 h-16 text-gray-200 dark:text-slate-700" />
             )}
             {isUploading && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
@@ -175,15 +178,15 @@ const ProfilePage: React.FC = () => {
           </label>
         </div>
 
-        <div className="mb-8 flex items-center gap-2 glass-card px-5 py-2.5 rounded-full">
+        <div className="mb-8 flex items-center gap-2 glass-card px-5 py-2.5 rounded-full border-none shadow-lg">
            <Hash className="w-4 h-4 text-teal-600" />
-           <p className="text-xs font-black text-slate-500 uppercase tracking-widest text-center">
-             {language === 'bn' ? 'সদস্য আইডি:' : 'Member ID:'} <span className="text-teal-700 text-sm">{toBengaliNumber(memberId)}</span>
+           <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">
+             {language === 'bn' ? 'সদস্য আইডি:' : 'Member ID:'} <span className="text-teal-700 dark:text-teal-400 text-sm">{toBengaliNumber(memberId)}</span>
            </p>
         </div>
 
         {showSuccess && (
-          <div className="w-full max-w-md mb-6 p-4 bg-green-50 text-green-600 rounded-2xl font-black text-[11px] flex items-center gap-3 border border-green-100 animate-in fade-in zoom-in">
+          <div className="w-full max-w-md mb-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-2xl font-black text-[11px] flex items-center gap-3 border border-green-100 dark:border-green-900/30 animate-in fade-in zoom-in">
             <CheckCircle2 className="w-5 h-5" /> {t('success')}!
           </div>
         )}
@@ -191,9 +194,9 @@ const ProfilePage: React.FC = () => {
         <div className="w-full max-w-md space-y-6">
           <div className="glass-card p-8 rounded-[2.5rem] space-y-6">
             <div>
-              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">{t('name')}</label>
+              <label className="block text-[10px] font-black text-gray-400 dark:text-slate-500 mb-2 uppercase tracking-[0.2em] ml-1">{t('name')}</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-600 w-5 h-5 z-10" />
                 <input 
                   id="profile-display-name"
                   name="user-full-name"
@@ -207,9 +210,9 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">{t('email')}</label>
+              <label className="block text-[10px] font-black text-gray-400 dark:text-slate-500 mb-2 uppercase tracking-[0.2em] ml-1">{t('email')}</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-600 w-5 h-5 z-10" />
                 <input 
                   id="profile-user-email"
                   name="user-email-address"
@@ -224,14 +227,14 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-[0.2em] ml-1">{t('phone')}</label>
+              <label className="block text-[10px] font-black text-gray-400 dark:text-slate-500 mb-2 uppercase tracking-[0.2em] ml-1">{t('phone')}</label>
               <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5 z-10" />
-                <input className={`${inputClass} bg-slate-100 text-slate-400 border-transparent cursor-not-allowed`} value={toBengaliNumber(currentUser?.phone || '')} disabled />
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 dark:text-slate-700 w-5 h-5 z-10" />
+                <input className={`${inputClass} bg-slate-100/50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-transparent cursor-not-allowed`} value={toBengaliNumber(currentUser?.phone || '')} disabled />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
               <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-[0.2em] ml-1">{t('language')}</label>
               <div className="flex gap-3">
                 <button
@@ -239,7 +242,7 @@ const ProfilePage: React.FC = () => {
                   className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
                     language === 'bn' 
                     ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' 
-                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   <Languages className="w-4 h-4" />
@@ -250,11 +253,41 @@ const ProfilePage: React.FC = () => {
                   className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
                     language === 'en' 
                     ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' 
-                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   <Languages className="w-4 h-4" />
                   {t('english')}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-[0.2em] ml-1">
+                {language === 'bn' ? 'থিম' : 'THEME'}
+              </label>
+              <div className="flex gap-3">
+                <button
+                  onClick={toggleTheme}
+                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                    theme === 'light' 
+                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Sun className="w-4 h-4" />
+                  {language === 'bn' ? 'লাইট মোড' : 'Light Mode'}
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                    theme === 'dark' 
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Moon className="w-4 h-4" />
+                  {language === 'bn' ? 'ডার্ক মোড' : 'Dark Mode'}
                 </button>
               </div>
             </div>

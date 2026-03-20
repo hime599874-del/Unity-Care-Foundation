@@ -128,6 +128,7 @@ const AdminDashboard: React.FC = () => {
   const [isSendingBulkSms, setIsSendingBulkSms] = useState(false);
   const [bulkSmsProgress, setBulkSmsProgress] = useState({ current: 0, total: 0 });
   const [fundFilter, setFundFilter] = useState<FundType | 'All'>('AppProblem');
+  const [viewingSmsRecipients, setViewingSmsRecipients] = useState<SmsRecord | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -180,6 +181,13 @@ const AdminDashboard: React.FC = () => {
     if (activeTab === 'settings') {
       setSettingsForm(db.getContactConfig());
     }
+    if (activeTab === 'sms') {
+      fetchSmsBalance();
+    }
+  }, [activeTab]);
+
+  // Auto-refresh SMS balance when switching to SMS tab
+  useEffect(() => {
     if (activeTab === 'sms') {
       fetchSmsBalance();
     }
@@ -517,6 +525,7 @@ const AdminDashboard: React.FC = () => {
 
     let successCount = 0;
     let failCount = 0;
+    const recipientsList: { name: string; phone: string; status: 'Success' | 'Failed' }[] = [];
 
     for (let i = 0; i < targetUsers.length; i++) {
       const user = targetUsers[i];
@@ -526,11 +535,17 @@ const AdminDashboard: React.FC = () => {
         : `${user.name} ${bulkSmsMessage}`;
       
       try {
-        await db.sendGenericSms(user.phone, personalizedMessage);
-        successCount++;
+        const result = await db.sendGenericSms(user.phone, personalizedMessage);
+        if (result.success) {
+          successCount++;
+          recipientsList.push({ name: user.name, phone: user.phone, status: 'Success' });
+        } else {
+          throw new Error('API Failed');
+        }
       } catch (err) {
         console.error(`Failed to send SMS to ${user.name}:`, err);
         failCount++;
+        recipientsList.push({ name: user.name, phone: user.phone, status: 'Failed' });
       }
       
       setBulkSmsProgress(prev => ({ ...prev, current: i + 1 }));
@@ -545,7 +560,8 @@ const AdminDashboard: React.FC = () => {
         successCount,
         failCount,
         timestamp: Date.now(),
-        status: failCount === 0 ? 'Success' : (successCount > 0 ? 'Partial' : 'Failed')
+        status: failCount === 0 ? 'Success' : (successCount > 0 ? 'Partial' : 'Failed'),
+        recipients: recipientsList
       });
     } catch (e) {
       console.error("Failed to log SMS history:", e);
@@ -569,16 +585,73 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const fetchSmsReportFromApi = async (record: SmsRecord) => {
+    setIsSmsLoading(true);
+    // Attempting to fetch from common report endpoints for this provider
+    const dateStr = new Date(record.timestamp).toISOString().split('T')[0];
+    const targetUrl = `https://panel2.smsbangladesh.com/sms_report?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&date=${dateStr}`;
+    
+    const proxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+    ];
+
+    let foundData = false;
+    for (const proxy of proxies) {
+      try {
+        const response = await fetch(proxy);
+        if (!response.ok) continue;
+        const data = await response.json();
+        
+        // If the API returns a list of sent messages, we try to filter by the message content
+        if (Array.isArray(data)) {
+          const matchingRecipients = data
+            .filter((item: any) => item.text && item.text.includes(record.message.slice(0, 20)))
+            .map((item: any) => ({
+              name: 'সদস্য', // API might not return name, just number
+              phone: item.to || item.number || 'অজানা',
+              status: (item.status === 'Success' || item.status === 'Delivered') ? 'Success' as const : 'Failed' as const
+            }));
+
+          if (matchingRecipients.length > 0) {
+            await db.updateSmsRecord(record.id, { recipients: matchingRecipients });
+            setViewingSmsRecipients({ ...record, recipients: matchingRecipients });
+            foundData = true;
+            alert('এপিআই থেকে তথ্য সফলভাবে সংগ্রহ করা হয়েছে।');
+            break;
+          }
+        }
+      } catch (err) {
+        console.warn(`Proxy failed for report: ${proxy}`, err);
+      }
+    }
+
+    if (!foundData) {
+      alert('দুঃখিত, এপিআই প্যানেলে এই মেসেজটির বিস্তারিত তথ্য পাওয়া যায়নি। সম্ভবত এটি অনেক পুরানো।');
+    }
+    setIsSmsLoading(false);
+  };
+
   const handleUpdateStatus = async (id: string, type: 'user' | 'tx' | 'assistance', status: any) => {
     try {
       if (type === 'user') await db.updateUser(id, { status });
-      if (type === 'tx') status === TransactionStatus.APPROVED ? await db.approveTransaction(id) : await db.rejectTransaction(id);
+      if (type === 'tx') {
+        if (status === TransactionStatus.APPROVED) {
+          await db.approveTransaction(id);
+        } else {
+          await db.rejectTransaction(id);
+        }
+      }
       if (type === 'assistance') {
         await db.updateAssistanceStatus(id, status, adminNote);
         setViewingAssistance(null);
         setAdminNote('');
       }
-    } catch (e) { alert('সমস্যা হয়েছে।'); }
+      // No alert on success to keep it smooth, real-time sync will update UI
+    } catch (e: any) { 
+      console.error("Status update error:", e);
+      alert(`সমস্যা হয়েছে: ${e.message || 'Unknown error'}`); 
+    }
   };
 
   const handleAddExpense = async () => {
@@ -1820,6 +1893,24 @@ const AdminDashboard: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-center flex gap-2 justify-center">
+                            {t.status === TransactionStatus.PENDING && (
+                              <>
+                                <button 
+                                  onClick={() => handleUpdateStatus(t.id, 'tx', TransactionStatus.APPROVED)}
+                                  className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
+                                  title="Approve"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleUpdateStatus(t.id, 'tx', TransactionStatus.REJECTED)}
+                                  className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"
+                                  title="Reject"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                             <button 
                               onClick={() => handleSendTransactionSms(t)}
                               disabled={isSendingSms !== null}
@@ -2357,12 +2448,17 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-4 text-[9px] font-bold text-slate-500">
-                          <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {toBengaliNumber(record.recipientCount)} জন</span>
+                          <button 
+                            onClick={() => setViewingSmsRecipients(record)}
+                            className="flex items-center gap-1 hover:text-indigo-600 transition-colors cursor-pointer"
+                          >
+                            <Users className="w-3 h-3" /> {toBengaliNumber(record.recipientCount)} জন
+                          </button>
                           {record.successCount !== undefined && (
                             <span className="flex items-center gap-1 text-emerald-600"><Check className="w-3 h-3" /> {toBengaliNumber(record.successCount)} সফল</span>
                           )}
-                          {record.failureCount !== undefined && (
-                            <span className="flex items-center gap-1 text-rose-600"><X className="w-3 h-3" /> {toBengaliNumber(record.failureCount)} ব্যর্থ</span>
+                          {record.failCount !== undefined && (
+                            <span className="flex items-center gap-1 text-rose-600"><X className="w-3 h-3" /> {toBengaliNumber(record.failCount)} ব্যর্থ</span>
                           )}
                         </div>
                       </div>
@@ -3498,6 +3594,89 @@ const AdminDashboard: React.FC = () => {
             <div className="absolute bottom-0 left-0 right-0 h-32 opacity-10 pointer-events-none overflow-hidden">
                <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-[#0D9488] rounded-full blur-3xl"></div>
                <div className="absolute -bottom-16 -right-16 w-64 h-64 bg-[#0D9488] rounded-full blur-3xl"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingSmsRecipients && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in duration-300">
+            <div className="p-8 border-b bg-slate-50/50 flex justify-between items-center">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-lg font-black text-slate-800">প্রাপক তালিকা</h3>
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">"{viewingSmsRecipients.message}"</p>
+              </div>
+              <button 
+                onClick={() => setViewingSmsRecipients(null)}
+                className="w-10 h-10 bg-white border shadow-sm rounded-2xl flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors active:scale-90"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-grow overflow-y-auto p-6 space-y-3 no-scrollbar">
+              {viewingSmsRecipients.recipients?.map((recipient, idx) => (
+                <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-xl border flex items-center justify-center text-slate-400">
+                      <UserIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-800">{recipient.name}</p>
+                      <p className="text-[10px] font-bold text-slate-400">{recipient.phone}</p>
+                    </div>
+                  </div>
+                  <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${
+                    recipient.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                  }`}>
+                    {recipient.status === 'Success' ? 'সফল' : 'ব্যর্থ'}
+                  </div>
+                </div>
+              ))}
+              {(!viewingSmsRecipients.recipients || viewingSmsRecipients.recipients.length === 0) && (
+                <div className="text-center py-10 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+                  <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-300 mx-auto mb-3">
+                    <Info className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs font-black text-slate-400">প্রাপক তালিকা পাওয়া যায়নি।</p>
+                  <p className="text-[9px] font-bold text-slate-300 mt-1 px-10">পুরানো এসএমএস রেকর্ডের ক্ষেত্রে এই তালিকাটি সংরক্ষিত নেই। শুধুমাত্র নতুন এসএমএসের ক্ষেত্রে এটি দেখা যাবে।</p>
+                  <button
+                    onClick={() => fetchSmsReportFromApi(viewingSmsRecipients)}
+                    disabled={isSmsLoading}
+                    className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition-colors flex items-center gap-2 mx-auto disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isSmsLoading ? 'animate-spin' : ''}`} />
+                    এপিআই থেকে তথ্য আনুন
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 bg-slate-50 border-t flex justify-between items-center">
+              <div className="flex gap-4">
+                <div className="text-center">
+                  <p className="text-[8px] font-black text-slate-400 uppercase">মোট</p>
+                  <p className="text-xs font-black text-slate-800">{toBengaliNumber(viewingSmsRecipients.recipientCount)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] font-black text-emerald-400 uppercase">সফল</p>
+                  <p className="text-xs font-black text-emerald-600">{toBengaliNumber(viewingSmsRecipients.successCount)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] font-black text-rose-400 uppercase">ব্যর্থ</p>
+                  <p className="text-xs font-black text-rose-600">{toBengaliNumber(viewingSmsRecipients.failCount)}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setViewingSmsRecipients(null)}
+                className="px-6 py-3 bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+              >
+                বন্ধ করুন
+              </button>
             </div>
           </div>
         </div>

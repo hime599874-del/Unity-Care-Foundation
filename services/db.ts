@@ -210,30 +210,49 @@ class FirebaseDB {
   private initRealtimeSync() {
     try {
       let usersInitialized = false;
+      let statsInitialized = false;
+      let transactionsInitialized = false;
+      let expensesInitialized = false;
+
+      const checkReady = () => {
+        if (usersInitialized && statsInitialized && transactionsInitialized && expensesInitialized && !this.isReady) {
+          this.isReady = true;
+          this.resolveReady();
+        }
+      };
+
       onSnapshot(collection(firestore, "users"), (snapshot) => {
         this.users = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as User[];
         this.updateLocalStats();
         this.notify();
         if (!usersInitialized) {
           usersInitialized = true;
-          this.isReady = true;
-          this.resolveReady();
+          checkReady();
         }
       }, (error) => {
         safeError("Firestore: Users sync error:", error);
-        // Resolve anyway to prevent app hang
         if (!usersInitialized) {
           usersInitialized = true;
-          this.isReady = true;
-          this.resolveReady();
+          checkReady();
         }
       });
 
-      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc")), (snapshot) => {
+      // Limit initial transactions to 500 for performance, can be adjusted if needed
+      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(500)), (snapshot) => {
         this.transactions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Transaction[];
         this.updateLocalStats();
         this.notify();
-      }, (error) => safeError("Firestore: Transactions sync error:", error));
+        if (!transactionsInitialized) {
+          transactionsInitialized = true;
+          checkReady();
+        }
+      }, (error) => {
+        safeError("Firestore: Transactions sync error:", error);
+        if (!transactionsInitialized) {
+          transactionsInitialized = true;
+          checkReady();
+        }
+      });
 
       onSnapshot(query(collection(firestore, "assistance_requests"), orderBy("timestamp", "desc")), (snapshot) => {
         this.assistanceRequests = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as AssistanceRequest[];
@@ -243,7 +262,17 @@ class FirebaseDB {
       onSnapshot(collection(firestore, "expenses"), (snapshot) => {
         this.expenses = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Expense[];
         this.notify();
-      }, (error) => safeError("Firestore: Expenses sync error:", error));
+        if (!expensesInitialized) {
+          expensesInitialized = true;
+          checkReady();
+        }
+      }, (error) => {
+        safeError("Firestore: Expenses sync error:", error);
+        if (!expensesInitialized) {
+          expensesInitialized = true;
+          checkReady();
+        }
+      });
 
       onSnapshot(collection(firestore, "projects"), (snapshot) => {
         this.projects = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as ProjectProgress[];
@@ -297,6 +326,16 @@ class FirebaseDB {
             };
             this.notify();
           }
+        }
+        if (!statsInitialized) {
+          statsInitialized = true;
+          checkReady();
+        }
+      }, (error) => {
+        safeError("Firestore: Stats sync error:", error);
+        if (!statsInitialized) {
+          statsInitialized = true;
+          checkReady();
         }
       });
     } catch (e) { safeError("Firestore: Initialization catch block:", e); }
@@ -393,46 +432,54 @@ class FirebaseDB {
     let userName = "";
     let amount = 0;
     
-    await runTransaction(firestore, async (transaction) => {
-      const txSnap = await transaction.get(txDocRef);
-      if (!txSnap.exists()) return;
-      const txData = txSnap.data();
-      if (txData.status === TransactionStatus.APPROVED) return;
-      
-      amount = txData.amount;
-      
-      const userRef = doc(firestore, "users", txData.userId);
-      const userSnap = await transaction.get(userRef);
-      if (userSnap.exists()) {
-        userPhone = userSnap.data().phone;
-        userName = userSnap.data().name || 'Member';
-      }
-      
-      const statsRef = doc(firestore, "metadata", "stats");
-      transaction.update(txDocRef, { status: TransactionStatus.APPROVED });
-      transaction.update(userRef, { totalDonation: increment(txData.amount), transactionCount: increment(1) });
-      transaction.set(statsRef, { totalCollection: increment(txData.amount) }, { merge: true });
-    });
-
-    // Send SMS after successful transaction
-    if (userPhone && amount > 0) {
-      try {
-        const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        const message = `Dear ${userName}, Thank you! Your donation of BDT ${amount} to Unity Care Foundation was successfully received on ${dateStr}.`;
-        const encodedMessage = encodeURIComponent(message);
-        // Using the provided credentials
-        const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${userPhone}&text=${encodedMessage}`;
+    try {
+      await runTransaction(firestore, async (transaction) => {
+        const txSnap = await transaction.get(txDocRef);
+        if (!txSnap.exists()) throw new Error("Transaction not found");
+        const txData = txSnap.data();
+        if (txData.status === TransactionStatus.APPROVED) return;
         
-        fetch(url, { method: 'GET', mode: 'no-cors' })
-          .then(() => {
-            console.log('SMS request sent to gateway.');
-            updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) }).catch(console.error);
-            updateDoc(txDocRef, { smsSent: true }).catch(console.error);
-          })
-          .catch(error => console.error('Error sending SMS:', error));
-      } catch (error) {
-        console.error('Failed to trigger SMS:', error);
+        amount = txData.amount;
+        
+        const statsRef = doc(firestore, "metadata", "stats");
+        transaction.update(txDocRef, { status: TransactionStatus.APPROVED });
+        transaction.set(statsRef, { totalCollection: increment(txData.amount) }, { merge: true });
+
+        if (txData.userId) {
+          const userRef = doc(firestore, "users", txData.userId);
+          const userSnap = await transaction.get(userRef);
+          if (userSnap.exists()) {
+            userPhone = userSnap.data().phone;
+            userName = userSnap.data().name || 'Member';
+            transaction.update(userRef, { 
+              totalDonation: increment(txData.amount), 
+              transactionCount: increment(1) 
+            });
+          }
+        }
+      });
+
+      // Send SMS after successful transaction
+      if (userPhone && amount > 0) {
+        try {
+          const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          const message = `Dear ${userName}, Thank you! Your donation of BDT ${amount} to Unity Care Foundation was successfully received on ${dateStr}.`;
+          const encodedMessage = encodeURIComponent(message);
+          const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${userPhone}&text=${encodedMessage}`;
+          
+          fetch(url, { method: 'GET', mode: 'no-cors' })
+            .then(() => {
+              updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) }).catch(console.error);
+              updateDoc(txDocRef, { smsSent: true }).catch(console.error);
+            })
+            .catch(error => console.error('Error sending SMS:', error));
+        } catch (error) {
+          console.error('Failed to trigger SMS:', error);
+        }
       }
+    } catch (error: any) {
+      console.error("Transaction approval failed:", error);
+      throw error;
     }
   }
 
@@ -443,18 +490,41 @@ class FirebaseDB {
     
     const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${formattedPhone}&text=${encodedMessage}`;
     
+    // Use proxy to read real-time response from API
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    
     try {
-      await fetch(url, { method: 'GET', mode: 'no-cors' });
-      await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
-      return true;
+      const response = await fetch(proxyUrl);
+      const text = await response.text();
+      console.log('SMS API Real-time Response:', text);
+      
+      // Check for success indicators from SMS Bangladesh API (1701 is success)
+      if (text.toLowerCase().includes('success') || text.includes('1701') || text.includes('sent')) {
+        await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+        return { success: true, response: text };
+      } else {
+        throw new Error(text || 'API Error');
+      }
     } catch (error) {
-      console.error('Error sending SMS:', error);
-      throw new Error('এসএমএস পাঠানো সম্ভব হয়নি।');
+      console.error('Error sending SMS via proxy:', error);
+      // Fallback to no-cors if proxy fails, but we won't get the response text
+      try {
+        await fetch(url, { method: 'GET', mode: 'no-cors' });
+        await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+        return { success: true, response: 'Sent (Opaque)' };
+      } catch (e) {
+        throw new Error('এসএমএস পাঠানো সম্ভব হয়নি।');
+      }
     }
   }
 
   async logSmsHistory(record: Omit<SmsRecord, 'id'>) {
     await addDoc(collection(firestore, "sms_history"), sanitizeForUpload(record));
+  }
+
+  async updateSmsRecord(id: string, data: Partial<SmsRecord>): Promise<void> {
+    const docRef = doc(firestore, 'sms_history', id);
+    await updateDoc(docRef, data);
   }
 
   async sendManualSms(txId: string) {

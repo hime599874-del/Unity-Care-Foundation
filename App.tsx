@@ -5,6 +5,7 @@ import { User, UserStatus, ActivityType } from './types';
 import { db } from './services/db';
 import { Heart, Home, CreditCard, User as UserIcon, Loader2 } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './services/LanguageContext';
+import { ThemeProvider } from './services/ThemeContext';
 
 // Lazy load pages
 const WelcomePage = lazy(() => import('./pages/WelcomePage'));
@@ -44,18 +45,18 @@ const BottomNav: React.FC = () => {
   if (!currentUser || location.pathname !== '/dashboard') return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 glass-nav px-6 py-3 flex justify-around items-center z-[100] rounded-t-[2.5rem] print:hidden bottom-nav">
-      <Link to="/dashboard" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
+    <div className="fixed bottom-0 left-0 right-0 glass-nav px-6 py-3 flex justify-around items-center z-[100] rounded-t-[2.5rem] print:hidden bottom-nav transition-colors duration-300">
+      <Link to="/dashboard" className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
         <Home className="w-6 h-6 no-glow" strokeWidth={2.5} />
         <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('home')}</span>
       </Link>
       <Link to="/transaction" className="flex flex-col items-center gap-1 -mt-12">
-        <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center shadow-xl shadow-teal-200 border-4 border-white text-white active:scale-90 transition-all">
+        <div className="w-16 h-16 bg-teal-600 dark:bg-teal-700 rounded-full flex items-center justify-center shadow-xl shadow-teal-200 dark:shadow-teal-900/40 border-4 border-white dark:border-slate-900 text-white active:scale-90 transition-all">
           <CreditCard className="w-7 h-7 no-glow" strokeWidth={2.5} />
         </div>
-        <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('donate_now')}</span>
+        <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2'] text-slate-400 dark:text-slate-500">{t('donate_now')}</span>
       </Link>
-      <Link to="/profile" className="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
+      <Link to="/profile" className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
         <UserIcon className="w-6 h-6 no-glow" strokeWidth={2.5} />
         <span className="text-[11px] font-bold uppercase tracking-wider font-['Baloo_Da_2']">{t('profile')}</span>
       </Link>
@@ -120,8 +121,8 @@ const AppContent: React.FC = () => {
       
       <BottomNav />
 
-      <footer className={`py-8 text-center bg-white border-t border-slate-200 print:hidden ${showNav ? 'mb-20' : ''}`}>
-        <Link to="/admin-auth" className="text-[11px] text-slate-900 hover:text-teal-600 transition-colors uppercase tracking-[0.2em] font-black">
+      <footer className={`py-8 text-center bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-900 print:hidden transition-colors duration-300 ${showNav ? 'mb-20' : ''}`}>
+        <Link to="/admin-auth" className="text-[11px] text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 transition-colors uppercase tracking-[0.2em] font-black">
           UNITY CARE - MANAGEMENT
         </Link>
       </footer>
@@ -132,11 +133,13 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <LanguageProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <AppWrapper />
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <AppWrapper />
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </LanguageProvider>
   );
 };

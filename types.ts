@@ -206,6 +206,12 @@ export interface RecipientInfo {
   timestamp: number;
 }
 
+export interface SmsRecipient {
+  name: string;
+  phone: string;
+  status: 'Success' | 'Failed';
+}
+
 export interface SmsRecord {
   id: string;
   recipientCount: number;
@@ -214,4 +220,5 @@ export interface SmsRecord {
   status: 'Success' | 'Partial' | 'Failed';
   successCount: number;
   failCount: number;
+  recipients?: SmsRecipient[];
 }

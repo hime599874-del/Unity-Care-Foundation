@@ -53,10 +53,10 @@ const UserDashboard: React.FC = () => {
   }, [isAnyModalOpen]);
 
   const cardDesigns = [
+    "from-[#0F172A] via-[#1E293B] to-[#0F172A]", // Dark Starry Night
     "from-[#1E40AF] via-[#3B82F6] to-[#10B981]", // Blue/Green
     "from-[#8B5CF6] via-[#A78BFA] to-[#60A5FA]", // Purple/Blue
     "from-[#F97316] via-[#FB923C] to-[#EF4444]", // Orange/Red
-    "from-[#4C1D95] via-[#7C3AED] to-[#DB2777]"  // Deep Purple/Pink
   ];
 
   useEffect(() => {
@@ -117,7 +117,7 @@ const UserDashboard: React.FC = () => {
     }
   };
 
-  const totalFund = appStats.totalCollection - (db.getExpenses().length === 0 ? 0 : appStats.totalExpense);
+  const totalFund = appStats.totalCollection - appStats.totalExpense;
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleOpenNotifications = () => {
@@ -145,29 +145,29 @@ const UserDashboard: React.FC = () => {
   };
 
   return (
-    <div className="bg-transparent min-h-screen pb-32 font-['Hind_Siliguri']">
+    <div className="bg-transparent dark:bg-slate-950 min-h-screen pb-32 font-['Hind_Siliguri'] transition-colors duration-300">
       {/* Top Profile Header */}
       <div className="px-6 pt-8 pb-4 flex justify-between items-center glass-nav sticky top-0 z-50">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl border-4 border-white shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 relative">
+          <div className="w-14 h-14 rounded-2xl border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 relative">
             <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
             {currentUser?.profilePic ? <img src={currentUser.profilePic} className="w-full h-full object-cover relative z-10" alt="Profile" /> : <UserIcon className="w-6 h-6 text-white relative z-10" />}
           </div>
           <div>
-            <h2 className="text-base font-black text-slate-800 tracking-tight leading-none mb-1">{t('hello')}, {currentUser?.name?.split(' ')[0]}!</h2>
+            <h2 className="text-base font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none mb-1">{t('hello')}, {currentUser?.name?.split(' ')[0]}!</h2>
             <div className="flex items-center gap-1 opacity-80">
-               <ShieldCheck className="w-4 h-4 text-teal-600 no-glow" />
-               <p className="text-base font-black text-teal-600 uppercase tracking-tight">{currentUser?.designation || t('verified_member')}</p>
+               <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400 no-glow" />
+               <p className="text-base font-black text-teal-600 dark:text-teal-400 uppercase tracking-tight">{currentUser?.designation || t('verified_member')}</p>
             </div>
           </div>
         </div>
-        <button onClick={handleOpenNotifications} className="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 border border-white/50 rounded-2xl text-slate-600 relative active:scale-90 transition-all shadow-sm overflow-hidden">
-          <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px]"></div>
+        <button onClick={handleOpenNotifications} className="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-800 dark:to-slate-900 border border-white/50 dark:border-slate-700/50 rounded-2xl text-slate-600 relative active:scale-90 transition-all shadow-sm overflow-hidden">
+          <div className="absolute inset-0 bg-white/20 dark:bg-slate-900/20 backdrop-blur-[1px]"></div>
           <img src="https://img.icons8.com/fluency/96/appointment-reminders.png" className="w-9 h-9 relative z-10 object-contain" alt="Notification" />
           {unreadCount > 0 && (
             <span className="absolute top-3 right-3 flex h-4 w-4 z-20">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white dark:border-slate-900"></span>
             </span>
           )}
         </button>
@@ -175,53 +175,99 @@ const UserDashboard: React.FC = () => {
 
       <div className="p-6 space-y-5">
         {/* Main Collection Card - Rotating Credit Card Design */}
-        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2rem] text-white relative overflow-hidden transition-all duration-1000 h-52 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/20`}>
+        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2.5rem] text-white relative overflow-hidden transition-all duration-1000 h-60 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/40`}>
           {/* Glossy Overlay */}
-          <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none z-20"></div>
+          <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none z-20"></div>
           
-          {/* World Map Pattern Overlay */}
-          <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay">
-            <svg viewBox="0 0 1000 500" className="w-full h-full object-cover">
-              <path d="M150,100 Q200,50 250,100 T350,100 M600,200 Q650,150 700,200 T800,200 M200,350 Q250,300 300,350 T400,350" stroke="white" strokeWidth="2" fill="none" />
-              {/* Simplified map shapes */}
-              <circle cx="200" cy="150" r="40" />
-              <circle cx="450" cy="250" r="60" />
-              <circle cx="750" cy="180" r="50" />
-              <circle cx="300" cy="380" r="30" />
-              <circle cx="850" cy="350" r="45" />
-            </svg>
+          {/* Starry Background */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* Twinkling Stars */}
+            {[...Array(40)].map((_, i) => (
+              <div 
+                key={i}
+                className="absolute w-0.5 h-0.5 bg-white rounded-full animate-star-twinkle"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  opacity: Math.random() * 0.6 + 0.2
+                }}
+              />
+            ))}
+            
+            {/* Moving Light Flow */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent w-[200%] h-[200%] animate-flow opacity-20"></div>
+
+            {/* Large Glowing Crescent Moon */}
+            <div className="absolute top-4 right-4 opacity-80 animate-moon-glow z-10">
+              <svg width="100" height="100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="url(#moon-grad)" />
+                <defs>
+                  <linearGradient id="moon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FFF" />
+                    <stop offset="100%" stopColor="#FFD700" stopOpacity="0.5" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+
+            {/* Hanging Ornate Lanterns (Fanoos) */}
+            <div className="absolute top-0 right-10 flex gap-8 pointer-events-none z-20">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="flex flex-col items-center animate-swing" style={{ animationDelay: `${i * 1.2}s` }}>
+                  {/* Hanging String */}
+                  <div className="w-px h-16 bg-gradient-to-b from-white/40 to-white/5"></div>
+                  {/* Lantern Body */}
+                  <div className="relative w-10 h-16">
+                    <svg viewBox="0 0 24 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]">
+                      <path d="M12 0L22 8V32L12 40L2 32V8L12 0Z" fill="url(#lantern-grad)" stroke="white" strokeWidth="1" />
+                      <path d="M6 10H18M6 15H18M6 20H18M6 25H18M6 30H18" stroke="white" strokeWidth="0.5" strokeOpacity="0.4" />
+                      <circle cx="12" cy="20" r="6" fill="#FFD700" className="animate-pulse" />
+                      <defs>
+                        <radialGradient id="lantern-grad" cx="50%" cy="50%" r="50%">
+                          <stop offset="0%" stopColor="#FFD700" />
+                          <stop offset="100%" stopColor="#B45309" />
+                        </radialGradient>
+                      </defs>
+                    </svg>
+                    {/* Intense Light Emission */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-amber-400/20 rounded-full blur-3xl animate-pulse-glow-intense"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Subtle Eid Mubarak Text */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none select-none">
+              <span className="text-7xl font-black uppercase tracking-[0.6em] rotate-[-12deg]">EID MUBARAK</span>
+            </div>
           </div>
 
-          {/* Decorative shapes */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-24 -mt-24"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full blur-2xl -ml-16 -mb-16"></div>
-          
-          <div className="relative z-10 flex flex-col h-full justify-between">
+          <div className="relative z-30 flex flex-col h-full justify-between">
             {/* Top Row: Chip and Bank Name */}
             <div className="flex justify-between items-start">
               <div className="flex gap-3 items-center">
-                <div className="w-10 h-7 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-200 rounded-md relative overflow-hidden shadow-inner border border-amber-500/20">
-                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px opacity-30">
-                    {[...Array(9)].map((_, i) => <div key={i} className="border border-black/20"></div>)}
+                <div className="w-12 h-9 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-200 rounded-lg relative overflow-hidden shadow-inner border border-amber-500/30">
+                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px opacity-40">
+                    {[...Array(9)].map((_, i) => <div key={i} className="border border-black/10"></div>)}
                   </div>
                 </div>
-                {/* Holographic Sticker */}
-                <div className="w-8 h-6 bg-gradient-to-tr from-slate-300 via-white to-slate-400 rounded-sm opacity-60 rotate-12 shadow-sm flex items-center justify-center">
-                  <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                <div className="w-9 h-7 bg-gradient-to-tr from-slate-300 via-white/80 to-slate-400 rounded-md opacity-40 rotate-12 shadow-sm flex items-center justify-center">
+                  <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] leading-none">UNITY CARE</p>
-                <p className="text-[6px] font-bold opacity-60 uppercase tracking-widest mt-1">Foundation</p>
+                <p className="text-[12px] font-black uppercase tracking-[0.25em] leading-none text-white/90">UNITY CARE</p>
+                <p className="text-[7px] font-bold opacity-50 uppercase tracking-widest mt-1">Foundation</p>
               </div>
             </div>
 
             {/* Middle Row: Balance */}
-            <div className="flex flex-col">
-               <p className="text-[7px] font-black text-white/50 uppercase tracking-[0.3em] mb-1">{t('current_balance')}</p>
-               <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-black text-white/40">৳</span>
-                  <h1 className="text-3xl font-black tracking-[0.15em] drop-shadow-lg">
+            <div className="flex flex-col -mt-4">
+               <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.35em] mb-1.5">{t('current_balance')}</p>
+               <div className="flex items-baseline gap-2.5">
+                  <span className="text-2xl font-black text-white/30">৳</span>
+                  <h1 className="text-4xl font-black tracking-[0.18em] drop-shadow-2xl">
                     {toBengaliNumber(totalFund.toLocaleString())}
                   </h1>
                </div>
@@ -229,39 +275,39 @@ const UserDashboard: React.FC = () => {
             
             {/* Bottom Row: Cardholder, Stats and Logo */}
             <div className="flex justify-between items-end">
-              <div className="space-y-2 flex-grow">
-                <div className="flex gap-4 items-center">
+              <div className="space-y-4 flex-grow">
+                <div className="flex gap-6 items-center">
                   <div>
-                    <p className="text-[6px] font-black text-white/40 uppercase tracking-widest mb-0.5">Cardholder Name</p>
-                    <p className="text-[10px] font-black uppercase tracking-wider truncate max-w-[120px]">{currentUser?.name || 'MEMBER NAME'}</p>
+                    <p className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-1">Cardholder Name</p>
+                    <p className="text-[11px] font-black uppercase tracking-wider truncate max-w-[140px]">{currentUser?.name || 'MEMBER NAME'}</p>
                   </div>
                   <div>
-                    <p className="text-[6px] font-black text-white/40 uppercase tracking-widest mb-0.5">Join Date</p>
-                    <p className="text-[10px] font-black tracking-widest">
+                    <p className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-1">Join Date</p>
+                    <p className="text-[11px] font-black tracking-widest">
                       {currentUser?.registeredAt 
                         ? new Date(currentUser.registeredAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) 
-                        : '00/00/00'}
+                        : '01/02/26'}
                     </p>
                   </div>
                 </div>
                 
-                {/* Restored Stats Badges */}
-                <div className="flex gap-2">
-                  <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{t('donate')}: ৳{toBengaliNumber(currentUser?.totalDonation?.toLocaleString() || 0)}</p>
+                {/* Stats Badges */}
+                <div className="flex gap-3">
+                  <div className="bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10 flex items-center gap-2.5 shadow-lg">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
+                    <p className="text-[11px] font-black text-white uppercase tracking-wider">{t('donate')}: ৳{toBengaliNumber(currentUser?.totalDonation?.toLocaleString() || 0)}</p>
                   </div>
-                  <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
-                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{t('transaction_count')}: {toBengaliNumber(currentUser?.transactionCount || 0)} {language === 'bn' ? 'টি' : ''}</p>
+                  <div className="bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10 flex items-center gap-2.5 shadow-lg">
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.6)]"></div>
+                    <p className="text-[11px] font-black text-white uppercase tracking-wider">{t('transaction_count')}: {toBengaliNumber(currentUser?.transactionCount || 0)} {language === 'bn' ? 'টি' : ''}</p>
                   </div>
                 </div>
               </div>
 
               {/* Mastercard-style Logo */}
-              <div className="flex -space-x-2.5 opacity-90 scale-75 origin-right mb-1">
-                <div className="w-7 h-7 rounded-full bg-[#EB001B]"></div>
-                <div className="w-7 h-7 rounded-full bg-[#F79E1B] mix-blend-screen"></div>
+              <div className="flex -space-x-3 opacity-90 scale-90 origin-right mb-1">
+                <div className="w-9 h-9 rounded-full bg-[#EB001B] shadow-lg"></div>
+                <div className="w-9 h-9 rounded-full bg-[#F79E1B] mix-blend-screen shadow-lg"></div>
               </div>
             </div>
           </div>
@@ -331,7 +377,7 @@ const UserDashboard: React.FC = () => {
                   {item.icon}
                 </div>
               </div>
-              <span className="text-[11px] font-bold text-slate-700 text-center leading-tight h-6 flex items-center justify-center px-0.5 font-['Baloo_Da_2']">
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 text-center leading-tight h-6 flex items-center justify-center px-0.5 font-['Baloo_Da_2']">
                 {item.label}
               </span>
             </button>
@@ -341,8 +387,8 @@ const UserDashboard: React.FC = () => {
         {/* Recent Transactions */}
         <div className="space-y-4">
            <div className="flex justify-between items-center px-2">
-              <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">{t('recent_activity')}</h3>
-              <button onClick={() => navigate('/history')} className="text-[9px] font-black text-teal-600 uppercase tracking-widest">{t('view_all')}</button>
+              <h3 className="text-[10px] font-black text-slate-800 dark:text-slate-400 uppercase tracking-[0.2em]">{t('recent_activity')}</h3>
+              <button onClick={() => navigate('/history')} className="text-[9px] font-black text-teal-600 dark:text-teal-400 uppercase tracking-widest">{t('view_all')}</button>
            </div>
            <div className="space-y-3">
               {allTransactions.filter(t => t.userId === currentUser?.id).slice(0, 3).map((tx, idx) => {
@@ -382,8 +428,8 @@ const UserDashboard: React.FC = () => {
                 );
               })}
               {allTransactions.filter(t => t.userId === currentUser?.id).length === 0 && (
-                <div className="bg-white p-10 rounded-[2.5rem] text-center border border-dashed border-slate-200">
-                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t('no_transactions')}</p>
+                <div className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] text-center border border-dashed border-slate-200 dark:border-slate-800">
+                  <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest">{t('no_transactions')}</p>
                 </div>
               )}
            </div>
@@ -392,8 +438,8 @@ const UserDashboard: React.FC = () => {
 
       {/* Notification Modal */}
       {showNotifs && (
-        <div className="fixed inset-0 z-[100] bg-white animate-in slide-in-from-bottom duration-300">
-           <div className="bg-[#0D9488] pt-10 pb-16 px-6 rounded-b-[4rem] relative overflow-hidden flex items-center gap-4">
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 animate-in slide-in-from-bottom duration-300">
+           <div className="bg-[#0D9488] dark:bg-[#065F46] pt-10 pb-16 px-6 rounded-b-[4rem] relative overflow-hidden flex items-center gap-4">
               <div className="absolute top-[-20px] left-[-20px] w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
               <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shadow-xl border border-white/30 relative overflow-hidden shrink-0">
                  <div className="absolute inset-0 bg-white/10"></div>
