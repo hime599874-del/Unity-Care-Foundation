@@ -299,7 +299,7 @@ const UserDashboard: React.FC = () => {
         </div>
 
         {/* Action Grid */}
-        <div className="grid grid-cols-4 gap-x-1 gap-y-1 px-1">
+        <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-1">
           {[
             { icon: <img src="https://img.icons8.com/fluency/96/charity.png" className="w-9 h-9 object-contain" alt="Donate" />, label: t('donate_now'), color: 'from-indigo-500 via-blue-500 to-cyan-400', glowColor: '#6366F1', path: '/transaction' },
             { icon: <img src="https://img.icons8.com/fluency/96/handshake.png" className="w-9 h-9 object-contain" alt="Apply" />, label: t('apply'), color: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: '#10B981', path: '/assistance' },
