@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType, SmsRecord, ChatMessage } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType, SmsRecord } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
@@ -11,18 +11,18 @@ import {
   Loader2, Phone, User as UserIcon, ShieldCheck,
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
-  Download, Smartphone, Landmark, Award, Activity, Edit, Trophy,
+  Download, Smartphone, Landmark, Award, Activity, QrCode, Edit,
   FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket,
-  MessageSquare, ChevronDown, Zap, Facebook, CheckCheck
+  MessageSquare, ChevronDown, Zap, Facebook
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import { QRCodeSVG } from 'qrcode.react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const toBengaliNumber = (num: number | string | undefined | null) => {
   if (num === undefined || num === null) return '';
-  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+  return num.toString();
 };
 
 const isUnicode = (text: string) => /[^\u0000-\u007f]/.test(text);
@@ -64,9 +64,10 @@ const AdminDashboard: React.FC = () => {
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
   const [smsBalance, setSmsBalance] = useState<string | null>(null);
   const [isSmsLoading, setIsSmsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'activities' | 'insights' | 'txManagement' | 'recipients' | 'sms'>(isAdmin ? 'overview' : 'recipients');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'qr' | 'activities' | 'insights' | 'txManagement' | 'recipients' | 'sms'>(isAdmin ? 'overview' : 'recipients');
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [qrSearchQuery, setQrSearchQuery] = useState('');
   const [editingExpiry, setEditingExpiry] = useState<{ userId: string, date: string } | null>(null);
   const [editingJoining, setEditingJoining] = useState<{ userId: string, date: string } | null>(null);
   const [expenseAmount, setExpenseAmount] = useState('');
@@ -104,7 +105,6 @@ const AdminDashboard: React.FC = () => {
   const [editingRecipient, setEditingRecipient] = useState<RecipientInfo | null>(null);
   
   const [viewingUser, setViewingUser] = useState<User | null>(null);
-  const [viewingChatMessages, setViewingChatMessages] = useState<ChatMessage[]>([]);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [viewingAssistance, setViewingAssistance] = useState<AssistanceRequest | null>(null);
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
@@ -118,8 +118,6 @@ const AdminDashboard: React.FC = () => {
   const [manualFundType, setManualFundType] = useState<FundType>('General');
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [userDesignation, setUserDesignation] = useState('');
-  const [userJoiningDate, setUserJoiningDate] = useState('');
-  const [userExpiryDate, setUserExpiryDate] = useState('');
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState<string | null>(null);
   const [manualSmsPhone, setManualSmsPhone] = useState('');
@@ -137,7 +135,7 @@ const AdminDashboard: React.FC = () => {
     const tab = params.get('tab');
     const editId = params.get('edit');
 
-    if (tab && ['users', 'donations', 'expenses', 'projects', 'complaints', 'progress', 'activities', 'insights', 'recipients', 'txManagement', 'settings'].includes(tab)) {
+    if (tab && ['users', 'donations', 'expenses', 'projects', 'complaints', 'progress', 'activities', 'insights', 'recipients', 'txManagement', 'qr', 'settings'].includes(tab)) {
       setActiveTab(tab as any);
     }
 
@@ -253,8 +251,6 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (viewingUser) {
       setUserDesignation(viewingUser.designation || 'ভেরিফাইড সদস্য');
-      setUserJoiningDate(new Date(viewingUser.registeredAt).toISOString().split('T')[0]);
-      setUserExpiryDate(viewingUser.expiryDate || '');
     }
   }, [viewingUser]);
 
@@ -416,53 +412,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleToggleLeaderboard = async () => {
-    if (!viewingUser) return;
-    setIsSubmitting(true);
-    try {
-      const newValue = viewingUser.showOnLeaderboard === false ? true : false;
-      await db.updateUser(viewingUser.id, { showOnLeaderboard: newValue });
-      setViewingUser({ ...viewingUser, showOnLeaderboard: newValue });
-    } catch (e) {
-      alert('আপডেট ব্যর্থ হয়েছে।');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleToggleIdCardInModal = async () => {
-    if (!viewingUser) return;
-    setIsSubmitting(true);
-    try {
-      const newStatus = !viewingUser.isIdCardEnabled;
-      await db.updateUser(viewingUser.id, { isIdCardEnabled: newStatus });
-      setViewingUser({ ...viewingUser, isIdCardEnabled: newStatus });
-    } catch (e) {
-      alert('আপডেট ব্যর্থ হয়েছে।');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateDates = async () => {
-    if (!viewingUser) return;
-    setIsSubmitting(true);
-    try {
-      const registeredAt = new Date(userJoiningDate).getTime();
-      await db.updateUser(viewingUser.id, { 
-        registeredAt,
-        expiryDate: userExpiryDate
-      });
-      setViewingUser({ ...viewingUser, registeredAt, expiryDate: userExpiryDate });
-      alert('তারিখ সফলভাবে আপডেট করা হয়েছে।');
-    } catch (e) {
-      alert('আপডেট ব্যর্থ হয়েছে।');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateRecipientPermission = async () => {
+  const handleToggleRecipientPermission = async () => {
     if (!viewingUser) return;
     setIsSubmitting(true);
     try {
@@ -510,6 +460,36 @@ const AdminDashboard: React.FC = () => {
       setEditingJoining(null);
       alert('যোগদানের তারিখ আপডেট হয়েছে।');
     } catch (e) { alert('ব্যর্থ হয়েছে।'); }
+  };
+
+  const downloadQRCode = (userId: string, userName: string) => {
+    const svg = document.getElementById(`qr-${userId}`);
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width + 40;
+      canvas.height = img.height + 100;
+      if (ctx) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 20, 20);
+        ctx.fillStyle = "black";
+        ctx.font = "bold 20px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(userName, canvas.width / 2, img.height + 60);
+        ctx.font = "14px Arial";
+        ctx.fillText("Unity Care Foundation", canvas.width / 2, img.height + 85);
+      }
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `QR_${userName}_${userId}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
   };
 
   const handleLogout = () => { 
@@ -712,29 +692,12 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (viewingUser) {
-      const unsubscribe = db.subscribeToChat(viewingUser.id, (messages) => {
-        setViewingChatMessages(messages);
-        
-        // Mark user messages as read when admin views
-        messages.filter(m => !m.isAdmin && !m.isRead).forEach(m => {
-          db.markChatMessageAsRead(viewingUser.id, m.id);
-        });
-      });
-      return unsubscribe;
-    } else {
-      setViewingChatMessages([]);
-    }
-  }, [viewingUser]);
-
   const handleSendMessage = async () => {
     if (!viewingUser || !notifMessage.trim()) return;
     try {
-      await db.sendChatMessage(viewingUser.id, notifMessage.trim(), true, adminUser?.id || currentUser?.id || 'admin', 'Admin');
-      // Also send a notification for the push/bell icon
       await db.sendNotification(viewingUser.id, notifMessage.trim());
       setNotifMessage('');
+      alert('বার্তা পাঠানো হয়েছে।');
     } catch (e) { alert('ব্যর্থ হয়েছে।'); }
   };
 
@@ -1120,6 +1083,7 @@ const AdminDashboard: React.FC = () => {
           { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" />, adminOnly: true },
           { id: 'recipients', label: 'গৃহীতার তথ্য', icon: <Heart className="w-4 h-4" />, adminOnly: false },
           { id: 'txManagement', label: 'লেনদেন ম্যানেজমেন্ট', icon: <Wallet className="w-4 h-4" />, adminOnly: true },
+          { id: 'qr', label: 'ইউজার আইডি QR', icon: <QrCode className="w-4 h-4" />, adminOnly: true },
           { id: 'sms', label: 'SMS সেটিংস', icon: <MessageCircle className="w-4 h-4" />, adminOnly: true },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" />, adminOnly: true }
         ].filter(tab => isAdmin || (!tab.adminOnly && effectiveUser?.canManageRecipients)).map(tab => (
@@ -2005,7 +1969,126 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'qr' && (
+          <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
+            <div className="bg-white p-4 rounded-3xl border shadow-sm flex items-center gap-3">
+              <Search className="w-5 h-5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="সদস্য খুঁজুন (নাম বা মোবাইল)..." 
+                className="w-full outline-none font-bold text-sm" 
+                value={qrSearchQuery} 
+                onChange={e => setQrSearchQuery(e.target.value)} 
+              />
+            </div>
 
+            <div className="space-y-4">
+              {users.filter(u => u.status === UserStatus.APPROVED && (u.name.toLowerCase().includes(qrSearchQuery.toLowerCase()) || u.phone.includes(qrSearchQuery))).map(u => (
+                <div key={u.id} className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-slate-100 rounded-2xl overflow-hidden border-2 border-white shadow-sm shrink-0">
+                      {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-8 h-8 m-3 text-slate-300" />}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-800">{u.name}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{u.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">যোগদানের তারিখ</p>
+                      {editingJoining?.userId === u.id ? (
+                        <div className="flex gap-2">
+                          <input 
+                            type="date" 
+                            className="w-full p-2 bg-slate-50 border rounded-xl text-xs font-bold"
+                            value={editingJoining.date}
+                            onChange={e => setEditingJoining({ ...editingJoining, date: e.target.value })}
+                          />
+                          <button onClick={() => handleUpdateJoining(u.id, editingJoining.date)} className="p-2 bg-emerald-600 text-white rounded-xl"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setEditingJoining(null)} className="p-2 bg-slate-200 text-slate-600 rounded-xl"><X className="w-4 h-4" /></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                          <span className="text-xs font-bold text-slate-700">{new Date(u.registeredAt).toISOString().split('T')[0]}</span>
+                          <button onClick={() => setEditingJoining({ userId: u.id, date: new Date(u.registeredAt).toISOString().split('T')[0] })} className="text-teal-600"><Calendar className="w-4 h-4" /></button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">মেয়াদ শেষ</p>
+                      {editingExpiry?.userId === u.id ? (
+                        <div className="flex gap-2">
+                          <input 
+                            type="date" 
+                            className="w-full p-2 bg-slate-50 border rounded-xl text-xs font-bold"
+                            value={editingExpiry.date}
+                            onChange={e => setEditingExpiry({ ...editingExpiry, date: e.target.value })}
+                          />
+                          <button onClick={() => handleUpdateExpiry(u.id, editingExpiry.date)} className="p-2 bg-emerald-600 text-white rounded-xl"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setEditingExpiry(null)} className="p-2 bg-slate-200 text-slate-600 rounded-xl"><X className="w-4 h-4" /></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                          <span className="text-xs font-bold text-slate-700">{u.expiryDate || 'নির্ধারিত নয়'}</span>
+                          <button onClick={() => setEditingExpiry({ userId: u.id, date: u.expiryDate || new Date().toISOString().split('T')[0] })} className="text-rose-600"><Calendar className="w-4 h-4" /></button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-teal-50/50 p-4 rounded-3xl border border-teal-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-xl shadow-sm">
+                        <Award className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest">সাংগঠনিক আইডি কার্ড</p>
+                        <p className="text-[8px] font-bold text-teal-600 uppercase tracking-widest mt-0.5">ইউজার প্রোফাইলে দেখা যাবে</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleToggleIdCard(u.id, !!u.isIdCardEnabled)}
+                      className={`w-12 h-6 rounded-full relative transition-all duration-300 ${u.isIdCardEnabled ? 'bg-teal-500' : 'bg-slate-200'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${u.isIdCardEnabled ? 'left-7' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-4 pt-4 border-t border-slate-100">
+                    <div className="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-inner">
+                      <QRCodeSVG 
+                        id={`qr-${u.id}`}
+                        className="no-glow"
+                        value={`নাম: ${u.name}\nমোবাইল: ${u.phone}\nরক্তের গ্রুপ: ${u.bloodGroup}\n\nলাইভ প্রোফাইল ও হিস্ট্রি দেখতে নিচের লিঙ্কে ক্লিক করুন:\n${window.location.origin}/#/u/${u.id}`} 
+                        size={220}
+                        level="M"
+                        includeMargin={true}
+                      />
+                    </div>
+                    <button 
+                      onClick={() => downloadQRCode(u.id, u.name)}
+                      className="flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-teal-200 active:scale-95 transition-all"
+                    >
+                      <Download className="w-4 h-4" /> কিউআর ডাউনলোড করুন
+                    </button>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase text-center">
+                      অফলাইনে নাম/মোবাইল এবং অনলাইনে লাইভ প্রোফাইল দেখার জন্য এই কিউআর কোডটি ব্যবহার করুন।
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {users.filter(u => u.status === UserStatus.APPROVED).length === 0 && (
+                <div className="text-center py-20 opacity-20">
+                  <QrCode className="w-16 h-16 mx-auto mb-4" />
+                  <p className="font-black uppercase tracking-widest">কোন সদস্য নেই</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {activeTab === 'recipients' && (
           <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
             <div className="bg-white p-8 rounded-[3rem] border shadow-xl space-y-6">
@@ -2490,8 +2573,7 @@ const AdminDashboard: React.FC = () => {
                        <X className="w-5 h-5" />
                     </button>
                  </div>
-                 <div className="absolute top-6 right-6 flex gap-2">
-
+                 <div className="absolute top-6 right-6">
                     <button className="p-2.5 bg-white/20 rounded-xl backdrop-blur-md text-white active:scale-90 transition-all">
                        <Download className="w-5 h-5" />
                     </button>
@@ -2693,44 +2775,6 @@ const AdminDashboard: React.FC = () => {
                        </button>
                     </div>
 
-                    <div className="bg-rose-50/50 p-5 rounded-[2.5rem] border border-rose-100 flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                          <div className="p-3 bg-white rounded-2xl shadow-sm">
-                             <Trophy className="w-5 h-5 text-rose-600" />
-                          </div>
-                          <div>
-                             <p className="text-[10px] font-black text-rose-800 uppercase tracking-widest leading-none">লিডারবোর্ড</p>
-                             <p className="text-[8px] font-bold text-rose-600 uppercase tracking-widest mt-1">লিডারবোর্ডে প্রদর্শিত হবে</p>
-                          </div>
-                       </div>
-                       <button 
-                          onClick={handleToggleLeaderboard}
-                          disabled={isSubmitting}
-                          className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.showOnLeaderboard !== false ? 'bg-rose-500' : 'bg-slate-200'}`}
-                       >
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.showOnLeaderboard !== false ? 'left-7' : 'left-1'}`}></div>
-                       </button>
-                    </div>
-
-                    <div className="bg-emerald-50/50 p-5 rounded-[2.5rem] border border-emerald-100 flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                          <div className="p-3 bg-white rounded-2xl shadow-sm">
-                             <CreditCard className="w-5 h-5 text-emerald-600" />
-                          </div>
-                          <div>
-                             <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-none">আইডি কার্ড</p>
-                             <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest mt-1">আইডি কার্ড সক্রিয় করুন</p>
-                          </div>
-                       </div>
-                       <button 
-                          onClick={handleToggleIdCardInModal}
-                          disabled={isSubmitting}
-                          className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isIdCardEnabled ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                       >
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isIdCardEnabled ? 'left-7' : 'left-1'}`}></div>
-                       </button>
-                    </div>
-
                     <div className="bg-blue-50/50 p-5 rounded-[2.5rem] border border-blue-100 flex items-center justify-between">
                        <div className="flex items-center gap-3">
                           <div className="p-3 bg-white rounded-2xl shadow-sm">
@@ -2742,7 +2786,7 @@ const AdminDashboard: React.FC = () => {
                           </div>
                        </div>
                        <button 
-                          onClick={handleUpdateRecipientPermission}
+                          onClick={handleToggleRecipientPermission}
                           disabled={isSubmitting}
                           className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.canManageRecipients ? 'bg-blue-500' : 'bg-slate-200'}`}
                        >
@@ -2763,92 +2807,14 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="bg-violet-50/50 p-5 rounded-[2.5rem] border border-violet-100 space-y-4">
+                    <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-3">
                        <div className="flex items-center gap-2 ml-1">
-                        <Calendar className="w-4 h-4 text-violet-600" />
-                        <p className="text-[10px] font-black text-violet-800 uppercase tracking-widest">যোগদান ও মেয়াদ শেষ হওয়ার তারিখ</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                         <div className="space-y-1.5">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">যোগদান</p>
-                            <input type="date" className="w-full p-4 bg-white border border-violet-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" value={userJoiningDate} onChange={e => setUserJoiningDate(e.target.value)} />
-                         </div>
-                         <div className="space-y-1.5">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">মেয়াদ শেষ</p>
-                            <input type="date" className="w-full p-4 bg-white border border-violet-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" value={userExpiryDate} onChange={e => setUserExpiryDate(e.target.value)} />
-                         </div>
-                      </div>
-                      <button onClick={handleUpdateDates} disabled={isSubmitting} className="w-full p-4 bg-violet-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-[12px] font-bold">
-                         {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5" /> আপডেট করুন</>}
-                      </button>
-                    </div>
-
-                    <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-4">
-                       <div className="flex items-center justify-between ml-1">
-                         <div className="flex items-center gap-2">
-                           <MessageCircle className="w-4 h-4 text-indigo-600" />
-                           <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">সরাসরি চ্যাট (অ্যাপে)</p>
-                         </div>
-                         <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active</p>
-                         </div>
+                         <MessageCircle className="w-4 h-4 text-indigo-600" />
+                         <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">বার্তা পাঠান (অ্যাপে)</p>
                        </div>
-
-                       {/* Chat Messages */}
-                       <div className="h-64 overflow-y-auto no-scrollbar space-y-3 p-3 bg-white/50 rounded-3xl border border-indigo-100/50">
-                          {viewingChatMessages.length > 0 ? (
-                            viewingChatMessages.map((m, i) => {
-                              const isMe = m.isAdmin;
-                              return (
-                                <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                   <div className={`max-w-[85%] group`}>
-                                      <div className={`p-3 rounded-2xl text-[11px] leading-relaxed font-medium shadow-sm ${
-                                        isMe ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
-                                      }`}>
-                                         {m.text}
-                                         <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                            <p className="text-[8px] opacity-60 font-bold">
-                                              {new Date(m.timestamp).toLocaleTimeString('bn-BD', { hour: 'numeric', minute: 'numeric' })}
-                                            </p>
-                                            {!isMe && m.isRead && (
-                                              <CheckCheck className="w-2.5 h-2.5 text-indigo-500" />
-                                            )}
-                                            {isMe && (
-                                              <CheckCheck className={`w-2.5 h-2.5 ${m.isRead ? 'text-white' : 'text-white/40'}`} />
-                                            )}
-                                         </div>
-                                      </div>
-                                   </div>
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <div className="h-full flex flex-col items-center justify-center opacity-20">
-                               <MessageSquare className="w-8 h-8 mb-2" />
-                               <p className="text-[10px] font-black uppercase tracking-widest">কোনো বার্তা নেই</p>
-                            </div>
-                          )}
-                       </div>
-
                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" 
-                            placeholder="বার্তা লিখুন..." 
-                            value={notifMessage} 
-                            onChange={e => setNotifMessage(e.target.value)} 
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                          />
-                          <button 
-                            onClick={handleSendMessage} 
-                            disabled={!notifMessage.trim()}
-                            className={`p-4 rounded-2xl shadow-lg active:scale-95 transition-all ${
-                              notifMessage.trim() ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'
-                            }`}
-                          >
-                            <Send className="w-5 h-5" />
-                          </button>
+                          <input type="text" className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" placeholder="বার্তা লিখুন..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} />
+                          <button onClick={handleSendMessage} className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all"><Send className="w-5 h-5" /></button>
                        </div>
                     </div>
 
@@ -3330,6 +3296,7 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Unity Care Foundation Admin</p>
                       </div>
                       <div className="pt-2">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=UCF-TXN-${viewingTransaction.transactionId}" className="w-12 h-12 mx-auto opacity-30 mix-blend-multiply" alt="QR" />
                       </div>
                     </div>
                   </div>

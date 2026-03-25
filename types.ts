@@ -63,7 +63,6 @@ export interface User {
   expiryDate?: string;
   isIdCardEnabled?: boolean;
   canManageRecipients?: boolean;
-  showOnLeaderboard?: boolean;
   whatsapp?: string;
   facebook?: string;
 }
@@ -164,17 +163,6 @@ export interface Notification {
   message: string;
   timestamp: number;
   isRead: boolean;
-}
-
-export interface ChatMessage {
-  id: string;
-  userId: string; // The conversation owner (user)
-  senderId: string; // The actual sender UID
-  userName: string; // Name of sender
-  text: string;
-  timestamp: number;
-  isRead: boolean;
-  isAdmin: boolean;
 }
 
 export enum ActivityType {

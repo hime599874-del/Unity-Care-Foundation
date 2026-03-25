@@ -58,24 +58,24 @@ const ExpensePage: React.FC = () => {
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-20 font-['Hind_Siliguri']">
       {/* Header */}
-      <div className="px-5 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm border-b border-slate-100 flex items-center gap-4 sticky top-0 z-30">
+      <div className="px-5 pt-8 pb-6 bg-white rounded-b-[3rem] shadow-sm border-b border-slate-100 flex items-center gap-4 sticky top-0 z-30">
         <button onClick={() => navigate('/dashboard')} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-slate-600 active:scale-90 transition-all">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-800">ব্যয়ের হিসাব</h1>
-          <p className="text-[9px] font-bold text-rose-600 uppercase tracking-widest mt-0.5">সংগঠনের খরচের স্বচ্ছতা</p>
+          <h1 className="text-xl font-black text-slate-800">ব্যয়ের হিসাব</h1>
+          <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mt-0.5">সংগঠনের খরচের স্বচ্ছতা</p>
         </div>
       </div>
 
       <div className="p-5 space-y-6">
         {/* Total Expense Card */}
-        <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-8 rounded-3xl shadow-xl shadow-rose-100 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-8 rounded-[2.5rem] shadow-xl shadow-rose-100 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
            <div className="relative z-10 flex justify-between items-center">
               <div>
-                <p className="text-rose-100 text-[10px] font-bold uppercase tracking-widest mb-1">সর্বমোট ব্যয়</p>
-                <h2 className="text-4xl font-bold">৳{toBengaliNumber(stats.totalExpense)}</h2>
+                <p className="text-rose-100 text-[10px] font-black uppercase tracking-widest mb-1">সর্বমোট ব্যয়</p>
+                <h2 className="text-4xl font-black">৳{toBengaliNumber(stats.totalExpense)}</h2>
               </div>
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center overflow-hidden relative">
                 <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
@@ -110,27 +110,27 @@ const ExpensePage: React.FC = () => {
         </div>
 
         {/* Remaining Fund Card */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
               <Wallet className="w-6 h-6 text-blue-600" />
             </div>
             <p className="text-sm font-bold text-slate-500">অবশিষ্ট ফান্ড</p>
           </div>
-          <p className="text-xl font-bold text-blue-600">৳{toBengaliNumber(remainingFund)}</p>
+          <p className="text-xl font-black text-blue-600">৳{toBengaliNumber(remainingFund)}</p>
         </div>
 
         {/* Expense List */}
         <div className="space-y-4">
           <div className="flex justify-between items-center px-2">
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">খরচের তালিকা</h3>
+            <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">খরচের তালিকা</h3>
             <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
               {toBengaliNumber(expenses.length)} টি এন্ট্রি
             </span>
           </div>
 
           {expenses.map((expense) => (
-            <div key={expense.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div key={expense.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
               <div className="flex justify-between items-start gap-4">
                 <div className="flex gap-4">
                   <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center shrink-0">
@@ -146,7 +146,7 @@ const ExpensePage: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-rose-600 text-lg">৳{toBengaliNumber(expense.amount)}</p>
+                  <p className="font-black text-rose-600 text-lg">৳{toBengaliNumber(expense.amount)}</p>
                 </div>
               </div>
 
@@ -154,7 +154,7 @@ const ExpensePage: React.FC = () => {
                 <div className="space-y-3">
                   <div 
                     onClick={() => setSelectedImage(expense.proofImage || null)}
-                    className="relative w-full h-48 bg-slate-100 rounded-2xl overflow-hidden cursor-pointer group border border-slate-100"
+                    className="relative w-full h-48 bg-slate-100 rounded-[1.5rem] overflow-hidden cursor-pointer group border border-slate-100"
                   >
                     <img 
                       src={expense.proofImage} 
@@ -170,7 +170,7 @@ const ExpensePage: React.FC = () => {
                   </div>
                   <button 
                     onClick={() => setSelectedImage(expense.proofImage || null)}
-                    className="w-full py-4 bg-teal-50 border border-teal-100 rounded-3xl flex items-center justify-center gap-3 text-[11px] font-bold text-teal-700 uppercase hover:bg-teal-100 transition-all active:scale-[0.98]"
+                    className="w-full py-4 bg-teal-50 border border-teal-100 rounded-3xl flex items-center justify-center gap-3 text-[11px] font-black text-teal-700 uppercase hover:bg-teal-100 transition-all active:scale-[0.98]"
                   >
                     <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                       <Info className="w-4 h-4" />
@@ -183,21 +183,21 @@ const ExpensePage: React.FC = () => {
           ))}
 
           {expenses.length === 0 && (
-            <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-100">
+            <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
                <div className="relative w-12 h-12 mx-auto mb-3 flex items-center justify-center opacity-20">
                   {/* 3D Scroll Background */}
                   <div className="absolute inset-0 bg-blue-500 rounded-sm transform -rotate-3 shadow-lg"></div>
                   <div className="absolute inset-0 bg-blue-600 rounded-sm transform rotate-2 shadow-md"></div>
                   <div className="absolute inset-0 bg-blue-500 rounded-sm flex flex-col items-center pt-1 px-1 gap-0.5 border border-blue-400/30">
                     <div className="w-full bg-white rounded-[1px] py-0.5 flex items-center justify-center mb-0.5 shadow-sm">
-                      <span className="text-[6px] font-bold text-blue-700 leading-none tracking-tighter">INVOICE</span>
+                      <span className="text-[6px] font-black text-blue-700 leading-none tracking-tighter">INVOICE</span>
                     </div>
                     <div className="w-full flex justify-between items-end px-0.5 pb-0.5">
                       <div className="flex flex-col gap-0.5 w-4">
                         <div className="h-[2px] w-full bg-white/60 rounded-full"></div>
                         <div className="h-[2px] w-full bg-white/60 rounded-full"></div>
                       </div>
-                      <div className="text-amber-400 font-bold text-[14px] leading-none drop-shadow-sm">$</div>
+                      <div className="text-amber-400 font-black text-[14px] leading-none drop-shadow-sm">$</div>
                     </div>
                   </div>
                   <div className="absolute -top-1.5 left-0 right-0 h-2 bg-blue-700 rounded-full shadow-inner"></div>
@@ -247,7 +247,7 @@ const ExpensePage: React.FC = () => {
 
       {/* Footer Branding */}
       <div className="text-center py-10 opacity-30">
-         <p className="text-[9px] font-bold uppercase tracking-[0.4em]">United for Humanity • Transparency Report</p>
+         <p className="text-[9px] font-black uppercase tracking-[0.4em]">United for Humanity • Transparency Report</p>
       </div>
     </div>
   );

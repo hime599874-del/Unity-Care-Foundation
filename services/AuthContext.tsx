@@ -20,7 +20,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [adminUser, setAdminUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingStep, setLoadingStep] = useState('Initializing...');
-  const [isOnline, setIsOnline] = useState(db.getIsOnline());
 
   const setCurrentUserPersisted = (user: User | null) => {
     setCurrentUser(user);
@@ -94,13 +93,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    const unsubscribe = db.subscribe(() => {
-      setIsOnline(db.getIsOnline());
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
     if (!currentUser || isLoading) return;
 
     const unsubscribe = db.subscribe(() => {
@@ -132,7 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAdmin, 
       isLoading,
       loadingStep,
-      isOnline
+      isOnline: db.getIsOnline()
     }}>
       {children}
     </AuthContext.Provider>

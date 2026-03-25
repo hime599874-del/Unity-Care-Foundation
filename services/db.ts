@@ -22,7 +22,7 @@ import {
   getDoc,
   getDocFromServer
 } from "firebase/firestore";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo, FundType, SmsRecord, ChatMessage } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo, FundType, SmsRecord } from '../types';
 
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -199,7 +199,6 @@ class FirebaseDB {
   private listeners: (() => void)[] = [];
   private isReady: boolean = false;
   private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
-  private isFirestoreConnected: boolean = true;
   private readyPromise: Promise<void>;
   private resolveReady!: () => void;
 
@@ -221,48 +220,18 @@ class FirebaseDB {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
         this.isOnline = true;
-        this.checkFirestoreConnection();
         this.notify();
       });
       window.addEventListener('offline', () => {
         this.isOnline = false;
-        this.isFirestoreConnected = false;
         this.notify();
       });
     }
     
-    this.initRealtimeSync();
-    this.checkFirestoreConnection();
+    this.initRealtimeSync(); 
   }
 
-  getIsOnline(): boolean { return this.isOnline && this.isFirestoreConnected; }
-
-  private async checkFirestoreConnection() {
-    if (!this.isOnline) return;
-    
-    try {
-      // Use a lightweight check to verify backend connectivity
-      await getDocFromServer(doc(firestore, 'metadata', 'stats'));
-      if (!this.isFirestoreConnected) {
-        this.isFirestoreConnected = true;
-        console.log("✅ Firebase: Connection restored.");
-        this.notify();
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        const msg = error.message.toLowerCase();
-        if (msg.includes('offline') || msg.includes('reach cloud firestore')) {
-          if (this.isFirestoreConnected) {
-            this.isFirestoreConnected = false;
-            console.warn("⚠️ Firebase: Backend unreachable. Operating in offline mode.");
-            this.notify();
-          }
-          // Retry after 30 seconds if still failing
-          setTimeout(() => this.checkFirestoreConnection(), 30000);
-        }
-      }
-    }
-  }
+  getIsOnline(): boolean { return this.isOnline; }
 
   private initRealtimeSync() {
     try {
@@ -780,32 +749,6 @@ class FirebaseDB {
     });
   }
   async markNotificationAsRead(notifId: string) { await updateDoc(doc(firestore, "notifications", notifId), { isRead: true }); }
-  
-  async sendChatMessage(userId: string, text: string, isAdmin: boolean, senderId: string, userName: string) {
-    const msg = sanitizeForUpload({
-      userId,
-      senderId,
-      userName,
-      text,
-      timestamp: Date.now(),
-      isRead: false,
-      isAdmin
-    });
-    await addDoc(collection(firestore, "chats", userId, "messages"), msg);
-  }
-
-  subscribeToChat(userId: string, callback: (messages: ChatMessage[]) => void) {
-    const q = query(collection(firestore, "chats", userId, "messages"), orderBy("timestamp", "asc"));
-    return onSnapshot(q, (snapshot) => {
-      const messages = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as ChatMessage[];
-      callback(messages);
-    });
-  }
-
-  async markChatMessageAsRead(userId: string, messageId: string) {
-    await updateDoc(doc(firestore, "chats", userId, "messages", messageId), { isRead: true });
-  }
-
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
   
   async getUserByPhone(phone: string): Promise<User | undefined> {
