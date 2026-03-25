@@ -526,7 +526,11 @@ class FirebaseDB {
       
       // Check for success indicators from SMS Bangladesh API (1701 is success)
       if (text.toLowerCase().includes('success') || text.includes('1701') || text.includes('sent')) {
-        await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+        try {
+          await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+        } catch (e) {
+          console.error("Failed to update SMS stats (possibly quota exceeded):", e);
+        }
         return { success: true, response: text };
       } else {
         throw new Error(text || 'API Error');
@@ -536,7 +540,11 @@ class FirebaseDB {
       // Fallback to no-cors if proxy fails, but we won't get the response text
       try {
         await fetch(url, { method: 'GET', mode: 'no-cors' });
-        await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+        try {
+          await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+        } catch (e) {
+          console.error("Failed to update SMS stats (possibly quota exceeded):", e);
+        }
         return { success: true, response: 'Sent (Opaque)' };
       } catch (e) {
         throw new Error('এসএমএস পাঠানো সম্ভব হয়নি।');
@@ -570,7 +578,26 @@ class FirebaseDB {
     return message;
   }
 
-  async rejectTransaction(txId: string) { await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED }); }
+  async rejectTransaction(txId: string) {
+    const txDoc = await getDoc(doc(firestore, "transactions", txId));
+    if (txDoc.exists()) {
+      const txData = txDoc.data() as Transaction;
+      const userDoc = await getDoc(doc(firestore, "users", txData.userId));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as User;
+        const dateStr = new Date(txData.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const message = `Dear ${userData.name}, your transaction of BDT ${txData.amount} on ${dateStr} has been cancelled by the admin. Please contact Unity Care Foundation for details.`;
+        
+        try {
+          await this.sendGenericSms(userData.phone, message);
+        } catch (e) {
+          console.error("Failed to send rejection SMS:", e);
+        }
+      }
+    }
+    await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED });
+  }
   
   async deleteTransaction(txId: string) {
     console.log("Attempting to delete transaction:", txId);

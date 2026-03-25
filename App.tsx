@@ -290,17 +290,6 @@ const AppWrapper: React.FC = () => {
                   className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
                 />
               </div>
-              
-              {progress > 80 && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => window.location.reload()}
-                  className="mt-6 w-full py-2 text-[10px] text-white/50 hover:text-white border border-white/20 hover:border-white/40 rounded-full transition-all uppercase tracking-widest font-bold"
-                >
-                  কানেকশন সমস্যা? রিলোড করুন
-                </motion.button>
-              )}
             </div>
           </div>
 
@@ -309,9 +298,9 @@ const AppWrapper: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.4 }}
             transition={{ delay: 1 }}
-            className="absolute bottom-10 text-white text-[9px] font-bold tracking-[0.5em] uppercase"
+            className="absolute bottom-10 text-white text-[11px] font-bold tracking-[0.4em] uppercase"
           >
-            Powered by Manobik Team
+            Powered by Unity Team
           </motion.div>
         </motion.div>
       ) : (

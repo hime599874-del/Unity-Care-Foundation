@@ -45,6 +45,21 @@
         "timestamp": { "type": "number" }
       },
       "required": ["userId", "category", "reason", "status", "timestamp"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A single message in a chat conversation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "isRead": { "type": "boolean" },
+        "isAdmin": { "type": "boolean" }
+      },
+      "required": ["userId", "senderId", "text", "timestamp", "isRead", "isAdmin"]
     }
   },
   "firestore": {
@@ -59,6 +74,10 @@
     "/assistance_requests/{reqId}": {
       "schema": "AssistanceRequest",
       "description": "Assistance applications"
+    },
+    "/chats/{userId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Chat messages between user and admin"
     },
     "/expenses/{expId}": {
       "schema": "Expense",

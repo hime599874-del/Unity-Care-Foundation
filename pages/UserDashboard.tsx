@@ -189,7 +189,7 @@ const UserDashboard: React.FC = () => {
 
       <div className="p-6 space-y-5">
         {/* Main Collection Card - Rotating Credit Card Design */}
-        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2.5rem] text-white relative overflow-hidden transition-all duration-1000 h-60 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/40`}>
+        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2.5rem] text-white relative overflow-hidden transition-all duration-1000 h-52 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/40`}>
           {/* Glossy Overlay */}
           <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none z-20"></div>
           
@@ -208,68 +208,12 @@ const UserDashboard: React.FC = () => {
                 }}
               />
             ))}
-            
-            {/* Moving Light Flow */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent w-[200%] h-[200%] animate-flow opacity-20"></div>
-
-            {/* Large Glowing Crescent Moon */}
-            <div className="absolute top-4 right-4 opacity-80 animate-moon-glow z-10">
-              <svg width="100" height="100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]">
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="url(#moon-grad)" />
-                <defs>
-                  <linearGradient id="moon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#FFF" />
-                    <stop offset="100%" stopColor="#FFD700" stopOpacity="0.5" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-
-            {/* Hanging Ornate Lanterns (Fanoos) */}
-            <div className="absolute top-0 right-10 flex gap-8 pointer-events-none z-20">
-              {[...Array(2)].map((_, i) => (
-                <div key={i} className="flex flex-col items-center animate-swing" style={{ animationDelay: `${i * 1.2}s` }}>
-                  {/* Hanging String */}
-                  <div className="w-px h-16 bg-gradient-to-b from-white/40 to-white/5"></div>
-                  {/* Lantern Body */}
-                  <div className="relative w-10 h-16">
-                    <svg viewBox="0 0 24 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]">
-                      <path d="M12 0L22 8V32L12 40L2 32V8L12 0Z" fill="url(#lantern-grad)" stroke="white" strokeWidth="1" />
-                      <path d="M6 10H18M6 15H18M6 20H18M6 25H18M6 30H18" stroke="white" strokeWidth="0.5" strokeOpacity="0.4" />
-                      <circle cx="12" cy="20" r="6" fill="#FFD700" className="animate-pulse" />
-                      <defs>
-                        <radialGradient id="lantern-grad" cx="50%" cy="50%" r="50%">
-                          <stop offset="0%" stopColor="#FFD700" />
-                          <stop offset="100%" stopColor="#B45309" />
-                        </radialGradient>
-                      </defs>
-                    </svg>
-                    {/* Intense Light Emission */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-amber-400/20 rounded-full blur-3xl animate-pulse-glow-intense"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Subtle Eid Mubarak Text */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none select-none">
-              <span className="text-7xl font-black uppercase tracking-[0.6em] rotate-[-12deg]">EID MUBARAK</span>
-            </div>
           </div>
 
           <div className="relative z-30 flex flex-col h-full justify-between">
-            {/* Top Row: Chip and Bank Name */}
+            {/* Top Row: Bank Name */}
             <div className="flex justify-between items-start">
-              <div className="flex gap-3 items-center">
-                <div className="w-12 h-9 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-200 rounded-lg relative overflow-hidden shadow-inner border border-amber-500/30">
-                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px opacity-40">
-                    {[...Array(9)].map((_, i) => <div key={i} className="border border-black/10"></div>)}
-                  </div>
-                </div>
-                <div className="w-9 h-7 bg-gradient-to-tr from-slate-300 via-white/80 to-slate-400 rounded-md opacity-40 rotate-12 shadow-sm flex items-center justify-center">
-                  <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-                </div>
-              </div>
+              <div></div> {/* Empty div to keep the flex layout balanced */}
               <div className="text-right">
                 <p className="text-[12px] font-black uppercase tracking-[0.25em] leading-none text-white/90">UNITY CARE</p>
                 <p className="text-[7px] font-bold opacity-50 uppercase tracking-widest mt-1">Foundation</p>
@@ -355,7 +299,7 @@ const UserDashboard: React.FC = () => {
         </div>
 
         {/* Action Grid */}
-        <div className="grid grid-cols-4 gap-x-3 gap-y-3 px-1">
+        <div className="grid grid-cols-4 gap-x-1 gap-y-1 px-1">
           {[
             { icon: <img src="https://img.icons8.com/fluency/96/charity.png" className="w-9 h-9 object-contain" alt="Donate" />, label: t('donate_now'), color: 'from-indigo-500 via-blue-500 to-cyan-400', glowColor: '#6366F1', path: '/transaction' },
             { icon: <img src="https://img.icons8.com/fluency/96/handshake.png" className="w-9 h-9 object-contain" alt="Apply" />, label: t('apply'), color: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: '#10B981', path: '/assistance' },

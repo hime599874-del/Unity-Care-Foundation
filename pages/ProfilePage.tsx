@@ -149,12 +149,12 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="bg-transparent dark:bg-slate-950 min-h-screen pb-20 font-['Hind_Siliguri'] transition-colors duration-300">
-      <div className="bg-teal-600/90 dark:bg-teal-900/90 backdrop-blur-xl text-white p-7 flex items-center justify-between rounded-b-[2.5rem] shadow-xl sticky top-0 z-50">
+      <div className="bg-teal-600/90 dark:bg-teal-900/90 backdrop-blur-xl text-white p-7 flex items-center justify-between rounded-b-3xl shadow-xl sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/dashboard')} className="p-2 bg-white/20 rounded-xl backdrop-blur-md active:scale-90 transition-all">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-black italic">{t('edit_profile')}</h1>
+          <h1 className="text-xl font-bold italic">{t('edit_profile')}</h1>
         </div>
         <button 
           onClick={handleLogout} 
@@ -162,13 +162,13 @@ const ProfilePage: React.FC = () => {
           title={t('logout')}
         >
           <LogOut className="w-5 h-5" />
-          <span className="text-xs font-black uppercase tracking-widest hidden xs:inline">{t('logout')}</span>
+          <span className="text-xs font-bold uppercase tracking-widest hidden xs:inline">{t('logout')}</span>
         </button>
       </div>
 
       <div className="p-6 flex flex-col items-center">
         <div className="relative mb-6 mt-4">
-          <div className="w-36 h-36 rounded-[2.5rem] glass-card overflow-hidden flex items-center justify-center relative border-4 border-white/50 dark:border-slate-800/50">
+          <div className="w-36 h-36 rounded-3xl glass-card overflow-hidden flex items-center justify-center relative border-4 border-white/50 dark:border-slate-800/50">
             {currentUser?.profilePic ? (
               <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
             ) : (
@@ -188,22 +188,22 @@ const ProfilePage: React.FC = () => {
 
         <div className="mb-8 flex items-center gap-2 glass-card px-5 py-2.5 rounded-full border-none shadow-lg">
            <Hash className="w-4 h-4 text-teal-600" />
-           <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">
+           <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">
              {language === 'bn' ? 'সদস্য আইডি:' : 'Member ID:'} <span className="text-teal-700 dark:text-teal-400 text-sm">{toBengaliNumber(memberId)}</span>
            </p>
         </div>
 
         {showSuccess && (
-          <div className="w-full max-w-md mb-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-2xl font-black text-[11px] flex items-center gap-3 border border-green-100 dark:border-green-900/30 animate-in fade-in zoom-in">
+          <div className="w-full max-w-md mb-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-2xl font-bold text-[11px] flex items-center gap-3 border border-green-100 dark:border-green-900/30 animate-in fade-in zoom-in">
             <CheckCircle2 className="w-5 h-5" /> {t('success')}!
           </div>
         )}
 
         <div className="w-full max-w-md space-y-2">
-          <div className="glass-card p-4 rounded-[2rem] space-y-2">
+          <div className="glass-card p-4 rounded-3xl space-y-2">
             {/* Existing fields */}
             <div>
-              <label className="block text-[9px] font-black text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">{t('name')}</label>
+              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">{t('name')}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-600 w-4 h-4 z-10" />
                 <input 
@@ -219,7 +219,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[9px] font-black text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">{t('email')}</label>
+              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">{t('email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-600 w-4 h-4 z-10" />
                 <input 
@@ -236,7 +236,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[9px] font-black text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">{t('phone')}</label>
+              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">{t('phone')}</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 dark:text-slate-700 w-4 h-4 z-10" />
                 <input className={`${inputClass} pl-10 p-2.5 bg-slate-100/50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-transparent cursor-not-allowed`} value={toBengaliNumber(currentUser?.phone || '')} disabled />
@@ -244,7 +244,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[9px] font-black text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">WhatsApp / Imo</label>
+              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">WhatsApp / Imo</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-600 w-4 h-4 z-10" />
                 <input 
@@ -257,7 +257,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[9px] font-black text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">Facebook Profile Link</label>
+              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-500 mb-0.5 uppercase tracking-[0.1em] ml-1">Facebook Profile Link</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-600 w-4 h-4 z-10" />
                 <input 
@@ -271,7 +271,7 @@ const ProfilePage: React.FC = () => {
 
             {/* New section for full user info */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-              <h3 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">{language === 'bn' ? 'অন্যান্য তথ্য' : 'Other Information'}</h3>
+              <h3 className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">{language === 'bn' ? 'অন্যান্য তথ্য' : 'Other Information'}</h3>
               <div className="grid grid-cols-2 gap-2 text-[9px] font-bold text-slate-500 dark:text-slate-400">
                 <div><p className="uppercase">{language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}</p><p className="text-slate-800 dark:text-slate-200 text-[10px]">{currentUser?.bloodGroup || 'N/A'}</p></div>
                 <div><p className="uppercase">{language === 'bn' ? 'পেশা' : 'Profession'}</p><p className="text-slate-800 dark:text-slate-200 text-[10px]">{currentUser?.profession || 'N/A'}</p></div>
@@ -283,11 +283,11 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
-              <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-[0.2em] ml-1">{t('language')}</label>
+              <label className="block text-[10px] font-bold text-gray-400 mb-3 uppercase tracking-[0.2em] ml-1">{t('language')}</label>
               <div className="flex gap-3">
                 <button
                   onClick={() => setLanguage('bn')}
-                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
                     language === 'bn' 
                     ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -298,7 +298,7 @@ const ProfilePage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setLanguage('en')}
-                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
                     language === 'en' 
                     ? 'bg-teal-600 text-white shadow-lg shadow-teal-100' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -311,13 +311,13 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-              <label className="block text-[10px] font-black text-gray-400 mb-3 uppercase tracking-[0.2em] ml-1">
+              <label className="block text-[10px] font-bold text-gray-400 mb-3 uppercase tracking-[0.2em] ml-1">
                 {language === 'bn' ? 'থিম' : 'THEME'}
               </label>
               <div className="flex gap-3">
                 <button
                   onClick={toggleTheme}
-                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
                     theme === 'light' 
                     ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -328,7 +328,7 @@ const ProfilePage: React.FC = () => {
                 </button>
                 <button
                   onClick={toggleTheme}
-                  className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
                     theme === 'dark' 
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -344,7 +344,7 @@ const ProfilePage: React.FC = () => {
           <button 
             onClick={handleSave}
             disabled={isSaving || !hasChanges}
-            className="w-full py-5 bg-teal-600 text-white rounded-[2rem] font-black text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+            className="w-full py-5 bg-teal-600 text-white rounded-2xl font-bold text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
           >
             {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-6 h-6" /> {t('save')}</>}
           </button>
@@ -352,7 +352,7 @@ const ProfilePage: React.FC = () => {
           {currentUser?.isIdCardEnabled && (
             <button 
               onClick={() => setShowIdCard(true)}
-              className="w-full py-5 bg-white text-teal-700 border-2 border-teal-600 rounded-[2rem] font-black text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all mt-4"
+              className="w-full py-5 bg-white text-teal-700 border-2 border-teal-600 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all mt-4"
             >
               <Award className="w-6 h-6" /> {language === 'bn' ? 'সাংগঠনিক আইডি কার্ড' : 'Organizational ID Card'}
             </button>
@@ -368,7 +368,7 @@ const ProfilePage: React.FC = () => {
               {/* Curved Ribbon Part */}
               <div className="w-20 h-48 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 relative flex flex-col items-center shadow-2xl rounded-b-3xl overflow-hidden border-x border-white/10">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.1),transparent)]"></div>
-                <div className="writing-mode-vertical text-[9px] font-black text-white/90 uppercase tracking-[0.5em] mt-10 whitespace-nowrap drop-shadow-lg">
+                <div className="writing-mode-vertical text-[9px] font-bold text-white/90 uppercase tracking-[0.5em] mt-10 whitespace-nowrap drop-shadow-lg">
                    OFFICIAL MEMBER
                 </div>
               </div>
@@ -394,7 +394,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* ID Card Body */}
-            <div ref={idCardRef} className="w-full aspect-[2.5/4] bg-white rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden relative border border-slate-200 flex flex-col">
+            <div ref={idCardRef} className="w-full aspect-[2.5/4] bg-white rounded-3xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden relative border border-slate-200 flex flex-col">
               {/* Premium Corporate Background */}
               <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-slate-50">
                 {/* Top Header Section */}
@@ -418,14 +418,14 @@ const ProfilePage: React.FC = () => {
                    <div className="w-12 h-12 bg-white rounded-2xl p-2 shadow-xl mx-auto mb-3 border border-slate-100 flex items-center justify-center rotate-3">
                       <Award className="w-8 h-8 text-teal-600" />
                    </div>
-                   <h3 className="text-[12px] font-black text-white uppercase tracking-[0.4em] leading-none mb-1 drop-shadow-md">UNITY CARE</h3>
+                   <h3 className="text-[12px] font-bold text-white uppercase tracking-[0.4em] leading-none mb-1 drop-shadow-md">UNITY CARE</h3>
                    <p className="text-[8px] font-bold text-teal-400 uppercase tracking-[0.2em]">Foundation</p>
                 </div>
 
                 {/* Profile Picture with Premium Frame */}
                 <div className="relative mb-6">
-                  <div className="w-36 h-36 bg-white rounded-[2.5rem] p-1 shadow-2xl border border-slate-200 rotate-2">
-                    <div className="w-full h-full bg-slate-100 rounded-[2.2rem] overflow-hidden border-2 border-white -rotate-2">
+                  <div className="w-36 h-36 bg-white rounded-3xl p-1 shadow-2xl border border-slate-200 rotate-2">
+                    <div className="w-full h-full bg-slate-100 rounded-2xl overflow-hidden border-2 border-white -rotate-2">
                       {currentUser.profilePic ? (
                         <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
                       ) : (
@@ -441,45 +441,37 @@ const ProfilePage: React.FC = () => {
 
                 {/* Name & Designation */}
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">{currentUser.name}</h2>
+                  <h2 className="text-2xl font-bold text-slate-900 uppercase tracking-tight leading-none mb-2">{currentUser.name}</h2>
                   <div className="inline-block px-4 py-1 bg-slate-900 rounded-full">
-                    <p className="text-[10px] font-black text-teal-400 uppercase tracking-[0.2em]">{currentUser.designation || (language === 'bn' ? 'ভেরিফাইড সদস্য' : 'Verified Member')}</p>
+                    <p className="text-[10px] font-bold text-teal-400 uppercase tracking-[0.2em]">{currentUser.designation || (language === 'bn' ? 'ভেরিফাইড সদস্য' : 'Verified Member')}</p>
                   </div>
                 </div>
 
                 {/* Details Section - Structured Grid */}
                 <div className="w-full grid grid-cols-2 gap-x-4 gap-y-3 mb-6 px-2">
                    <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'সদস্য আইডি' : 'Member ID'}</span>
-                      <span className="text-[11px] text-slate-900 font-black tracking-widest">{memberId}</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'সদস্য আইডি' : 'Member ID'}</span>
+                      <span className="text-[11px] text-slate-900 font-bold tracking-widest">{memberId}</span>
                    </div>
                    <div className="flex flex-col text-right">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}</span>
-                      <span className="text-[11px] text-rose-600 font-black tracking-widest">{currentUser.bloodGroup || '—'}</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}</span>
+                      <span className="text-[11px] text-rose-600 font-bold tracking-widest">{currentUser.bloodGroup || '—'}</span>
                    </div>
                    <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'যোগদানের তারিখ' : 'Joining Date'}</span>
-                      <span className="text-[11px] text-slate-900 font-black tracking-widest">{currentUser.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-GB', { numberingSystem: 'latn' }) : '01/02/2026'}</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'যোগদানের তারিখ' : 'Joining Date'}</span>
+                      <span className="text-[11px] text-slate-900 font-bold tracking-widest">{currentUser.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-GB', { numberingSystem: 'latn' }) : '01/02/2026'}</span>
                    </div>
                    <div className="flex flex-col text-right">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'মেয়াদ শেষ' : 'Expiry Date'}</span>
-                      <span className="text-[11px] text-rose-600 font-black tracking-widest">{currentUser.expiryDate || '31/12/2026'}</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{language === 'bn' ? 'মেয়াদ শেষ' : 'Expiry Date'}</span>
+                      <span className="text-[11px] text-rose-600 font-bold tracking-widest">{currentUser.expiryDate || '31/12/2026'}</span>
                    </div>
                 </div>
 
-                {/* QR Code Area */}
+                {/* QR Code Area - Removed per user request */}
                 <div className="mt-auto mb-10 relative w-full flex justify-center">
-                  <div className="p-2.5 bg-white rounded-2xl shadow-2xl border border-slate-100 relative z-10 transform hover:scale-105 transition-transform duration-300">
-                    <QRCodeSVG 
-                      className="no-glow"
-                      value={`${window.location.origin}/#/u/${currentUser.id}`}
-                      size={80}
-                      level="H"
-                      includeMargin={false}
-                    />
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {language === 'bn' ? 'ইউনিটি কেয়ার ফাউন্ডেশন' : 'Unity Care Foundation'}
                   </div>
-                  {/* Decorative Bottom Elements */}
-                  <div className="absolute -bottom-10 left-0 w-full h-20 bg-slate-900 clip-path-id-top-v rotate-180 opacity-100 z-0"></div>
                 </div>
               </div>
 
@@ -491,20 +483,20 @@ const ProfilePage: React.FC = () => {
             <div className="flex gap-4 mt-8 w-full">
               <button 
                 onClick={() => setShowIdCard(false)}
-                className="flex-grow py-4 bg-white/10 text-white rounded-2xl font-black uppercase text-xs backdrop-blur-md border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="flex-grow py-4 bg-white/10 text-white rounded-2xl font-bold uppercase text-xs backdrop-blur-md border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <X className="w-4 h-4" /> {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
               </button>
               <button 
                 onClick={handleDownloadIdCard}
                 disabled={isDownloading}
-                className="flex-grow py-4 bg-teal-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-teal-900/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-grow py-4 bg-teal-600 text-white rounded-2xl font-bold uppercase text-xs shadow-lg shadow-teal-900/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} {language === 'bn' ? 'ডাউনলোড' : 'Download'}
               </button>
               <button 
                 onClick={() => window.print()}
-                className="p-4 bg-slate-800 text-white rounded-2xl font-black shadow-lg active:scale-95 transition-all flex items-center justify-center"
+                className="p-4 bg-slate-800 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center"
                 title={language === 'bn' ? 'প্রিন্ট' : 'Print'}
               >
                 <Printer className="w-4 h-4" />
