@@ -22,17 +22,9 @@ import {
   getDoc,
   getDocFromServer
 } from "firebase/firestore";
-import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo, FundType, SmsRecord } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, AppStats, Notification, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, ActivityType, RecipientInfo, FundType, SmsRecord, ChatMessage } from '../types';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCchYeZEfLW7mtwoixaabaILnscS-Y4-U",
-  authDomain: "unity-care-foundation-426f8.firebaseapp.com",
-  projectId: "unity-care-foundation-426f8",
-  storageBucket: "unity-care-foundation-426f8.appspot.com",
-  messagingSenderId: "22086379500",
-  appId: "1:22086379500:web:7e150225b82f9d996a42c9",
-  measurementId: "G-HWHFFQ3R65"
-};
+import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
@@ -40,14 +32,23 @@ const firestore = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
-});
+}, (firebaseConfig as any).firestoreDatabaseId);
 
 async function testConnection() {
   try {
-    await getDocFromServer(doc(firestore, 'test', 'connection'));
+    // Use a more robust check that doesn't rely on a specific document existing
+    await getDocFromServer(doc(firestore, 'metadata', 'stats'));
+    console.log("✅ Firebase: Connection verified successfully.");
   } catch (error) {
-    if(error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('Could not reach Cloud Firestore backend'))) {
-      console.error("🔥 Firebase Connection Error: Could not reach Cloud Firestore. Please ensure you have created a Firestore Database in your Firebase Console (Build -> Firestore Database -> Create database).");
+    if(error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('offline') || msg.includes('reach cloud firestore')) {
+        console.error("🔥 Firebase Connection Error: Could not reach Cloud Firestore. Please check your internet connection or Firebase project status.");
+      } else if (msg.includes('permission-denied') || msg.includes('missing or insufficient permissions')) {
+        console.error("🔥 Firebase Permission Error: Security rules might be blocking access. Please verify your firestore.rules.");
+      } else {
+        console.warn("⚠️ Firebase Connection Warning:", error.message);
+      }
     }
   }
 }
@@ -197,14 +198,70 @@ class FirebaseDB {
   };
   private listeners: (() => void)[] = [];
   private isReady: boolean = false;
+  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  private isFirestoreConnected: boolean = true;
   private readyPromise: Promise<void>;
   private resolveReady!: () => void;
 
   constructor() { 
     this.readyPromise = new Promise((resolve) => {
       this.resolveReady = resolve;
+      
+      // Safety timeout: Resolve ready state after 8 seconds even if some syncs are slow
+      // This prevents the app from being stuck on the splash screen indefinitely
+      setTimeout(() => {
+        if (!this.isReady) {
+          console.warn("🔥 Firebase: Ready state reached via timeout. Some data may still be syncing.");
+          this.isReady = true;
+          this.resolveReady();
+        }
+      }, 8000);
     });
-    this.initRealtimeSync(); 
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.isOnline = true;
+        this.checkFirestoreConnection();
+        this.notify();
+      });
+      window.addEventListener('offline', () => {
+        this.isOnline = false;
+        this.isFirestoreConnected = false;
+        this.notify();
+      });
+    }
+    
+    this.initRealtimeSync();
+    this.checkFirestoreConnection();
+  }
+
+  getIsOnline(): boolean { return this.isOnline && this.isFirestoreConnected; }
+
+  private async checkFirestoreConnection() {
+    if (!this.isOnline) return;
+    
+    try {
+      // Use a lightweight check to verify backend connectivity
+      await getDocFromServer(doc(firestore, 'metadata', 'stats'));
+      if (!this.isFirestoreConnected) {
+        this.isFirestoreConnected = true;
+        console.log("✅ Firebase: Connection restored.");
+        this.notify();
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('offline') || msg.includes('reach cloud firestore')) {
+          if (this.isFirestoreConnected) {
+            this.isFirestoreConnected = false;
+            console.warn("⚠️ Firebase: Backend unreachable. Operating in offline mode.");
+            this.notify();
+          }
+          // Retry after 30 seconds if still failing
+          setTimeout(() => this.checkFirestoreConnection(), 30000);
+        }
+      }
+    }
   }
 
   private initRealtimeSync() {
@@ -723,6 +780,32 @@ class FirebaseDB {
     });
   }
   async markNotificationAsRead(notifId: string) { await updateDoc(doc(firestore, "notifications", notifId), { isRead: true }); }
+  
+  async sendChatMessage(userId: string, text: string, isAdmin: boolean, senderId: string, userName: string) {
+    const msg = sanitizeForUpload({
+      userId,
+      senderId,
+      userName,
+      text,
+      timestamp: Date.now(),
+      isRead: false,
+      isAdmin
+    });
+    await addDoc(collection(firestore, "chats", userId, "messages"), msg);
+  }
+
+  subscribeToChat(userId: string, callback: (messages: ChatMessage[]) => void) {
+    const q = query(collection(firestore, "chats", userId, "messages"), orderBy("timestamp", "asc"));
+    return onSnapshot(q, (snapshot) => {
+      const messages = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as ChatMessage[];
+      callback(messages);
+    });
+  }
+
+  async markChatMessageAsRead(userId: string, messageId: string) {
+    await updateDoc(doc(firestore, "chats", userId, "messages", messageId), { isRead: true });
+  }
+
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
   
   async getUserByPhone(phone: string): Promise<User | undefined> {

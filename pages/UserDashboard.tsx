@@ -11,7 +11,7 @@ import {
   List, ArrowUpRight, TrendingUp, Bell, ChevronRight,
   ShieldCheck, X, Clock, Plus, TrendingDown, Receipt, Users, HandHelping,
   Lightbulb, Info, Smartphone, CheckCircle2, Send, Loader2, MessageSquare, MessageCircle, Facebook, Mail, PhoneCall, Copy, Landmark, Building2,
-  PieChart, Activity, Fingerprint, ScrollText, AlertCircle
+  PieChart, Activity, Fingerprint, ScrollText, AlertCircle, WifiOff, ClipboardList, Trophy, HeartPulse, UserCog, History, Megaphone, Headset, FileText
 } from 'lucide-react';
 
 const UserDashboard: React.FC = () => {
@@ -152,12 +152,26 @@ const UserDashboard: React.FC = () => {
           <div className="w-14 h-14 rounded-2xl border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 relative">
             <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
             {currentUser?.profilePic ? <img src={currentUser.profilePic} className="w-full h-full object-cover relative z-10" alt="Profile" /> : <UserIcon className="w-6 h-6 text-white relative z-10" />}
+            {!db.getIsOnline() && (
+              <div className="absolute top-0 right-0 bg-rose-500 p-1 rounded-bl-lg z-20 animate-pulse">
+                <WifiOff className="w-2.5 h-2.5 text-white" />
+              </div>
+            )}
           </div>
           <div>
             <h2 className="text-base font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none mb-1">{t('hello')}, {currentUser?.name?.split(' ')[0]}!</h2>
             <div className="flex items-center gap-1 opacity-80">
-               <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400 no-glow" />
-               <p className="text-base font-black text-teal-600 dark:text-teal-400 uppercase tracking-tight">{currentUser?.designation || t('verified_member')}</p>
+               {!db.getIsOnline() ? (
+                 <>
+                   <AlertCircle className="w-4 h-4 text-rose-500 animate-pulse" />
+                   <p className="text-base font-black text-rose-500 uppercase tracking-tight">অফলাইন</p>
+                 </>
+               ) : (
+                 <>
+                   <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400 no-glow" />
+                   <p className="text-base font-black text-teal-600 dark:text-teal-400 uppercase tracking-tight">{currentUser?.designation || t('verified_member')}</p>
+                 </>
+               )}
             </div>
           </div>
         </div>
@@ -174,101 +188,45 @@ const UserDashboard: React.FC = () => {
       </div>
 
       <div className="p-6 space-y-5">
-        {/* Main Collection Card - Rotating Credit Card Design */}
-        <div className={`bg-gradient-to-br ${cardDesigns[currentCardIdx]} p-5 rounded-[2.5rem] text-white relative overflow-hidden transition-all duration-1000 h-60 flex flex-col justify-between group backdrop-blur-md border border-white/20 shadow-2xl shadow-slate-900/40`}>
-          {/* Glossy Overlay */}
-          <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none z-20"></div>
-          
-          {/* Starry Background */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {/* Twinkling Stars */}
-            {[...Array(40)].map((_, i) => (
-              <div 
-                key={i}
-                className="absolute w-0.5 h-0.5 bg-white rounded-full animate-star-twinkle"
-                style={{
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 5}s`,
-                  opacity: Math.random() * 0.6 + 0.2
-                }}
-              />
-            ))}
+        {/* Main Collection Card - MasterCard Inspired Design */}
+        <div className="bg-[#0a192f] p-6 rounded-[2rem] text-[#f5c142] relative overflow-hidden h-60 flex flex-col justify-between shadow-2xl border border-[#f5c142]/20">
+          {/* Plexus/Network Background Effect - Static */}
+          <div className="absolute inset-0 opacity-60">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(56,189,248,0.4),transparent_70%)]"></div>
+            {/* Static Nodes */}
+            <div className="absolute top-[10%] left-[20%] w-1.5 h-1.5 bg-sky-400 rounded-full shadow-[0_0_10px_#38bdf8]"></div>
+            <div className="absolute top-[30%] left-[60%] w-1.5 h-1.5 bg-sky-400 rounded-full shadow-[0_0_10px_#38bdf8]"></div>
+            <div className="absolute top-[70%] left-[40%] w-1.5 h-1.5 bg-sky-400 rounded-full shadow-[0_0_10px_#38bdf8]"></div>
+            <div className="absolute top-[50%] left-[80%] w-1.5 h-1.5 bg-sky-400 rounded-full shadow-[0_0_10px_#38bdf8]"></div>
+            <div className="absolute top-[20%] left-[90%] w-1.5 h-1.5 bg-sky-400 rounded-full shadow-[0_0_10px_#38bdf8]"></div>
+            <div className="absolute top-[80%] left-[10%] w-1.5 h-1.5 bg-sky-400 rounded-full shadow-[0_0_10px_#38bdf8]"></div>
             
-            {/* Moving Light Flow */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent w-[200%] h-[200%] animate-flow opacity-20"></div>
-
-            {/* Large Glowing Crescent Moon */}
-            <div className="absolute top-4 right-4 opacity-80 animate-moon-glow z-10">
-              <svg width="100" height="100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]">
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="url(#moon-grad)" />
-                <defs>
-                  <linearGradient id="moon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#FFF" />
-                    <stop offset="100%" stopColor="#FFD700" stopOpacity="0.5" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-
-            {/* Hanging Ornate Lanterns (Fanoos) */}
-            <div className="absolute top-0 right-10 flex gap-8 pointer-events-none z-20">
-              {[...Array(2)].map((_, i) => (
-                <div key={i} className="flex flex-col items-center animate-swing" style={{ animationDelay: `${i * 1.2}s` }}>
-                  {/* Hanging String */}
-                  <div className="w-px h-16 bg-gradient-to-b from-white/40 to-white/5"></div>
-                  {/* Lantern Body */}
-                  <div className="relative w-10 h-16">
-                    <svg viewBox="0 0 24 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]">
-                      <path d="M12 0L22 8V32L12 40L2 32V8L12 0Z" fill="url(#lantern-grad)" stroke="white" strokeWidth="1" />
-                      <path d="M6 10H18M6 15H18M6 20H18M6 25H18M6 30H18" stroke="white" strokeWidth="0.5" strokeOpacity="0.4" />
-                      <circle cx="12" cy="20" r="6" fill="#FFD700" className="animate-pulse" />
-                      <defs>
-                        <radialGradient id="lantern-grad" cx="50%" cy="50%" r="50%">
-                          <stop offset="0%" stopColor="#FFD700" />
-                          <stop offset="100%" stopColor="#B45309" />
-                        </radialGradient>
-                      </defs>
-                    </svg>
-                    {/* Intense Light Emission */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-amber-400/20 rounded-full blur-3xl animate-pulse-glow-intense"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Subtle Eid Mubarak Text */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none select-none">
-              <span className="text-7xl font-black uppercase tracking-[0.6em] rotate-[-12deg]">EID MUBARAK</span>
-            </div>
+            {/* Static Lines */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
+              <line x1="40" y1="20" x2="120" y2="60" stroke="rgba(56,189,248,0.3)" strokeWidth="0.5" />
+              <line x1="120" y1="60" x2="80" y2="140" stroke="rgba(56,189,248,0.3)" strokeWidth="0.5" />
+              <line x1="80" y1="140" x2="160" y2="100" stroke="rgba(56,189,248,0.3)" strokeWidth="0.5" />
+              <line x1="160" y1="100" x2="180" y2="40" stroke="rgba(56,189,248,0.3)" strokeWidth="0.5" />
+              <line x1="180" y1="40" x2="20" y2="160" stroke="rgba(56,189,248,0.3)" strokeWidth="0.5" />
+            </svg>
           </div>
-
+          
           <div className="relative z-30 flex flex-col h-full justify-between">
-            {/* Top Row: Chip and Bank Name */}
-            <div className="flex justify-between items-start">
-              <div className="flex gap-3 items-center">
-                <div className="w-12 h-9 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-200 rounded-lg relative overflow-hidden shadow-inner border border-amber-500/30">
-                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px opacity-40">
-                    {[...Array(9)].map((_, i) => <div key={i} className="border border-black/10"></div>)}
-                  </div>
-                </div>
-                <div className="w-9 h-7 bg-gradient-to-tr from-slate-300 via-white/80 to-slate-400 rounded-md opacity-40 rotate-12 shadow-sm flex items-center justify-center">
-                  <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-                </div>
-              </div>
+            {/* Top Row: Bank Name */}
+            <div className="flex justify-end items-start">
               <div className="text-right">
-                <p className="text-[12px] font-black uppercase tracking-[0.25em] leading-none text-white/90">UNITY CARE</p>
-                <p className="text-[7px] font-bold opacity-50 uppercase tracking-widest mt-1">Foundation</p>
+                <p className="text-[12px] font-black uppercase tracking-[0.25em] leading-none text-[#f5c142]">UNITY CARE</p>
+                <p className="text-[7px] font-bold opacity-70 uppercase tracking-widest mt-1">Foundation</p>
               </div>
             </div>
 
             {/* Middle Row: Balance */}
-            <div className="flex flex-col -mt-4">
-               <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.35em] mb-1.5">{t('current_balance')}</p>
+            <div className="flex flex-col">
+               <p className="text-[8px] font-black text-[#f5c142]/60 uppercase tracking-[0.35em] mb-1.5">{t('current_balance')}</p>
                <div className="flex items-baseline gap-2.5">
-                  <span className="text-2xl font-black text-white/30">৳</span>
-                  <h1 className="text-4xl font-black tracking-[0.18em] drop-shadow-2xl">
-                    {toBengaliNumber(totalFund.toLocaleString())}
+                  <span className="text-2xl font-black text-[#f5c142]/50">৳</span>
+                  <h1 className="text-4xl font-black tracking-[0.18em] drop-shadow-md">
+                    {toBengaliNumber(totalFund.toLocaleString('en-US'))}
                   </h1>
                </div>
             </div>
@@ -278,12 +236,12 @@ const UserDashboard: React.FC = () => {
               <div className="space-y-4 flex-grow">
                 <div className="flex gap-6 items-center">
                   <div>
-                    <p className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-1">Cardholder Name</p>
-                    <p className="text-[11px] font-black uppercase tracking-wider truncate max-w-[140px]">{currentUser?.name || 'MEMBER NAME'}</p>
+                    <p className="text-[7px] font-black text-[#f5c142]/60 uppercase tracking-widest mb-1">Cardholder Name</p>
+                    <p className="text-[11px] font-black uppercase tracking-wider truncate max-w-[140px] text-[#f5c142]">{currentUser?.name || 'MEMBER NAME'}</p>
                   </div>
                   <div>
-                    <p className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-1">Join Date</p>
-                    <p className="text-[11px] font-black tracking-widest">
+                    <p className="text-[7px] font-black text-[#f5c142]/60 uppercase tracking-widest mb-1">Join Date</p>
+                    <p className="text-[11px] font-black tracking-widest text-[#f5c142]">
                       {currentUser?.registeredAt 
                         ? new Date(currentUser.registeredAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) 
                         : '01/02/26'}
@@ -293,21 +251,21 @@ const UserDashboard: React.FC = () => {
                 
                 {/* Stats Badges */}
                 <div className="flex gap-3">
-                  <div className="bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10 flex items-center gap-2.5 shadow-lg">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
-                    <p className="text-[11px] font-black text-white uppercase tracking-wider">{t('donate')}: ৳{toBengaliNumber(currentUser?.totalDonation?.toLocaleString() || 0)}</p>
+                  <div className="bg-[#f5c142]/10 px-4 py-2 rounded-2xl border border-[#f5c142]/20 flex items-center gap-2.5">
+                    <div className="w-2 h-2 rounded-full bg-[#f5c142]"></div>
+                    <p className="text-[11px] font-black text-[#f5c142] uppercase tracking-wider">{t('donate')}: ৳{toBengaliNumber((currentUser?.totalDonation || 0).toLocaleString('en-US'))}</p>
                   </div>
-                  <div className="bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10 flex items-center gap-2.5 shadow-lg">
-                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.6)]"></div>
-                    <p className="text-[11px] font-black text-white uppercase tracking-wider">{t('transaction_count')}: {toBengaliNumber(currentUser?.transactionCount || 0)} {language === 'bn' ? 'টি' : ''}</p>
+                  <div className="bg-[#f5c142]/10 px-4 py-2 rounded-2xl border border-[#f5c142]/20 flex items-center gap-2.5">
+                    <div className="w-2 h-2 rounded-full bg-[#f5c142]"></div>
+                    <p className="text-[11px] font-black text-[#f5c142] uppercase tracking-wider">{t('transaction_count')}: {toBengaliNumber(currentUser?.transactionCount || 0)}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Mastercard-style Logo */}
-              <div className="flex -space-x-3 opacity-90 scale-90 origin-right mb-1">
-                <div className="w-9 h-9 rounded-full bg-[#EB001B] shadow-lg"></div>
-                <div className="w-9 h-9 rounded-full bg-[#F79E1B] mix-blend-screen shadow-lg"></div>
+              {/* MasterCard Logo */}
+              <div className="flex -space-x-2 mb-1">
+                <div className="w-7 h-7 rounded-full bg-[#EB001B] opacity-90"></div>
+                <div className="w-7 h-7 rounded-full bg-[#F79E1B] mix-blend-screen opacity-90"></div>
               </div>
             </div>
           </div>
@@ -335,7 +293,7 @@ const UserDashboard: React.FC = () => {
              </div>
              <div className="overflow-hidden relative z-10">
                 <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-0.5 font-['Baloo_Da_2']">{t('expenses')}</p>
-                <h3 className="text-sm font-black text-white truncate drop-shadow-md">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString())}</h3>
+                <h3 className="text-sm font-black text-white truncate drop-shadow-md">৳{toBengaliNumber((db.getExpenses().length === 0 ? 0 : appStats.totalExpense).toLocaleString('en-US'))}</h3>
              </div>
           </button>
         </div>
@@ -343,27 +301,27 @@ const UserDashboard: React.FC = () => {
         {/* Action Grid */}
         <div className="grid grid-cols-4 gap-x-3 gap-y-3 px-1">
           {[
-            { icon: <img src="https://img.icons8.com/fluency/96/charity.png" className="w-9 h-9 object-contain" alt="Donate" />, label: t('donate_now'), color: 'from-indigo-500 via-blue-500 to-cyan-400', glowColor: '#6366F1', path: '/transaction' },
-            { icon: <img src="https://img.icons8.com/fluency/96/handshake.png" className="w-9 h-9 object-contain" alt="Apply" />, label: t('apply'), color: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: '#10B981', path: '/assistance' },
-            { icon: <img src="https://img.icons8.com/fluency/96/trophy.png" className="w-9 h-9 object-contain" alt="Top Donors" />, label: t('top_donors'), color: 'from-amber-400 via-orange-500 to-rose-500', glowColor: '#F59E0B', path: '/leaderboard' },
-            { icon: <img src="https://img.icons8.com/fluency/96/groups.png" className="w-9 h-9 object-contain" alt="Members" />, label: t('permanent_members'), color: 'from-blue-400 via-indigo-500 to-purple-600', glowColor: '#3B82F6', action: () => setShowPermanentMembersModal(true) },
-            { icon: <img src="https://img.icons8.com/fluency/96/heart-with-pulse.png" className="w-9 h-9 object-contain" alt="Recipients" />, label: 'গৃহীতার তথ্য', color: 'from-rose-400 via-pink-500 to-purple-500', glowColor: '#F43F5E', path: '/recipients' },
+            { icon: <HandHelping className="w-7 h-7 text-white" />, label: t('donate_now'), color: 'from-blue-400 to-indigo-600', glowColor: '#6366F1', path: '/transaction' },
+            { icon: <ClipboardList className="w-7 h-7 text-white" />, label: t('apply'), color: 'from-emerald-400 to-teal-600', glowColor: '#10B981', path: '/assistance' },
+            { icon: <Trophy className="w-7 h-7 text-white" />, label: t('top_donors'), color: 'from-amber-400 to-orange-600', glowColor: '#F59E0B', path: '/leaderboard' },
+            { icon: <Users className="w-7 h-7 text-white" />, label: t('permanent_members'), color: 'from-indigo-400 to-purple-600', glowColor: '#3B82F6', action: () => setShowPermanentMembersModal(true) },
+            { icon: <HeartPulse className="w-7 h-7 text-white" />, label: 'গৃহীতার তথ্য', color: 'from-rose-400 to-pink-600', glowColor: '#F43F5E', path: '/recipients' },
             ...(currentUser?.canManageRecipients ? [{ 
-              icon: <img src="https://img.icons8.com/fluency/96/edit-user-female.png" className="w-9 h-9 object-contain" alt="Manage Recipients" />, 
+              icon: <UserCog className="w-7 h-7 text-white" />, 
               label: 'গৃহীতা ম্যানেজমেন্ট', 
-              color: 'from-teal-400 via-emerald-500 to-green-600', 
+              color: 'from-teal-400 to-emerald-600', 
               glowColor: '#10B981', 
               path: '/manage-recipients' 
             }] : []),
-            { icon: <img src="https://img.icons8.com/fluency/96/clipboard.png" className="w-9 h-9 object-contain" alt="History" />, label: t('history'), color: 'from-violet-500 via-purple-600 to-fuchsia-600', glowColor: '#8B5CF6', path: '/history' },
-            { icon: <img src="https://img.icons8.com/fluency/96/idea.png" className="w-9 h-9 object-contain" alt="Suggestion" />, label: t('suggestion'), color: 'from-lime-400 via-emerald-500 to-teal-600', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },
-            { icon: <img src="https://img.icons8.com/fluency/96/scales.png" className="w-9 h-9 object-contain" alt="Policy" />, label: t('policy'), color: 'from-slate-600 via-slate-700 to-slate-900', glowColor: '#475569', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
-            { icon: <img src="https://img.icons8.com/fluency/96/megaphone.png" className="w-9 h-9 object-contain" alt="Complaint" />, label: t('complaint'), color: 'from-rose-500 via-pink-600 to-purple-700', glowColor: '#F43F5E', action: () => setShowComplaintModal(true) },
-            { icon: <img src="https://img.icons8.com/fluency/96/pos-terminal.png" className="w-10 h-10 object-contain" alt="Payment" />, label: t('payment'), color: 'from-blue-500 via-indigo-600 to-violet-700', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
-            { icon: <img src="https://img.icons8.com/fluency/96/receipt.png" className="w-10 h-10 object-contain" alt="Expenses" />, label: t('expenses'), color: 'from-rose-500 via-rose-700 to-purple-900', glowColor: '#E11D48', path: '/expenses' },
-            { icon: <img src="https://img.icons8.com/fluency/96/customer-support.png" className="w-9 h-9 object-contain" alt="Contact" />, label: t('contact'), color: 'from-pink-500 via-rose-600 to-orange-600', glowColor: '#EC4899', action: () => setShowContactModal(true) },
-            { icon: <img src="https://img.icons8.com/fluency/96/bill.png" className="w-10 h-10 object-contain" alt="Vouchers" />, label: t('vouchers'), color: 'from-blue-500 via-indigo-700 to-purple-800', glowColor: '#2563EB', path: '/vouchers' },
-            { icon: <img src="https://img.icons8.com/fluency/96/combo-chart.png" className="w-9 h-9 object-contain" alt="Progress" />, label: t('progress'), color: 'from-indigo-400 via-violet-600 to-purple-700', glowColor: '#6366F1', path: '/progress' },
+            { icon: <History className="w-7 h-7 text-white" />, label: t('history'), color: 'from-violet-400 to-purple-600', glowColor: '#8B5CF6', path: '/history' },
+            { icon: <Lightbulb className="w-7 h-7 text-white" />, label: t('suggestion'), color: 'from-lime-400 to-emerald-600', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },
+            { icon: <ScrollText className="w-7 h-7 text-white" />, label: t('policy'), color: 'from-slate-500 to-slate-700', glowColor: '#475569', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
+            { icon: <Megaphone className="w-7 h-7 text-white" />, label: t('complaint'), color: 'from-rose-500 to-red-600', glowColor: '#F43F5E', action: () => setShowComplaintModal(true) },
+            { icon: <CreditCard className="w-7 h-7 text-white" />, label: t('payment'), color: 'from-blue-500 to-indigo-700', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
+            { icon: <Receipt className="w-7 h-7 text-white" />, label: t('expenses'), color: 'from-rose-400 to-rose-600', glowColor: '#E11D48', path: '/expenses' },
+            { icon: <Headset className="w-7 h-7 text-white" />, label: t('contact'), color: 'from-pink-400 to-rose-600', glowColor: '#EC4899', action: () => setShowContactModal(true) },
+            { icon: <FileText className="w-7 h-7 text-white" />, label: t('vouchers'), color: 'from-blue-500 to-purple-700', glowColor: '#2563EB', path: '/vouchers' },
+            { icon: <TrendingUp className="w-7 h-7 text-white" />, label: t('progress'), color: 'from-indigo-400 to-purple-700', glowColor: '#6366F1', path: '/progress' },
           ].map((item, idx) => (
             <button 
               key={idx} 
@@ -371,7 +329,7 @@ const UserDashboard: React.FC = () => {
               className="flex flex-col items-center gap-1.5 active:scale-90 transition-all group"
             >
               <div 
-                className={`w-14 h-14 glossy-icon flex items-center justify-center text-white bg-gradient-to-br ${item.color} rounded-2xl`}
+                className={`w-14 h-14 glossy-icon flex items-center justify-center text-white bg-gradient-to-br ${item.color} rounded-3xl`}
               >
                 <div className="relative z-10 drop-shadow-lg">
                   {item.icon}
@@ -395,29 +353,45 @@ const UserDashboard: React.FC = () => {
                 const glossyColors = ["glossy-pink", "glossy-purple", "glossy-blue"];
                 const glossyClass = glossyColors[idx % glossyColors.length];
                 
+                const getBankLogo = (method: string) => {
+                  const m = method.toLowerCase();
+                  if (m.includes('bkash')) return { img: 'https://i.ibb.co/93SJDFLT/image-161466-1701693779.jpg', scale: 'scale-110' };
+                  if (m.includes('nagad')) return { img: 'https://i.ibb.co/kd64m5t/images-1.png', scale: 'scale-110' };
+                  if (m.includes('rocket')) return { img: 'https://i.ibb.co/WWqk4189/images-4.jpg', scale: 'scale-[1.35]' };
+                  if (m.includes('dbbl')) return { img: 'https://i.ibb.co/0RtgBg2k/o-Se-SYq-X9crpm-R6n-T9jn-I-24-049b42353edf981f0f6fc7e21ce90af0-jvectors.webp', scale: 'scale-110' };
+                  if (m.includes('islami')) return { img: 'https://i.ibb.co/PZKKtNN8/images-7.jpg', scale: 'scale-110' };
+                  if (m.includes('midland')) return { img: 'https://i.ibb.co/nq6nb223/images-22.jpg', scale: 'scale-110' };
+                  return null;
+                };
+                const bankLogo = getBankLogo(tx.method);
+                
                 return (
                   <div 
                     key={tx.id} 
                     onClick={() => navigate('/vouchers', { state: { transactionId: tx.id } })}
-                    className={`cursor-pointer p-4 flex justify-between items-center transition-all active:scale-[0.98] glossy-pill ${glossyClass}`}
+                    className="cursor-pointer p-3 bg-white dark:bg-slate-900 rounded-2xl flex justify-between items-center transition-all active:scale-[0.98] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md"
                   >
-                    <div className="flex items-center gap-3 relative z-10">
-                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white shadow-inner border border-white/30 backdrop-blur-sm">
-                        <ArrowUpRight className="w-5 h-5" />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-inner overflow-hidden ${bankLogo ? 'bg-white border border-slate-100 dark:border-slate-800' : glossyClass}`}>
+                        {bankLogo ? (
+                          <img src={bankLogo.img} alt={tx.method} className={`h-6 w-auto object-contain mix-blend-multiply dark:mix-blend-normal ${bankLogo.scale}`} />
+                        ) : (
+                          <ArrowUpRight className="w-5 h-5 stroke-[1.5]" />
+                        )}
                       </div>
                       <div>
-                        <p className="font-black text-white text-xs tracking-tight leading-none drop-shadow-md">{tx.method === 'Admin Manual' ? 'Manual' : tx.method}</p>
-                        <p className="text-[8px] text-white/90 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1">
+                        <p className="font-bold text-slate-800 dark:text-slate-200 text-sm tracking-wide capitalize">{tx.method === 'Admin Manual' ? 'Manual' : tx.method}</p>
+                        <p className="text-[9px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 flex items-center gap-1">
                           <Clock className="w-3 h-3" /> {toBengaliNumber(tx.date)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right relative z-10">
-                      <p className="font-black text-white text-base italic leading-none drop-shadow-lg">৳{toBengaliNumber(tx.amount)}</p>
-                      <span className={`text-[7px] font-black uppercase px-2.5 py-1 rounded-full mt-2 inline-block border border-white/40 shadow-sm ${
-                        tx.status === TransactionStatus.APPROVED ? 'bg-emerald-500/50 text-white' : 
-                        tx.status === TransactionStatus.REJECTED ? 'bg-rose-500/50 text-white' : 
-                        'bg-amber-500/50 text-white'
+                    <div className="text-right">
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-lg italic leading-none">৳{toBengaliNumber(tx.amount.toLocaleString('en-US'))}</p>
+                      <span className={`text-[8px] font-bold uppercase px-2.5 py-0.5 rounded-full mt-1.5 inline-block tracking-wider ${
+                        tx.status === TransactionStatus.APPROVED ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 
+                        tx.status === TransactionStatus.REJECTED ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400' : 
+                        'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
                       }`}>
                         {tx.status === TransactionStatus.APPROVED ? t('status_success') : 
                          tx.status === TransactionStatus.REJECTED ? t('status_cancelled') : 
@@ -806,19 +780,23 @@ const UserDashboard: React.FC = () => {
                     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                        {[
                           { id: 'alrajhi', name: 'Al Rajhi', color: 'bg-blue-600' },
-                          { id: 'bkash', name: 'bKash', color: 'bg-[#D12053]' },
-                          { id: 'nagad', name: 'Nagad', color: 'bg-[#F7941D]' },
-                          { id: 'rocket', name: 'Rocket', color: 'bg-[#8C3494]' },
-                          { id: 'dbbl', name: 'DBBL', color: 'bg-[#007A33]' },
-                          { id: 'islami', name: 'Islami', color: 'bg-[#008000]' },
-                          { id: 'midland', name: 'Midland', color: 'bg-[#E31E24]' }
+                          { id: 'bkash', name: 'bKash', color: 'bg-[#D12053]', img: 'https://i.ibb.co/93SJDFLT/image-161466-1701693779.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
+                          { id: 'nagad', name: 'Nagad', color: 'bg-[#F7941D]', img: 'https://i.ibb.co/kd64m5t/images-1.png', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
+                          { id: 'rocket', name: 'Rocket', color: 'bg-[#8C3494]', img: 'https://i.ibb.co/WWqk4189/images-4.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-[1.35]' },
+                          { id: 'dbbl', name: 'DBBL', color: 'bg-[#007A33]', img: 'https://i.ibb.co/0RtgBg2k/o-Se-SYq-X9crpm-R6n-T9jn-I-24-049b42353edf981f0f6fc7e21ce90af0-jvectors.webp', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
+                          { id: 'islami', name: 'Islami', color: 'bg-[#008000]', img: 'https://i.ibb.co/PZKKtNN8/images-7.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
+                          { id: 'midland', name: 'Midland', color: 'bg-[#E31E24]', img: 'https://i.ibb.co/nq6nb223/images-22.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' }
                        ].map(bank => (
                           <button 
                             key={bank.id}
                             onClick={() => setSelectedBank(bank.id)}
-                            className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-wider whitespace-nowrap transition-all border-2 ${selectedBank === bank.id ? `border-slate-900 ${bank.color} text-white shadow-lg` : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                            className={`px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-wider whitespace-nowrap transition-all border-2 flex items-center justify-center min-w-[80px] h-[44px] overflow-hidden ${selectedBank === bank.id ? (bank.img ? 'border-slate-900 bg-white shadow-lg' : `border-slate-900 ${bank.color} text-white shadow-lg`) : 'border-slate-100 bg-slate-50 text-slate-400'}`}
                           >
-                             {bank.name}
+                             {bank.img ? (
+                               <img src={bank.img} alt={bank.name} className={bank.imgClass} />
+                             ) : (
+                               bank.name
+                             )}
                           </button>
                        ))}
                     </div>

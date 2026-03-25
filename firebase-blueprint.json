@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Application user profile and donation history",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "birthYear": { "type": "integer" },
+        "bloodGroup": { "type": "string" },
+        "location": { "type": "string", "enum": ["Bangladesh", "Abroad"] },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "totalDonation": { "type": "number" },
+        "transactionCount": { "type": "number" },
+        "registeredAt": { "type": "number" },
+        "designation": { "type": "string" }
+      },
+      "required": ["name", "phone", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Donation transaction record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "amount": { "type": "number" },
+        "method": { "type": "string", "enum": ["Bkash", "Nagad", "Rocket", "Bank"] },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["userId", "amount", "status", "timestamp"]
+    },
+    "AssistanceRequest": {
+      "title": "AssistanceRequest",
+      "description": "Request for humanitarian assistance",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "category": { "type": "string", "enum": ["Medical", "Education", "Food", "Emergency", "Other"] },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "REVIEWING", "APPROVED", "PROCESSING", "REJECTED", "DISBURSED"] },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["userId", "category", "reason", "status", "timestamp"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A single message in a chat conversation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "isRead": { "type": "boolean" },
+        "isAdmin": { "type": "boolean" }
+      },
+      "required": ["userId", "senderId", "text", "timestamp", "isRead", "isAdmin"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/transactions/{txId}": {
+      "schema": "Transaction",
+      "description": "Donation records"
+    },
+    "/assistance_requests/{reqId}": {
+      "schema": "AssistanceRequest",
+      "description": "Assistance applications"
+    },
+    "/chats/{userId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Chat messages between user and admin"
+    },
+    "/expenses/{expId}": {
+      "schema": "Expense",
+      "description": "Organization expenses"
+    },
+    "/metadata/stats": {
+      "schema": "AppStats",
+      "description": "Global application statistics"
+    },
+    "/metadata/contact": {
+      "schema": "ContactConfig",
+      "description": "Contact and maintenance configuration"
+    }
+  }
+}

@@ -9,6 +9,8 @@ interface AuthContextType {
   setAdminUser: (user: User | null) => void;
   isAdmin: boolean;
   isLoading: boolean;
+  loadingStep: string;
+  isOnline: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +19,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [adminUser, setAdminUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingStep, setLoadingStep] = useState('Initializing...');
+  const [isOnline, setIsOnline] = useState(db.getIsOnline());
 
   const setCurrentUserPersisted = (user: User | null) => {
     setCurrentUser(user);
@@ -39,9 +43,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const initAuth = async () => {
       try {
+        setLoadingStep('Connecting to database...');
         // Wait for database to sync initial data
         await db.whenReady();
         
+        setLoadingStep('Verifying session...');
         const userId = localStorage.getItem('current_user_id');
         if (userId) {
           const user = db.getUser(userId);
@@ -52,6 +58,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const adminId = localStorage.getItem('admin_user_id');
         if (adminId === 'admin') {
+          setLoadingStep('Loading admin profile...');
           const mockAdmin: User = {
             id: 'admin',
             name: 'Admin',
@@ -74,14 +81,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           };
           setAdminUser(mockAdmin);
         }
+        setLoadingStep('Ready!');
       } catch (error) {
         console.error("Auth initialization error:", error);
+        setLoadingStep('Error initializing app');
       } finally {
         setIsLoading(false);
       }
     };
 
     initAuth();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = db.subscribe(() => {
+      setIsOnline(db.getIsOnline());
+    });
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -114,7 +130,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       adminUser,
       setAdminUser: setAdminUserPersisted,
       isAdmin, 
-      isLoading 
+      isLoading,
+      loadingStep,
+      isOnline
     }}>
       {children}
     </AuthContext.Provider>

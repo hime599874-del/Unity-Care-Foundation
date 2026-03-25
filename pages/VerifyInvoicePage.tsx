@@ -96,9 +96,11 @@ const VerifyInvoicePage: React.FC = () => {
             </div>
             <div className="space-y-1 text-right">
               <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5 justify-end">
-                <Calendar className="w-3 h-3" /> Date
+                <Calendar className="w-3 h-3" /> Date & Time
               </p>
-              <p className="font-black text-slate-800 text-sm">{transaction.date}</p>
+              <p className="font-black text-slate-800 text-sm">
+                {transaction.date} | {new Date(transaction.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5">

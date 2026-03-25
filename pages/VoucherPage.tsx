@@ -46,6 +46,15 @@ const VoucherPage: React.FC = () => {
     return num.toString();
   };
 
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
   const handleDownload = async () => {
     if (!invoiceRef.current) return;
     
@@ -150,7 +159,7 @@ const VoucherPage: React.FC = () => {
                     <h4 className="font-black text-slate-800 text-xs leading-tight mb-0.5">{tx.userName}</h4>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold uppercase">
-                        <Clock className="w-3 h-3" /> {toBengaliNumber(tx.date)}
+                        <Clock className="w-3 h-3" /> {toBengaliNumber(tx.date)} | {formatTime(tx.timestamp)}
                       </div>
                       <span className="text-[8px] font-black text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">{tx.method === 'Admin Manual' ? 'Manual' : tx.method}</span>
                     </div>
@@ -245,7 +254,7 @@ const VoucherPage: React.FC = () => {
                     <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter italic leading-none">INVOICE</h2>
                     <div className="mt-1 text-[8px] sm:text-[9px] font-bold text-rose-100 flex flex-col items-end gap-0.5">
                       <p className="whitespace-nowrap">NO: #{selectedTx.transactionId.slice(-8).toUpperCase()}</p>
-                      <p className="whitespace-nowrap">DATE: {selectedTx.date}</p>
+                      <p className="whitespace-nowrap">DATE: {selectedTx.date} | TIME: {formatTime(selectedTx.timestamp)}</p>
                     </div>
                   </div>
                 </div>

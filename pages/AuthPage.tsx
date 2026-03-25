@@ -8,7 +8,7 @@ import { UserStatus, User as UserType } from '../types';
 import { 
   Phone, User, ShieldCheck, ArrowRight, ArrowLeft, Camera, 
   CheckCircle2, X, Droplets, ChevronDown, Loader2, Globe, Search, MapPin, Briefcase, Calendar, Info, ScrollText, Package, HandHelping, 
-  FileCheck, ShieldAlert, HeartHandshake, Zap, Scale, Trash2
+  FileCheck, ShieldAlert, HeartHandshake, Zap, Scale, Trash2, AlertCircle
 } from 'lucide-react';
 
 import { BD_LOCATION_DATA, PROFESSIONS, COUNTRY_DIAL_CODES, BLOOD_GROUPS } from '../src/constants/locationData';
@@ -300,8 +300,12 @@ const AuthPage: React.FC = () => {
               </button>
               
               <div className="text-center mt-2">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  {db.isDbReady() ? `ডাটাবেজ সংযুক্ত: ${db.getUsers().length} জন সদস্য লোড হয়েছে` : 'ডাটাবেজ কানেক্ট হচ্ছে...'}
+                <p className={`text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 ${!db.getIsOnline() ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
+                  {!db.getIsOnline() ? (
+                    <><AlertCircle className="w-3 h-3" /> ইন্টারনেট কানেকশন নেই!</>
+                  ) : (
+                    db.isDbReady() ? `ডাটাবেজ সংযুক্ত: ${db.getUsers().length} জন সদস্য লোড হয়েছে` : 'ডাটাবেজ কানেক্ট হচ্ছে...'
+                  )}
                 </p>
               </div>
 
