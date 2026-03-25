@@ -6,7 +6,7 @@ import { db } from '../services/db';
 import { AssistanceStatus, AssistanceRequest } from '../types';
 import { 
   ArrowLeft, HandHelping, MessageSquare, Send, 
-  Clock, CheckCircle2, XCircle, Info, Loader2, AlertCircle, ChevronRight,
+  Clock, CircleCheck, CircleX, Info, Loader2, CircleAlert, ChevronRight,
   Zap, HeartPulse, GraduationCap, Utensils
 } from 'lucide-react';
 
@@ -91,8 +91,8 @@ const AssistancePage: React.FC = () => {
 
   const getTimelineIcon = (status: AssistanceStatus) => {
     switch (status) {
-      case AssistanceStatus.APPROVED: return <CheckCircle2 className="w-4 h-4" />;
-      case AssistanceStatus.REJECTED: return <XCircle className="w-4 h-4" />;
+      case AssistanceStatus.APPROVED: return <CircleCheck className="w-4 h-4" />;
+      case AssistanceStatus.REJECTED: return <CircleX className="w-4 h-4" />;
       case AssistanceStatus.DISBURSED: return <Zap className="w-4 h-4" />;
       case AssistanceStatus.REVIEWING: return <Loader2 className="w-4 h-4 animate-spin" />;
       case AssistanceStatus.PROCESSING: return <Clock className="w-4 h-4" />;
@@ -175,7 +175,7 @@ const AssistancePage: React.FC = () => {
                    <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getStatusStyle(req.status)} dark:bg-slate-800 dark:border-slate-700 border shadow-sm`}>
-                            {req.status === AssistanceStatus.APPROVED ? <CheckCircle2 className="w-5 h-5" /> : req.status === AssistanceStatus.REJECTED ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                            {req.status === AssistanceStatus.APPROVED ? <CircleCheck className="w-5 h-5" /> : req.status === AssistanceStatus.REJECTED ? <CircleX className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                          </div>
                          <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">{getStatusText(req.status)}</span>
@@ -205,7 +205,7 @@ const AssistancePage: React.FC = () => {
               ))}
               {userRequests.length === 0 && (
                 <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-100 dark:border-slate-800 transition-colors duration-300">
-                   <AlertCircle className="w-10 h-10 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+                   <CircleAlert className="w-10 h-10 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
                    <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em]">এখনো কোন আবেদন পাওয়া যায়নি</p>
                 </div>
               )}
@@ -218,7 +218,7 @@ const AssistancePage: React.FC = () => {
            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[80vh] flex flex-col">
               <div className="p-6 bg-teal-600 dark:bg-teal-700 text-white flex justify-between items-center shrink-0">
                  <h3 className="font-black uppercase text-xs tracking-widest">আবেদন ট্র্যাকিং</h3>
-                 <button onClick={() => setTrackingRequest(null)} className="p-2 bg-white/20 dark:bg-slate-800 rounded-xl"><XCircle className="w-5 h-5" /></button>
+                 <button onClick={() => setTrackingRequest(null)} className="p-2 bg-white/20 dark:bg-slate-800 rounded-xl"><CircleX className="w-5 h-5" /></button>
               </div>
               <div className="p-6 overflow-y-auto no-scrollbar space-y-6">
                  <div className="relative">

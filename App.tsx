@@ -6,6 +6,8 @@ import { db } from './services/db';
 import { Heart, Home, CreditCard, User as UserIcon, Loader2 } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './services/LanguageContext';
 import { ThemeProvider } from './services/ThemeContext';
+import { AuthProvider, useAuth } from './services/AuthContext';
+import { ToastProvider } from './services/ToastContext';
 
 // Lazy load pages
 const WelcomePage = lazy(() => import('./pages/WelcomePage'));
@@ -32,9 +34,6 @@ const PageLoader = () => (
     <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
   </div>
 );
-
-import { AuthProvider, useAuth } from './services/AuthContext';
-import { ToastProvider } from './services/ToastContext';
 
 const BottomNav: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();

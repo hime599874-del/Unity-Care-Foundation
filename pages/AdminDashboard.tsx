@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { db } from '../services/db';
-import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType, SmsRecord, ChatMessage } from '../types';
+import { User, Transaction, UserStatus, TransactionStatus, Expense, AssistanceRequest, AssistanceStatus, Suggestion, Complaint, ContactConfig, ProjectProgress, MemberActivity, RecipientInfo, FundType, SmsRecord } from '../types';
 import { 
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
@@ -10,10 +10,10 @@ import {
   MessageCircle, Send, Wallet,
   Loader2, Phone, User as UserIcon, ShieldCheck,
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
-  Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, AlertCircle,
+  Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, CircleAlert,
   Download, Smartphone, Landmark, Award, Activity, Edit, Trophy,
   FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket,
-  MessageSquare, ChevronDown, Zap, Facebook, CheckCheck
+  MessageSquare, ChevronDown, Zap, Facebook
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -104,13 +104,11 @@ const AdminDashboard: React.FC = () => {
   const [editingRecipient, setEditingRecipient] = useState<RecipientInfo | null>(null);
   
   const [viewingUser, setViewingUser] = useState<User | null>(null);
-  const [viewingChatMessages, setViewingChatMessages] = useState<ChatMessage[]>([]);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [viewingAssistance, setViewingAssistance] = useState<AssistanceRequest | null>(null);
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
   const [selectedTxForInvoice, setSelectedTxForInvoice] = useState<Transaction | null>(null);
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
-  const [notifMessage, setNotifMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
   
   const [manualAmount, setManualAmount] = useState('');
@@ -712,32 +710,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (viewingUser) {
-      const unsubscribe = db.subscribeToChat(viewingUser.id, (messages) => {
-        setViewingChatMessages(messages);
-        
-        // Mark user messages as read when admin views
-        messages.filter(m => !m.isAdmin && !m.isRead).forEach(m => {
-          db.markChatMessageAsRead(viewingUser.id, m.id);
-        });
-      });
-      return unsubscribe;
-    } else {
-      setViewingChatMessages([]);
-    }
-  }, [viewingUser]);
-
-  const handleSendMessage = async () => {
-    if (!viewingUser || !notifMessage.trim()) return;
-    try {
-      await db.sendChatMessage(viewingUser.id, notifMessage.trim(), true, adminUser?.id || currentUser?.id || 'admin', 'Admin');
-      // Also send a notification for the push/bell icon
-      await db.sendNotification(viewingUser.id, notifMessage.trim());
-      setNotifMessage('');
-    } catch (e) { alert('ব্যর্থ হয়েছে।'); }
-  };
-
   const handleAddManualFunds = async () => {
     if (!viewingUser || !manualAmount) return;
     try {
@@ -1114,7 +1086,7 @@ const AdminDashboard: React.FC = () => {
             </div>
           ), adminOnly: true },
           { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-4 h-4" />, adminOnly: true },
-          { id: 'complaints', label: 'অভিযোগ', icon: <AlertCircle className="w-4 h-4" />, adminOnly: true },
+          { id: 'complaints', label: 'অভিযোগ', icon: <CircleAlert className="w-4 h-4" />, adminOnly: true },
           { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" />, adminOnly: true },
           { id: 'activities', label: 'মেম্বার অ্যাক্টিভিটি', icon: <Clock className="w-4 h-4" />, adminOnly: true },
           { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" />, adminOnly: true },
@@ -1320,7 +1292,7 @@ const AdminDashboard: React.FC = () => {
                      {req.amount > 0 && <p className="text-sm font-black text-rose-600">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}
                   </div>
                 ))}
-                {assistance.length === 0 && <div className="text-center py-20 opacity-20"><AlertCircle className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন আবেদন নেই</p></div>}
+                {assistance.length === 0 && <div className="text-center py-20 opacity-20"><CircleAlert className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন আবেদন নেই</p></div>}
              </div>
           </div>
         )}
@@ -1594,7 +1566,7 @@ const AdminDashboard: React.FC = () => {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
               <div className="flex items-center gap-5 relative z-10">
                 <div className="p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-inner">
-                  <AlertCircle className="w-10 h-10 text-white" />
+                  <CircleAlert className="w-10 h-10 text-white" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-black tracking-tight">অভিযোগ বক্স</h2>
@@ -1690,7 +1662,7 @@ const AdminDashboard: React.FC = () => {
                      </div>
                   </div>
                 ))}
-                {projects.length === 0 && <div className="text-center py-20 opacity-20"><AlertCircle className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন প্রজেক্ট নেই</p></div>}
+                {projects.length === 0 && <div className="text-center py-20 opacity-20"><CircleAlert className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন প্রজেক্ট নেই</p></div>}
              </div>
           </div>
         )}
@@ -2437,7 +2409,7 @@ const AdminDashboard: React.FC = () => {
                   <div className="pt-4 space-y-3">
                     <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-rose-50 text-rose-600 rounded-xl"><AlertCircle className="w-4 h-4" /></div>
+                        <div className="p-2 bg-rose-50 text-rose-600 rounded-xl"><CircleAlert className="w-4 h-4" /></div>
                         <div>
                           <p className="text-[10px] font-black text-slate-800">মেইনটেন্যান্স মোড</p>
                           <p className="text-[8px] font-bold text-slate-400">অ্যাপ সাময়িক বন্ধ রাখতে</p>
@@ -2781,75 +2753,6 @@ const AdminDashboard: React.FC = () => {
                       <button onClick={handleUpdateDates} disabled={isSubmitting} className="w-full p-4 bg-violet-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-[12px] font-bold">
                          {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5" /> আপডেট করুন</>}
                       </button>
-                    </div>
-
-                    <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-4">
-                       <div className="flex items-center justify-between ml-1">
-                         <div className="flex items-center gap-2">
-                           <MessageCircle className="w-4 h-4 text-indigo-600" />
-                           <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">সরাসরি চ্যাট (অ্যাপে)</p>
-                         </div>
-                         <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active</p>
-                         </div>
-                       </div>
-
-                       {/* Chat Messages */}
-                       <div className="h-64 overflow-y-auto no-scrollbar space-y-3 p-3 bg-white/50 rounded-3xl border border-indigo-100/50">
-                          {viewingChatMessages.length > 0 ? (
-                            viewingChatMessages.map((m, i) => {
-                              const isMe = m.isAdmin;
-                              return (
-                                <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                   <div className={`max-w-[85%] group`}>
-                                      <div className={`p-3 rounded-2xl text-[11px] leading-relaxed font-medium shadow-sm ${
-                                        isMe ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
-                                      }`}>
-                                         {m.text}
-                                         <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                            <p className="text-[8px] opacity-60 font-bold">
-                                              {new Date(m.timestamp).toLocaleTimeString('bn-BD', { hour: 'numeric', minute: 'numeric' })}
-                                            </p>
-                                            {!isMe && m.isRead && (
-                                              <CheckCheck className="w-2.5 h-2.5 text-indigo-500" />
-                                            )}
-                                            {isMe && (
-                                              <CheckCheck className={`w-2.5 h-2.5 ${m.isRead ? 'text-white' : 'text-white/40'}`} />
-                                            )}
-                                         </div>
-                                      </div>
-                                   </div>
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <div className="h-full flex flex-col items-center justify-center opacity-20">
-                               <MessageSquare className="w-8 h-8 mb-2" />
-                               <p className="text-[10px] font-black uppercase tracking-widest">কোনো বার্তা নেই</p>
-                            </div>
-                          )}
-                       </div>
-
-                       <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" 
-                            placeholder="বার্তা লিখুন..." 
-                            value={notifMessage} 
-                            onChange={e => setNotifMessage(e.target.value)} 
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                          />
-                          <button 
-                            onClick={handleSendMessage} 
-                            disabled={!notifMessage.trim()}
-                            className={`p-4 rounded-2xl shadow-lg active:scale-95 transition-all ${
-                              notifMessage.trim() ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'
-                            }`}
-                          >
-                            <Send className="w-5 h-5" />
-                          </button>
-                       </div>
                     </div>
 
                     <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">

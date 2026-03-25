@@ -166,17 +166,6 @@ export interface Notification {
   isRead: boolean;
 }
 
-export interface ChatMessage {
-  id: string;
-  userId: string; // The conversation owner (user)
-  senderId: string; // The actual sender UID
-  userName: string; // Name of sender
-  text: string;
-  timestamp: number;
-  isRead: boolean;
-  isAdmin: boolean;
-}
-
 export enum ActivityType {
   LOGIN = 'LOGIN',
   PAGE_VIEW = 'PAGE_VIEW',

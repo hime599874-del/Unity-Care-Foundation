@@ -6,7 +6,7 @@ import { db } from '../services/db';
 import { FundType } from '../types';
 import { 
   ArrowLeft, Smartphone, ChevronDown, DollarSign, Wallet,
-  Check, X, Send, CheckCircle2, Landmark as BankIcon, 
+  Check, X, Send, CircleCheck, Landmark as BankIcon, 
   Zap, Receipt, Coins, Hash, Building2, Loader2
 } from 'lucide-react';
 
@@ -185,7 +185,7 @@ const TransactionPage: React.FC = () => {
       {showSuccessModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-8">
            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl animate-in zoom-in-95">
-              <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+              <CircleCheck className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">সফল হয়েছে!</h3>
               <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-8">তথ্য যাচাইয়ের পর আপনার একাউন্টে ব্যালেন্স যোগ হবে।</p>
               <button onClick={() => navigate('/dashboard')} className="w-full py-4 bg-slate-900 dark:bg-slate-800 text-white rounded-2xl font-bold text-xs uppercase shadow-xl">ঠিক আছে</button>

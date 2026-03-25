@@ -5,7 +5,7 @@ import { useToast } from '../services/ToastContext';
 import { db } from '../services/db';
 import { 
   ArrowLeft, Camera, User, Mail, Phone, Save, 
-  CheckCircle2, Hash, LogOut, Loader2, Award, QrCode, X, Download,
+  CircleCheck, Hash, LogOut, Loader2, Award, QrCode, X, Download,
   Languages, Printer
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -195,7 +195,7 @@ const ProfilePage: React.FC = () => {
 
         {showSuccess && (
           <div className="w-full max-w-md mb-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-2xl font-bold text-[11px] flex items-center gap-3 border border-green-100 dark:border-green-900/30 animate-in fade-in zoom-in">
-            <CheckCircle2 className="w-5 h-5" /> {t('success')}!
+            <CircleCheck className="w-5 h-5" /> {t('success')}!
           </div>
         )}
 
@@ -435,7 +435,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                   {/* Verified Badge */}
                   <div className="absolute -bottom-2 -right-2 bg-teal-600 text-white p-1.5 rounded-full shadow-lg border-2 border-white">
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CircleCheck className="w-4 h-4" />
                   </div>
                 </div>
 

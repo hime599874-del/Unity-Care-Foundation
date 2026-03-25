@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../services/db';
 import { Transaction } from '../types';
-import { CheckCircle2, Building2, Calendar, User, CreditCard, ShieldCheck, ArrowLeft, MapPin, Globe } from 'lucide-react';
+import { CircleCheck, Building2, Calendar, User, CreditCard, ShieldCheck, ArrowLeft, MapPin, Globe } from 'lucide-react';
 
 const VerifyInvoicePage: React.FC = () => {
   const { transactionId } = useParams<{ transactionId: string }>();
@@ -62,7 +62,7 @@ const VerifyInvoicePage: React.FC = () => {
           </div>
         </div>
         <div className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full flex items-center gap-2 border border-emerald-100">
-          <CheckCircle2 className="w-4 h-4" />
+          <CircleCheck className="w-4 h-4" />
           <span className="text-[10px] font-black uppercase tracking-widest">Verified</span>
         </div>
       </div>

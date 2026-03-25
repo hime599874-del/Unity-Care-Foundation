@@ -7,8 +7,8 @@ import { useLanguage } from '../services/LanguageContext';
 import { UserStatus, User as UserType } from '../types';
 import { 
   Phone, User, ShieldCheck, ArrowRight, ArrowLeft, Camera, 
-  CheckCircle2, X, Droplets, ChevronDown, Loader2, Globe, Search, MapPin, Briefcase, Calendar, Info, ScrollText, Package, HandHelping, 
-  FileCheck, ShieldAlert, HeartHandshake, Zap, Scale, Trash2, AlertCircle
+  CircleCheck, X, Droplets, ChevronDown, Loader2, Globe, Search, MapPin, Briefcase, Calendar, Info, ScrollText, Package, HandHelping, 
+  FileCheck, ShieldAlert, HeartHandshake, Zap, Scale, Trash2, CircleAlert
 } from 'lucide-react';
 
 import { BD_LOCATION_DATA, PROFESSIONS, COUNTRY_DIAL_CODES, BLOOD_GROUPS } from '../src/constants/locationData';
@@ -272,7 +272,7 @@ const AuthPage: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 relative overflow-hidden">
           {error && <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-2xl text-xs font-bold border border-rose-100 dark:border-rose-800/50 flex items-center gap-4 animate-in shake duration-500"><X className="w-5 h-5" /> {error}</div>}
-          {success && <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-bold border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-4"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
+          {success && <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-bold border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-4"><CircleCheck className="w-5 h-5" /> {success}</div>}
 
           {isLogin ? (
             <form onSubmit={handleLogin} className="space-y-6">
@@ -302,7 +302,7 @@ const AuthPage: React.FC = () => {
               <div className="text-center mt-2">
                 <p className={`text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 ${!db.getIsOnline() ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
                   {!db.getIsOnline() ? (
-                    <><AlertCircle className="w-3 h-3" /> ইন্টারনেট কানেকশন নেই!</>
+                    <><CircleAlert className="w-3 h-3" /> ইন্টারনেট কানেকশন নেই!</>
                   ) : (
                     db.isDbReady() ? `ডাটাবেজ সংযুক্ত: ${db.getUsers().length} জন সদস্য লোড হয়েছে` : 'ডাটাবেজ কানেক্ট হচ্ছে...'
                   )}
@@ -458,7 +458,7 @@ const AuthPage: React.FC = () => {
                        <label className={`flex items-start gap-4 p-5 rounded-3xl cursor-pointer shadow-xl transition-all border-b-4 group ${formData.policyConsent ? 'bg-emerald-600 dark:bg-emerald-700 border-emerald-800 dark:border-emerald-900 shadow-emerald-100 dark:shadow-emerald-900/20' : 'bg-teal-600 dark:bg-teal-700 border-teal-800 dark:border-teal-900 shadow-teal-100 dark:shadow-teal-900/20'}`}>
                           <div className="pt-1">
                             <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${formData.policyConsent ? 'bg-white border-white' : 'bg-transparent border-white/40'}`}>
-                              {formData.policyConsent && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />}
+                              {formData.policyConsent && <CircleCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />}
                             </div>
                             <input 
                               type="checkbox" 

@@ -5,7 +5,7 @@ import { ProjectProgress, TransactionStatus } from '../types';
 import { useToast } from '../services/ToastContext';
 import { 
   ArrowLeft, TrendingUp, Target, Calendar, 
-  CheckCircle2, Clock, AlertCircle, BarChart3,
+  CircleCheck, Clock, CircleAlert, BarChart3,
   Users, DollarSign, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

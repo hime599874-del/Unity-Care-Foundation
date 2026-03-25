@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../services/db';
 import { Transaction, TransactionStatus } from '../types';
 import { useAuth } from '../services/AuthContext';
-import { ArrowLeft, Calendar, FileText, X, Wallet, Receipt, ArrowUpRight, Clock, Download, ShieldCheck, CheckCircle2, Building2, MapPin, Phone, Mail, Globe } from 'lucide-react';
+import { ArrowLeft, Calendar, FileText, X, Wallet, Receipt, ArrowUpRight, Clock, Download, ShieldCheck, CircleCheck, Building2, MapPin, Phone, Mail, Globe } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 const VoucherPage: React.FC = () => {

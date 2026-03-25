@@ -10,8 +10,8 @@ import {
   Wallet, CreditCard, Award, User as UserIcon, 
   List, ArrowUpRight, TrendingUp, Bell, ChevronRight,
   ShieldCheck, X, Clock, Plus, TrendingDown, Receipt, Users, HandHelping,
-  Lightbulb, Info, Smartphone, CheckCircle2, Send, Loader2, MessageSquare, MessageCircle, Facebook, Mail, PhoneCall, Copy, Landmark, Building2,
-  PieChart, Activity, Fingerprint, ScrollText, AlertCircle, WifiOff
+  Lightbulb, Info, Smartphone, CircleCheck, Send, Loader2, MessageSquare, MessageCircle, Facebook, Mail, PhoneCall, Copy, Landmark, Building2,
+  PieChart, Activity, Fingerprint, ScrollText, CircleAlert, WifiOff
 } from 'lucide-react';
 
 const UserDashboard: React.FC = () => {
@@ -163,7 +163,7 @@ const UserDashboard: React.FC = () => {
             <div className="flex items-center gap-1 opacity-80">
                {!db.getIsOnline() ? (
                  <>
-                   <AlertCircle className="w-4 h-4 text-rose-500 animate-pulse" />
+                   <CircleAlert className="w-4 h-4 text-rose-500 animate-pulse" />
                    <p className="text-base font-black text-rose-500 uppercase tracking-tight">অফলাইন</p>
                  </>
                ) : (
@@ -299,7 +299,7 @@ const UserDashboard: React.FC = () => {
         </div>
 
         {/* Action Grid */}
-        <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-1">
+        <div className="grid grid-cols-4 gap-x-1 gap-y-1 px-1">
           {[
             { icon: <img src="https://img.icons8.com/fluency/96/charity.png" className="w-9 h-9 object-contain" alt="Donate" />, label: t('donate_now'), color: 'from-indigo-500 via-blue-500 to-cyan-400', glowColor: '#6366F1', path: '/transaction' },
             { icon: <img src="https://img.icons8.com/fluency/96/handshake.png" className="w-9 h-9 object-contain" alt="Apply" />, label: t('apply'), color: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: '#10B981', path: '/assistance' },
@@ -595,7 +595,7 @@ const UserDashboard: React.FC = () => {
                  <div className="absolute top-[-20px] left-[-20px] w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                  <div className="flex items-center gap-4 relative z-10">
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/30">
-                       <AlertCircle className="w-6 h-6" />
+                       <CircleAlert className="w-6 h-6" />
                     </div>
                     <h3 className="font-black uppercase text-sm tracking-widest">{t('send_complaint')}</h3>
                  </div>
@@ -715,7 +715,7 @@ const UserDashboard: React.FC = () => {
                                       <p className="text-sm font-black text-slate-800 tracking-wider">DBBLBDDH</p>
                                    </div>
                                    <button onClick={() => copyToClipboard('DBBLBDDH', 'swift')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
-                                      {copiedField === 'swift' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                      {copiedField === 'swift' ? <CircleCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                                    </button>
                                 </div>
                                 <div className="border-b border-black/5 pb-3 flex items-center justify-between">
@@ -724,7 +724,7 @@ const UserDashboard: React.FC = () => {
                                       <p className="text-sm font-black text-slate-800 tracking-wider">090270608</p>
                                    </div>
                                    <button onClick={() => copyToClipboard('090270608', 'routing')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
-                                      {copiedField === 'routing' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                      {copiedField === 'routing' ? <CircleCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                                    </button>
                                 </div>
                              </>
@@ -751,7 +751,7 @@ const UserDashboard: React.FC = () => {
                                )} 
                                className="p-2 text-slate-300 hover:text-slate-600 transition-colors"
                              >
-                                {copiedField === 'acc' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                {copiedField === 'acc' ? <CircleCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                              </button>
                           </div>
                           {selectedBank === 'alrajhi' && (
@@ -761,7 +761,7 @@ const UserDashboard: React.FC = () => {
                                    <p className="text-[11px] font-black text-slate-800 tracking-tight">SA17 8000 0859 6080 1785 9970</p>
                                 </div>
                                 <button onClick={() => copyToClipboard('SA1780000859608017859970', 'iban')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
-                                   {copiedField === 'iban' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                   {copiedField === 'iban' ? <CircleCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                                 </button>
                              </div>
                           )}

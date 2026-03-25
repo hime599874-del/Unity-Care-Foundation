@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, ArrowRight, ShieldCheck, Heart, Users, Globe2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, Heart, Users, Globe2, CircleCheck } from 'lucide-react';
 import { useLanguage } from '../services/LanguageContext';
 
 const WelcomePage: React.FC = () => {
@@ -56,7 +56,7 @@ const WelcomePage: React.FC = () => {
             {t('get_started')} <ArrowRight className="w-6 h-6" />
           </button>
           <div className="flex flex-col items-center gap-2 opacity-30">
-             <CheckCircle2 className="w-4 h-4 text-teal-600" />
+             <CircleCheck className="w-4 h-4 text-teal-600" />
              <p className="text-[9px] font-black uppercase tracking-[0.3em]">{t('non_political')}</p>
           </div>
         </div>
