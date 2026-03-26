@@ -14,30 +14,30 @@ import {
 import { BD_LOCATION_DATA, PROFESSIONS, COUNTRY_DIAL_CODES, BLOOD_GROUPS } from '../src/constants/locationData';
 import ImageCropper from '../src/components/ImageCropper';
 
-const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
+const compressImage = (base64Str: string, size = 400): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      if (width > height) {
-        if (width > maxWidth) {
-          height *= maxWidth / width;
-          width = maxWidth;
-        }
-      } else {
-        if (height > maxHeight) {
-          width *= maxHeight / height;
-          height = maxHeight;
-        }
-      }
-      canvas.width = width;
-      canvas.height = height;
       const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.6));
+      
+      // Calculate square crop
+      const minDimension = Math.min(img.width, img.height);
+      const startX = (img.width - minDimension) / 2;
+      const startY = (img.height - minDimension) / 2;
+      
+      canvas.width = size;
+      canvas.height = size;
+      
+      // Draw cropped square image
+      ctx?.drawImage(
+        img,
+        startX, startY, minDimension, minDimension, // Source
+        0, 0, size, size // Destination
+      );
+      
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
     img.onerror = () => resolve(base64Str);
   });

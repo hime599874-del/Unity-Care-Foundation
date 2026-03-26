@@ -7,22 +7,26 @@ import {
   Users, DollarSign, Check, X, Trash2, LayoutDashboard, 
   TrendingUp, TrendingDown, Search, 
   LogOut, Plus, Home,
-  MessageCircle, Send, Wallet,
+  MessageCircle, Send, Wallet, QrCode,
   Loader2, Phone, User as UserIcon, ShieldCheck,
   MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
   Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, CircleAlert,
   Download, Smartphone, Landmark, Award, Activity, Edit, Trophy,
   FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket,
-  MessageSquare, ChevronDown, Zap, Facebook
+  MessageSquare, ChevronDown, Zap, Facebook, Bell
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+import { QRCodeSVG } from 'qrcode.react';
+import * as XLSX from 'xlsx';
+import { useLanguage } from '../services/LanguageContext';
+import { useTheme } from '../services/ThemeContext';
+
 const toBengaliNumber = (num: number | string | undefined | null) => {
   if (num === undefined || num === null) return '';
-  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
+  return num.toString();
 };
 
 const isUnicode = (text: string) => /[^\u0000-\u007f]/.test(text);
@@ -64,7 +68,7 @@ const AdminDashboard: React.FC = () => {
   const [settingsForm, setSettingsForm] = useState<ContactConfig>(db.getContactConfig());
   const [smsBalance, setSmsBalance] = useState<string | null>(null);
   const [isSmsLoading, setIsSmsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'activities' | 'insights' | 'txManagement' | 'recipients' | 'sms'>(isAdmin ? 'overview' : 'recipients');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'assistance' | 'txs' | 'expense' | 'suggestions' | 'complaints' | 'settings' | 'progress' | 'activities' | 'insights' | 'txManagement' | 'recipients' | 'sms' | 'qr'>(isAdmin ? 'overview' : 'recipients');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [editingExpiry, setEditingExpiry] = useState<{ userId: string, date: string } | null>(null);
@@ -74,6 +78,8 @@ const AdminDashboard: React.FC = () => {
   const [expenseImage, setExpenseImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [selectedUserForQr, setSelectedUserForQr] = useState<User | null>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
   
   const [projectName, setProjectName] = useState('');
   const [projectTarget, setProjectTarget] = useState('');
@@ -116,12 +122,11 @@ const AdminDashboard: React.FC = () => {
   const [manualFundType, setManualFundType] = useState<FundType>('General');
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [userDesignation, setUserDesignation] = useState('');
-  const [userJoiningDate, setUserJoiningDate] = useState('');
-  const [userExpiryDate, setUserExpiryDate] = useState('');
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState<string | null>(null);
   const [manualSmsPhone, setManualSmsPhone] = useState('');
   const [manualSmsMessage, setManualSmsMessage] = useState('');
+  const [manualAppMessage, setManualAppMessage] = useState('');
   const [selectedSmsUserIds, setSelectedSmsUserIds] = useState<string[]>([]);
   const [smsHistory, setSmsHistory] = useState<SmsRecord[]>([]);
   const [bulkSmsMessage, setBulkSmsMessage] = useState('');
@@ -251,8 +256,6 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (viewingUser) {
       setUserDesignation(viewingUser.designation || 'ভেরিফাইড সদস্য');
-      setUserJoiningDate(new Date(viewingUser.registeredAt).toISOString().split('T')[0]);
-      setUserExpiryDate(viewingUser.expiryDate || '');
     }
   }, [viewingUser]);
 
@@ -428,37 +431,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleToggleIdCardInModal = async () => {
-    if (!viewingUser) return;
-    setIsSubmitting(true);
-    try {
-      const newStatus = !viewingUser.isIdCardEnabled;
-      await db.updateUser(viewingUser.id, { isIdCardEnabled: newStatus });
-      setViewingUser({ ...viewingUser, isIdCardEnabled: newStatus });
-    } catch (e) {
-      alert('আপডেট ব্যর্থ হয়েছে।');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateDates = async () => {
-    if (!viewingUser) return;
-    setIsSubmitting(true);
-    try {
-      const registeredAt = new Date(userJoiningDate).getTime();
-      await db.updateUser(viewingUser.id, { 
-        registeredAt,
-        expiryDate: userExpiryDate
-      });
-      setViewingUser({ ...viewingUser, registeredAt, expiryDate: userExpiryDate });
-      alert('তারিখ সফলভাবে আপডেট করা হয়েছে।');
-    } catch (e) {
-      alert('আপডেট ব্যর্থ হয়েছে।');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleUpdateRecipientPermission = async () => {
     if (!viewingUser) return;
@@ -650,9 +622,12 @@ const AdminDashboard: React.FC = () => {
     setIsSmsLoading(false);
   };
 
-  const handleUpdateStatus = async (id: string, type: 'user' | 'tx' | 'assistance', status: any) => {
+  const handleUpdateStatus = async (id: string, type: 'user' | 'tx' | 'assistance' | 'user_id_card' | 'user_qr' | 'user_expiry', status: any) => {
     try {
       if (type === 'user') await db.updateUser(id, { status });
+      if (type === 'user_id_card') await db.updateUser(id, { isIdCardEnabled: status });
+      if (type === 'user_qr') await db.updateUser(id, { isQrEnabled: status });
+      if (type === 'user_expiry') await db.updateUser(id, { expiryDate: status });
       if (type === 'tx') {
         if (status === TransactionStatus.APPROVED) {
           await db.approveTransaction(id);
@@ -794,6 +769,25 @@ const AdminDashboard: React.FC = () => {
     } finally { setIsCapturing(false); }
   };
 
+  const downloadUserQr = async (user: User) => {
+    setSelectedUserForQr(user);
+    // Wait for state update and render
+    setTimeout(async () => {
+      if (!qrRef.current) return;
+      try {
+        const dataUrl = await toPng(qrRef.current, { backgroundColor: '#ffffff', pixelRatio: 3 });
+        const link = document.createElement('a');
+        link.download = `QR_${user.name}_${user.phone.slice(-4)}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (e) {
+        alert('ডাউনলোড ব্যর্থ হয়েছে।');
+      } finally {
+        setSelectedUserForQr(null);
+      }
+    }, 100);
+  };
+
   const downloadAsExcel = () => {
     const approvedTxs = transactions.filter(t => t.status === TransactionStatus.APPROVED);
     const headers = ['SL', 'Date', 'Name', 'Phone', 'Amount', 'Method', 'Transaction ID'];
@@ -814,7 +808,7 @@ const AdminDashboard: React.FC = () => {
     
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Donation_Report_${new Date().toLocaleDateString()}.csv`);
+    link.setAttribute("download", `Donation_Report_${new Date().toLocaleDateString('en-GB')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1024,6 +1018,57 @@ const AdminDashboard: React.FC = () => {
     }, 500);
   };
 
+  const downloadBeautifulExcelReport = () => {
+    try {
+      // Sort transactions by amount descending
+      const sortedTxs = [...filteredMonthlyTxs].sort((a, b) => b.amount - a.amount);
+
+      // Prepare data for Excel
+      const excelData = [
+        ['Unity Care Foundation - Transaction Report'],
+        [`Month: ${reportMonthEn} | Fund: ${fundFilter}`],
+        [],
+        ['Date', 'Name', 'Phone', 'Method', 'Amount (BDT)']
+      ];
+
+      sortedTxs.forEach((tx) => {
+        const user = db.getUser(tx.userId);
+        excelData.push([
+          new Date(tx.timestamp).toLocaleDateString('en-GB'),
+          user?.name || tx.userName || 'Unknown',
+          user?.phone || 'N/A',
+          tx.method,
+          tx.amount
+        ]);
+      });
+
+      // Add Total Row
+      excelData.push(['', '', '', 'Total:', monthlyTotalAmount]);
+
+      // Create Worksheet
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+      // Adjust column widths
+      ws['!cols'] = [
+        { wch: 15 }, // Date
+        { wch: 30 }, // Name
+        { wch: 15 }, // Phone
+        { wch: 15 }, // Method
+        { wch: 20 }  // Amount
+      ];
+
+      // Create Workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Transaction Report');
+
+      // Generate Excel File and trigger download
+      XLSX.writeFile(wb, `Transaction_Report_${reportMonth}_${fundFilter}.xlsx`);
+    } catch (error) {
+      console.error('Excel generation failed', error);
+      alert('Excel generation failed. Please try again.');
+    }
+  };
+
   const monthlyInsights = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
@@ -1092,6 +1137,7 @@ const AdminDashboard: React.FC = () => {
           { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" />, adminOnly: true },
           { id: 'recipients', label: 'গৃহীতার তথ্য', icon: <Heart className="w-4 h-4" />, adminOnly: false },
           { id: 'txManagement', label: 'লেনদেন ম্যানেজমেন্ট', icon: <Wallet className="w-4 h-4" />, adminOnly: true },
+          { id: 'qr', label: 'কিউআর', icon: <QrCode className="w-4 h-4" />, adminOnly: true },
           { id: 'sms', label: 'SMS সেটিংস', icon: <MessageCircle className="w-4 h-4" />, adminOnly: true },
           { id: 'settings', label: 'সেটিংস', icon: <Settings className="w-4 h-4" />, adminOnly: true }
         ].filter(tab => isAdmin || (!tab.adminOnly && effectiveUser?.canManageRecipients)).map(tab => (
@@ -1107,8 +1153,8 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <StatCard label="মোট সদস্য" value={`${toBengaliNumber(stats.totalUsers)} জন`} icon={<Users className="w-6 h-6" />} color="bg-blue-50 text-blue-600" />
               <StatCard label="স্থায়ী সদস্য" value={`${toBengaliNumber(users.filter(u => u.isPermanentMember).length)} জন`} icon={<Award className="w-6 h-6" />} color="bg-amber-50 text-amber-600" />
-              <StatCard label="মোট আদায়" value={`৳${toBengaliNumber(stats.totalCollection.toLocaleString())}`} icon={<TrendingUp className="w-6 h-6" />} color="bg-emerald-50 text-emerald-600" />
-              <StatCard label="মোট ব্যয়" value={`৳${toBengaliNumber(stats.totalExpense.toLocaleString())}`} icon={
+              <StatCard label="মোট আদায়" value={`৳${toBengaliNumber(stats.totalCollection.toLocaleString('en-US'))}`} icon={<TrendingUp className="w-6 h-6" />} color="bg-emerald-50 text-emerald-600" />
+              <StatCard label="মোট ব্যয়" value={`৳${toBengaliNumber(stats.totalExpense.toLocaleString('en-US'))}`} icon={
                 <div className="relative w-6 h-6 flex items-center justify-center">
                   <div className="absolute bottom-0.5 w-4 h-3 bg-blue-600 rounded-sm shadow-sm"></div>
                   <div className="absolute bottom-1 w-3.5 h-4 bg-amber-400 rounded-md shadow-inner"></div>
@@ -1118,7 +1164,7 @@ const AdminDashboard: React.FC = () => {
               } color="bg-rose-50 text-rose-600" />
               <div className="bg-[#0D9488] p-5 rounded-[2.5rem] text-white shadow-xl flex flex-col justify-between h-28 border border-white/20 col-span-2">
                 <p className="text-[9px] font-black uppercase opacity-80 leading-none tracking-widest">বর্তমান তহবিল</p>
-                <h3 className="text-2xl font-black leading-none italic">৳{toBengaliNumber(netBalance.toLocaleString())}</h3>
+                <h3 className="text-2xl font-black leading-none italic">৳{toBengaliNumber(netBalance.toLocaleString('en-US'))}</h3>
               </div>
             </div>
 
@@ -1129,7 +1175,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shrink-0 overflow-hidden border border-slate-100">
                         {u.profilePic ? (
-                          <img src={u.profilePic} className="w-full h-full object-cover" />
+                          <img src={u.profilePic} className="w-full h-full object-cover aspect-square" />
                         ) : (
                           <UserIcon className="w-5 h-5" />
                         )}
@@ -1156,7 +1202,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0 overflow-hidden border border-slate-100">
                         {userMap[t.userId]?.profilePic ? (
-                          <img src={userMap[t.userId].profilePic} className="w-full h-full object-cover" />
+                          <img src={userMap[t.userId].profilePic} className="w-full h-full object-cover aspect-square" />
                         ) : (
                           <Smartphone className="w-5 h-5" />
                         )}
@@ -1207,7 +1253,7 @@ const AdminDashboard: React.FC = () => {
                               <td className="px-6 py-4" onClick={() => setViewingUser(u)}>
                                  <div className="flex items-center gap-4 cursor-pointer">
                                     <div className="w-12 h-12 rounded-[1.2rem] bg-slate-100 overflow-hidden shrink-0 border-2 border-white shadow-sm group-hover:scale-105 transition-transform">
-                                       {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-6 h-6 m-3 text-slate-300" />}
+                                       {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover aspect-square" /> : <UserIcon className="w-6 h-6 m-3 text-slate-300" />}
                                     </div>
                                     <div>
                                        <p className="font-black text-sm text-slate-800">{u.name}</p>
@@ -1266,7 +1312,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex items-center gap-3">
                            <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100">
                              {userMap[req.userId]?.profilePic ? (
-                               <img src={userMap[req.userId].profilePic} className="w-full h-full object-cover" />
+                               <img src={userMap[req.userId].profilePic} className="w-full h-full object-cover aspect-square" />
                              ) : (
                                <HandHelping className="w-6 h-6" />
                              )}
@@ -1289,7 +1335,7 @@ const AdminDashboard: React.FC = () => {
                         </div>
                      </div>
                      <p className="text-[11px] font-bold text-slate-600 line-clamp-2">{req.reason}</p>
-                     {req.amount > 0 && <p className="text-sm font-black text-rose-600">৳{toBengaliNumber(req.amount.toLocaleString())}</p>}
+                     {req.amount > 0 && <p className="text-sm font-black text-rose-600">৳{toBengaliNumber(req.amount.toLocaleString('en-US'))}</p>}
                   </div>
                 ))}
                 {assistance.length === 0 && <div className="text-center py-20 opacity-20"><CircleAlert className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন আবেদন নেই</p></div>}
@@ -1340,7 +1386,7 @@ const AdminDashboard: React.FC = () => {
                    <h2 className="text-2xl font-black text-white italic tracking-tight">UNITY CARE FOUNDATION</h2>
                    <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-teal-100 mt-2 opacity-80 italic">লে ন দে ন  রি পো র্ট</p>
                    <h1 className="text-4xl sm:text-6xl font-black text-white italic mt-6 leading-none drop-shadow-2xl">
-                     ৳{toBengaliNumber(stats.totalCollection.toLocaleString())}
+                     ৳{toBengaliNumber(stats.totalCollection.toLocaleString('en-US'))}
                    </h1>
                 </div>
 
@@ -1371,7 +1417,7 @@ const AdminDashboard: React.FC = () => {
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
                                       {user?.profilePic ? (
-                                        <img src={user.profilePic} className="w-full h-full object-cover" />
+                                        <img src={user.profilePic} className="w-full h-full object-cover aspect-square" />
                                       ) : (
                                         <UserIcon className="w-4 h-4 m-2.5 text-slate-300" />
                                       )}
@@ -1392,7 +1438,7 @@ const AdminDashboard: React.FC = () => {
                                 </td>
                                 <td onClick={() => setViewingTransaction(t)} className="px-5 py-2.5 text-right align-middle cursor-pointer">
                                   <div className="flex flex-col items-end">
-                                    <p className="text-[17px] font-black text-[#0D9488] italic">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
+                                    <p className="text-[17px] font-black text-[#0D9488] italic">৳{toBengaliNumber(t.amount.toLocaleString('en-US'))}</p>
                                     <p className="text-[7px] font-bold text-slate-300 uppercase tracking-tighter group-hover:text-[#0D9488] transition-colors">View Details</p>
                                   </div>
                                 </td>
@@ -1536,7 +1582,7 @@ const AdminDashboard: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-xs overflow-hidden border border-slate-100">
                           {userMap[s.userId]?.profilePic ? (
-                            <img src={userMap[s.userId].profilePic} className="w-full h-full object-cover" />
+                            <img src={userMap[s.userId].profilePic} className="w-full h-full object-cover aspect-square" />
                           ) : (
                             s.userName.charAt(0)
                           )}
@@ -1544,11 +1590,18 @@ const AdminDashboard: React.FC = () => {
                         <div>
                           <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{s.userName}</p>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {new Date(s.timestamp).toLocaleDateString()}
+                            <Clock className="w-3 h-3" /> {new Date(s.timestamp).toLocaleDateString('en-GB')}
                           </p>
                           <p className="text-[8px] font-black text-slate-500">{toBengaliNumber(userMap[s.userId]?.phone || '')}</p>
                         </div>
                       </div>
+                      <button 
+                        onClick={() => setViewingUser(userMap[s.userId])}
+                        className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors"
+                        title="Reply"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
                     </div>
                     <div className="bg-slate-50/50 p-5 rounded-3xl border border-slate-50">
                       <p className="text-[13px] font-bold text-slate-700 leading-relaxed italic">"{s.message}"</p>
@@ -1587,7 +1640,7 @@ const AdminDashboard: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 font-black text-xs overflow-hidden border border-slate-100">
                           {userMap[c.userId]?.profilePic ? (
-                            <img src={userMap[c.userId].profilePic} className="w-full h-full object-cover" />
+                            <img src={userMap[c.userId].profilePic} className="w-full h-full object-cover aspect-square" />
                           ) : (
                             c.userName.charAt(0)
                           )}
@@ -1595,11 +1648,18 @@ const AdminDashboard: React.FC = () => {
                         <div>
                           <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{c.userName}</p>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {new Date(c.timestamp).toLocaleDateString()}
+                            <Clock className="w-3 h-3" /> {new Date(c.timestamp).toLocaleDateString('en-GB')}
                           </p>
                           <p className="text-[8px] font-black text-slate-500">{toBengaliNumber(userMap[c.userId]?.phone || '')}</p>
                         </div>
                       </div>
+                      <button 
+                        onClick={() => setViewingUser(userMap[c.userId])}
+                        className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-colors"
+                        title="Reply"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
                     </div>
                     <div className="bg-rose-50/30 p-5 rounded-3xl border border-rose-50">
                       <p className="text-[13px] font-bold text-slate-700 leading-relaxed italic">"{c.message}"</p>
@@ -1648,7 +1708,7 @@ const AdminDashboard: React.FC = () => {
                      <div className="flex justify-between items-start">
                         <div>
                            <h4 className="text-sm font-black text-slate-800 italic">{p.name}</h4>
-                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">লক্ষ্য: ৳{toBengaliNumber(p.targetAmount.toLocaleString())}</p>
+                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">লক্ষ্য: ৳{toBengaliNumber(p.targetAmount.toLocaleString('en-US'))}</p>
                         </div>
                         <div className="flex gap-2">
                            <button onClick={() => db.deleteProject(p.id)} className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors">
@@ -1702,7 +1762,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex items-center gap-2 overflow-hidden">
                           <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                             {userMap[act.userId]?.profilePic ? (
-                              <img src={userMap[act.userId].profilePic} className="w-full h-full object-cover" />
+                              <img src={userMap[act.userId].profilePic} className="w-full h-full object-cover aspect-square" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">
                                 {act.userName.charAt(0)}
@@ -1776,7 +1836,7 @@ const AdminDashboard: React.FC = () => {
                     <div key={u.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white border shadow-sm overflow-hidden">
-                          {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : <UserIcon className="w-5 h-5 m-2.5 text-slate-300" />}
+                          {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover aspect-square" /> : <UserIcon className="w-5 h-5 m-2.5 text-slate-300" />}
                         </div>
                         <div>
                           <p className="text-sm font-black text-slate-800">{u.name}</p>
@@ -1785,7 +1845,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest">
-                          {new Date(u.registeredAt).toLocaleDateString('en-US')}
+                          {new Date(u.registeredAt).toLocaleDateString('en-GB')}
                         </p>
                         {transactions.some(t => t.userId === u.id && t.status === TransactionStatus.APPROVED) ? (
                           <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase mt-1 inline-block">Paid</span>
@@ -1848,16 +1908,22 @@ const AdminDashboard: React.FC = () => {
                     ৳{toBengaliNumber(transactions
                       .filter(t => t.status === TransactionStatus.APPROVED && t.date.startsWith(reportMonth) && (fundFilter === 'All' ? true : t.fundType === fundFilter))
                       .reduce((sum, t) => sum + t.amount, 0)
-                      .toLocaleString()
+                      .toLocaleString('en-US')
                     )}
                   </h3>
                 </div>
-                <div className="flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button 
                     onClick={downloadMonthlyPDFReport}
-                    className="w-full h-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all"
+                    className="w-full flex-1 h-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all"
                   >
-                    <Download className="w-5 h-5" /> পিডিএফ ডাউনলোড করুন
+                    <Download className="w-5 h-5" /> পিডিএফ
+                  </button>
+                  <button 
+                    onClick={downloadBeautifulExcelReport}
+                    className="w-full flex-1 h-full flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-3xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all"
+                  >
+                    <Download className="w-5 h-5" /> এক্সেল
                   </button>
                 </div>
               </div>
@@ -1892,7 +1958,7 @@ const AdminDashboard: React.FC = () => {
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                                 {userMap[t.userId]?.profilePic ? (
-                                  <img src={userMap[t.userId].profilePic} className="w-full h-full object-cover" />
+                                  <img src={userMap[t.userId].profilePic} className="w-full h-full object-cover aspect-square" />
                                 ) : (
                                   <UserIcon className="w-4 h-4 m-2 text-slate-300" />
                                 )}
@@ -1905,7 +1971,7 @@ const AdminDashboard: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <p className="text-sm font-black text-[#0D9488]">৳{toBengaliNumber(t.amount.toLocaleString())}</p>
+                            <p className="text-sm font-black text-[#0D9488]">৳{toBengaliNumber(t.amount.toLocaleString('en-US'))}</p>
                           </td>
                           <td className="px-6 py-4">
                             <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${
@@ -2186,7 +2252,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-slate-50 p-3 rounded-2xl">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">পরিমাণ</p>
-                        <p className="text-xs font-black text-rose-600">৳{toBengaliNumber(r.amount.toLocaleString())}</p>
+                        <p className="text-xs font-black text-rose-600">৳{toBengaliNumber(r.amount.toLocaleString('en-US'))}</p>
                       </div>
                       <div className="bg-slate-50 p-3 rounded-2xl">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">তারিখ</p>
@@ -2342,7 +2408,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <p className="text-[11px] font-bold text-slate-800 line-clamp-2 italic">"{record.message}"</p>
-                            <p className="text-[9px] text-slate-400 font-bold">{new Date(record.timestamp).toLocaleString()}</p>
+                            <p className="text-[9px] text-slate-400 font-bold">{new Date(record.timestamp).toLocaleString('en-GB')}</p>
                           </div>
                           <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${
                             record.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 
@@ -2373,7 +2439,114 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'settings' && (
+          {activeTab === 'qr' && (
+          <div className="space-y-6 animate-in fade-in max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 bg-white p-4 rounded-3xl border shadow-sm max-w-lg mx-auto">
+              <Search className="w-5 h-5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="সদস্য খুঁজুন (নাম বা মোবাইল)..." 
+                className="w-full outline-none font-bold text-sm" 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredUsers.map(u => (
+                <div key={u.id} className="bg-white p-5 rounded-[2.5rem] border shadow-sm flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden shrink-0">
+                      {u.profilePic ? (
+                        <img src={u.profilePic} className="w-full h-full object-cover aspect-square" />
+                      ) : (
+                        <UserIcon className="w-6 h-6 m-4 text-slate-300" />
+                      )}
+                    </div>
+                    <div className="flex-grow overflow-hidden">
+                      <p className="text-sm font-black text-slate-800 uppercase italic truncate">{u.name}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{u.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-emerald-600" />
+                        <p className="text-[9px] font-black text-emerald-800 uppercase tracking-widest">আইডি কার্ড</p>
+                      </div>
+                      <button 
+                        onClick={() => handleUpdateStatus(u.id, 'user_id_card', !u.isIdCardEnabled)}
+                        className={`w-10 h-5 rounded-full relative transition-all duration-300 ${u.isIdCardEnabled ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                      >
+                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 ${u.isIdCardEnabled ? 'left-5.5' : 'left-0.5'}`}></div>
+                      </button>
+                    </div>
+
+                    <div className="bg-cyan-50/50 p-3 rounded-2xl border border-cyan-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <QrCode className="w-4 h-4 text-cyan-600" />
+                        <p className="text-[9px] font-black text-cyan-800 uppercase tracking-widest">কিউআর</p>
+                      </div>
+                      <button 
+                        onClick={() => handleUpdateStatus(u.id, 'user_qr', !u.isQrEnabled)}
+                        className={`w-10 h-5 rounded-full relative transition-all duration-300 ${u.isQrEnabled ? 'bg-cyan-500' : 'bg-slate-200'}`}
+                      >
+                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 ${u.isQrEnabled ? 'left-5.5' : 'left-0.5'}`}></div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-violet-50/50 p-4 rounded-2xl border border-violet-100 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-violet-600" />
+                      <p className="text-[9px] font-black text-violet-800 uppercase tracking-widest">মেয়াদ শেষ হওয়ার তারিখ</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        type="date" 
+                        className="w-full p-3 bg-white border border-violet-100 rounded-xl outline-none text-[11px] font-bold shadow-sm" 
+                        value={u.expiryDate || ''} 
+                        onChange={e => handleUpdateStatus(u.id, 'user_expiry', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => downloadUserQr(u)}
+                    className="w-full py-3 bg-[#0D9488] text-white rounded-2xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" /> কিউআর কোড ডাউনলোড
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Hidden QR for download */}
+            <div className="fixed left-[-9999px] top-[-9999px]">
+              <div ref={qrRef} className="p-10 bg-white flex flex-col items-center justify-center gap-6 border-[20px] border-teal-600 rounded-[3rem]">
+                <div className="text-2xl font-black text-teal-600 uppercase tracking-widest italic">UNITY CARE FOUNDATION</div>
+                <div className="p-6 bg-white border-4 border-teal-600 rounded-[2rem] shadow-2xl">
+                  {selectedUserForQr && (
+                    <QRCodeSVG 
+                      value={selectedUserForQr.id} 
+                      size={250} 
+                      level="H"
+                      includeMargin={false}
+                      fgColor="#0D9488"
+                    />
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-xl font-black text-slate-800 uppercase italic">{selectedUserForQr?.name}</p>
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.4em] mt-2">OFFICIAL MEMBER QR</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
             <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6 animate-in fade-in max-w-lg mx-auto">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 ml-1">
@@ -2458,7 +2631,7 @@ const AdminDashboard: React.FC = () => {
            <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 h-[94vh]">
               <div className="relative bg-[#0D9488] pt-10 pb-12 px-8 text-center shrink-0">
                  <div className="absolute top-6 left-6">
-                    <button onClick={() => setViewingUser(null)} className="p-2.5 bg-white/20 rounded-xl backdrop-blur-md text-white active:scale-90 transition-all">
+                    <button onClick={() => { setViewingUser(null); setManualAppMessage(''); }} className="p-2.5 bg-white/20 rounded-xl backdrop-blur-md text-white active:scale-90 transition-all">
                        <X className="w-5 h-5" />
                     </button>
                  </div>
@@ -2470,7 +2643,7 @@ const AdminDashboard: React.FC = () => {
                  </div>
                  <div className="flex flex-col items-center">
                     <div className="w-28 h-28 rounded-3xl bg-white p-1 mb-4 shadow-2xl relative overflow-hidden border-4 border-white/20">
-                       {viewingUser.profilePic ? <img src={viewingUser.profilePic} className="w-full h-full object-cover rounded-2xl" /> : <UserIcon className="w-12 h-12 m-7 text-slate-200" />}
+                       {viewingUser.profilePic ? <img src={viewingUser.profilePic} className="w-full h-full object-cover rounded-2xl aspect-square" /> : <UserIcon className="w-12 h-12 m-7 text-slate-200" />}
                     </div>
                     <h2 className="text-2xl font-black text-white tracking-tight">{viewingUser.name}</h2>
                     <p className="text-[11px] font-bold text-teal-50 uppercase tracking-[0.1em] mt-1 opacity-90">সদস্য আইডি: {toBengaliNumber(viewingUser.phone.slice(-4))}</p>
@@ -2569,7 +2742,7 @@ const AdminDashboard: React.FC = () => {
                        <div className="p-2 bg-purple-50 text-purple-600 rounded-xl"><Clock className="w-4 h-4" /></div>
                        <div>
                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">নিবন্ধন</p>
-                         <p className="text-[11px] font-black text-slate-800">{new Date(viewingUser.registeredAt).toLocaleDateString('bn-BD')}</p>
+                         <p className="text-[11px] font-black text-slate-800">{new Date(viewingUser.registeredAt).toLocaleDateString('en-GB')}</p>
                        </div>
                     </div>
                  </div>
@@ -2644,64 +2817,46 @@ const AdminDashboard: React.FC = () => {
                     )}
                  </div>
 
-                 {/* Admin Controls */}
-                 <div className="space-y-4 pt-2">
-                    <div className="bg-amber-50/50 p-5 rounded-[2.5rem] border border-amber-100 flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                          <div className="p-3 bg-white rounded-2xl shadow-sm">
-                             <Award className="w-5 h-5 text-amber-600" />
-                          </div>
-                          <div>
-                             <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest leading-none">স্থায়ী সদস্য</p>
-                             <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-1">হোমপেজে প্রদর্শিত হবে</p>
-                          </div>
-                       </div>
-                       <button 
-                          onClick={handleTogglePermanentMember}
-                          disabled={isSubmitting}
-                          className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isPermanentMember ? 'bg-amber-500' : 'bg-slate-200'}`}
-                       >
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isPermanentMember ? 'left-7' : 'left-1'}`}></div>
-                       </button>
-                    </div>
+                  {/* Admin Controls */}
+                  <div className="space-y-4 pt-2">
+                     <div className="bg-amber-50/50 p-5 rounded-[2.5rem] border border-amber-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                           <div className="p-3 bg-white rounded-2xl shadow-sm">
+                              <Award className="w-5 h-5 text-amber-600" />
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest leading-none">স্থায়ী সদস্য</p>
+                              <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-1">হোমপেজে প্রদর্শিত হবে</p>
+                           </div>
+                        </div>
+                        <button 
+                           onClick={handleTogglePermanentMember}
+                           disabled={isSubmitting}
+                           className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isPermanentMember ? 'bg-amber-500' : 'bg-slate-200'}`}
+                        >
+                           <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isPermanentMember ? 'left-7' : 'left-1'}`}></div>
+                        </button>
+                     </div>
 
-                    <div className="bg-rose-50/50 p-5 rounded-[2.5rem] border border-rose-100 flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                          <div className="p-3 bg-white rounded-2xl shadow-sm">
-                             <Trophy className="w-5 h-5 text-rose-600" />
-                          </div>
-                          <div>
-                             <p className="text-[10px] font-black text-rose-800 uppercase tracking-widest leading-none">লিডারবোর্ড</p>
-                             <p className="text-[8px] font-bold text-rose-600 uppercase tracking-widest mt-1">লিডারবোর্ডে প্রদর্শিত হবে</p>
-                          </div>
-                       </div>
-                       <button 
-                          onClick={handleToggleLeaderboard}
-                          disabled={isSubmitting}
-                          className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.showOnLeaderboard !== false ? 'bg-rose-500' : 'bg-slate-200'}`}
-                       >
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.showOnLeaderboard !== false ? 'left-7' : 'left-1'}`}></div>
-                       </button>
-                    </div>
+                     <div className="bg-rose-50/50 p-5 rounded-[2.5rem] border border-rose-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                           <div className="p-3 bg-white rounded-2xl shadow-sm">
+                              <Trophy className="w-5 h-5 text-rose-600" />
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-black text-rose-800 uppercase tracking-widest leading-none">লিডারবোর্ড</p>
+                              <p className="text-[8px] font-bold text-rose-600 uppercase tracking-widest mt-1">লিডারবোর্ডে প্রদর্শিত হবে</p>
+                           </div>
+                        </div>
+                        <button 
+                           onClick={handleToggleLeaderboard}
+                           disabled={isSubmitting}
+                           className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.showOnLeaderboard !== false ? 'bg-rose-500' : 'bg-slate-200'}`}
+                        >
+                           <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.showOnLeaderboard !== false ? 'left-7' : 'left-1'}`}></div>
+                        </button>
+                     </div>
 
-                    <div className="bg-emerald-50/50 p-5 rounded-[2.5rem] border border-emerald-100 flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                          <div className="p-3 bg-white rounded-2xl shadow-sm">
-                             <CreditCard className="w-5 h-5 text-emerald-600" />
-                          </div>
-                          <div>
-                             <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-none">আইডি কার্ড</p>
-                             <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest mt-1">আইডি কার্ড সক্রিয় করুন</p>
-                          </div>
-                       </div>
-                       <button 
-                          onClick={handleToggleIdCardInModal}
-                          disabled={isSubmitting}
-                          className={`w-12 h-6 rounded-full relative transition-all duration-300 ${viewingUser.isIdCardEnabled ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                       >
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${viewingUser.isIdCardEnabled ? 'left-7' : 'left-1'}`}></div>
-                       </button>
-                    </div>
 
                     <div className="bg-blue-50/50 p-5 rounded-[2.5rem] border border-blue-100 flex items-center justify-between">
                        <div className="flex items-center gap-3">
@@ -2722,6 +2877,38 @@ const AdminDashboard: React.FC = () => {
                        </button>
                     </div>
 
+                    <div className="bg-indigo-50/50 p-5 rounded-[2.5rem] border border-indigo-100 space-y-3">
+                       <div className="flex items-center gap-2 ml-1">
+                         <Bell className="w-4 h-4 text-indigo-600" />
+                         <p className="text-[10px] font-black text-indigo-800 uppercase tracking-widest">অ্যাপে মেসেজ পাঠান (Notification)</p>
+                       </div>
+                       <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            className="flex-grow p-4 bg-white border border-indigo-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" 
+                            placeholder="মেসেজ লিখুন..." 
+                            value={manualAppMessage} 
+                            onChange={e => setManualAppMessage(e.target.value)} 
+                          />
+                          <button 
+                            onClick={async () => {
+                              if (!viewingUser || !manualAppMessage.trim()) return;
+                              setIsSubmitting(true);
+                              try {
+                                await db.sendNotification(viewingUser.id, manualAppMessage.trim());
+                                setManualAppMessage('');
+                                alert('মেসেজ পাঠানো হয়েছে।');
+                              } catch (e: any) { alert(e.message); }
+                              finally { setIsSubmitting(false); }
+                            }} 
+                            disabled={isSubmitting}
+                            className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center"
+                          >
+                            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                          </button>
+                       </div>
+                    </div>
+
                     <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
                        <div className="flex items-center gap-2 ml-1">
                         <ShieldCheck className="w-4 h-4 text-teal-600" />
@@ -2735,25 +2922,6 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="bg-violet-50/50 p-5 rounded-[2.5rem] border border-violet-100 space-y-4">
-                       <div className="flex items-center gap-2 ml-1">
-                        <Calendar className="w-4 h-4 text-violet-600" />
-                        <p className="text-[10px] font-black text-violet-800 uppercase tracking-widest">যোগদান ও মেয়াদ শেষ হওয়ার তারিখ</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                         <div className="space-y-1.5">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">যোগদান</p>
-                            <input type="date" className="w-full p-4 bg-white border border-violet-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" value={userJoiningDate} onChange={e => setUserJoiningDate(e.target.value)} />
-                         </div>
-                         <div className="space-y-1.5">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">মেয়াদ শেষ</p>
-                            <input type="date" className="w-full p-4 bg-white border border-violet-100 rounded-2xl outline-none text-[12px] font-bold shadow-sm" value={userExpiryDate} onChange={e => setUserExpiryDate(e.target.value)} />
-                         </div>
-                      </div>
-                      <button onClick={handleUpdateDates} disabled={isSubmitting} className="w-full p-4 bg-violet-600 text-white rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-[12px] font-bold">
-                         {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5" /> আপডেট করুন</>}
-                      </button>
-                    </div>
 
                     <div className="bg-teal-50/50 p-5 rounded-[2.5rem] border border-teal-100 space-y-3">
                        <div className="flex items-center gap-2 ml-1">
@@ -2858,7 +3026,7 @@ const AdminDashboard: React.FC = () => {
                  {viewingAssistance.amount && viewingAssistance.amount > 0 && (
                    <div className="flex justify-between items-center px-4">
                       <p className="text-xs font-black text-slate-400 uppercase">প্রার্থিত অর্থ</p>
-                      <p className="text-2xl font-black text-rose-600">৳{toBengaliNumber(viewingAssistance.amount.toLocaleString())}</p>
+                      <p className="text-2xl font-black text-rose-600">৳{toBengaliNumber(viewingAssistance.amount.toLocaleString('en-US'))}</p>
                    </div>
                  )}
 
@@ -2870,7 +3038,7 @@ const AdminDashboard: React.FC = () => {
                          <div key={idx} className="relative">
                            <div className="absolute -left-[21px] top-1 w-3 h-3 bg-white border-2 border-teal-500 rounded-full"></div>
                            <p className="text-[10px] font-black text-teal-600 uppercase">{getAssistanceStatusLabel(event.status)}</p>
-                           <p className="text-[9px] text-slate-400 font-bold">{new Date(event.timestamp).toLocaleString()}</p>
+                           <p className="text-[9px] text-slate-400 font-bold">{new Date(event.timestamp).toLocaleString('en-GB')}</p>
                            {event.note && <p className="text-[10px] text-slate-600 font-medium mt-0.5">{event.note}</p>}
                          </div>
                        ))}
@@ -2948,6 +3116,7 @@ const AdminDashboard: React.FC = () => {
                     await db.deleteUser(userToDelete.id);
                     setUserToDelete(null);
                     setViewingUser(null);
+                    setManualAppMessage('');
                     alert("সদস্যকে সফলভাবে ডিলিট করা হয়েছে।");
                   } catch (error: any) {
                     alert("ডিলিট করতে সমস্যা হয়েছে।");
@@ -3134,7 +3303,7 @@ const AdminDashboard: React.FC = () => {
                       <div className="bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 flex items-center gap-5">
                         <div className="w-20 h-20 rounded-3xl bg-white border-4 border-white shadow-xl overflow-hidden shrink-0">
                           {db.getUser(viewingTransaction.userId)?.profilePic ? (
-                            <img src={db.getUser(viewingTransaction.userId)?.profilePic} className="w-full h-full object-cover" />
+                            <img src={db.getUser(viewingTransaction.userId)?.profilePic} className="w-full h-full object-cover aspect-square" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-slate-100">
                                <UserIcon className="w-8 h-8 text-slate-300" />
@@ -3192,7 +3361,7 @@ const AdminDashboard: React.FC = () => {
                           <div className="flex items-center justify-center gap-1 sm:gap-2">
                             <span className="text-3xl sm:text-4xl font-black text-white italic">৳</span>
                             <h3 className="text-5xl sm:text-6xl font-black text-white italic tracking-tighter leading-none">
-                              {toBengaliNumber(viewingTransaction.amount.toLocaleString())}
+                              {toBengaliNumber(viewingTransaction.amount.toLocaleString('en-US'))}
                             </h3>
                           </div>
                         </div>
@@ -3334,9 +3503,9 @@ const AdminDashboard: React.FC = () => {
                         <td className="p-2 sm:p-3">
                           <p className="font-black text-slate-800">General Donation</p>
                         </td>
-                        <td className="p-2 sm:p-3 text-center">৳{toBengaliNumber(selectedTxForInvoice.amount)}</td>
+                        <td className="p-2 sm:p-3 text-center">৳{toBengaliNumber(selectedTxForInvoice.amount.toLocaleString('en-US'))}</td>
                         <td className="p-2 sm:p-3 text-center">1</td>
-                        <td className="p-2 sm:p-3 text-right font-black">৳{toBengaliNumber(selectedTxForInvoice.amount)}</td>
+                        <td className="p-2 sm:p-3 text-right font-black">৳{toBengaliNumber(selectedTxForInvoice.amount.toLocaleString('en-US'))}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -3347,11 +3516,11 @@ const AdminDashboard: React.FC = () => {
                   <div className="w-full max-w-[140px] sm:max-w-[200px] space-y-1.5">
                     <div className="flex justify-between items-center text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase">
                       <p>Subtotal:</p>
-                      <p>৳{toBengaliNumber(selectedTxForInvoice.amount)}</p>
+                      <p>৳{toBengaliNumber(selectedTxForInvoice.amount.toLocaleString('en-US'))}</p>
                     </div>
                     <div className="bg-rose-600 p-2 sm:p-3 rounded-xl text-white flex justify-between items-center">
                       <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest">Total:</p>
-                      <p className="text-sm sm:text-lg font-black">৳{toBengaliNumber(selectedTxForInvoice.amount)}</p>
+                      <p className="text-sm sm:text-lg font-black">৳{toBengaliNumber(selectedTxForInvoice.amount.toLocaleString('en-US'))}</p>
                     </div>
                   </div>
                 </div>
@@ -3503,7 +3672,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Total Amount</p>
-                  <p className="text-3xl font-black text-slate-800 leading-none">BDT {monthlyTotalAmount.toLocaleString()}</p>
+                  <p className="text-3xl font-black text-slate-800 leading-none">BDT {monthlyTotalAmount.toLocaleString('en-US')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-5 pl-6">
@@ -3512,7 +3681,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Report Generated</p>
-                  <p className="text-3xl font-black text-slate-800 leading-none">{new Date().toLocaleDateString()}</p>
+                  <p className="text-3xl font-black text-slate-800 leading-none">{new Date().toLocaleDateString('en-GB')}</p>
                 </div>
               </div>
             </div>
@@ -3545,7 +3714,7 @@ const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="p-4 text-[12px] font-bold text-slate-500 text-center border-b border-slate-100">{t.transactionId}</td>
                       <td className="p-4 text-[12px] font-bold text-slate-500 text-center border-b border-slate-100">{t.fundType}</td>
-                      <td className="p-4 text-[12px] font-black text-slate-800 text-right border-b border-slate-100">BDT {t.amount.toLocaleString()}</td>
+                      <td className="p-4 text-[12px] font-black text-slate-800 text-right border-b border-slate-100">BDT {t.amount.toLocaleString('en-US')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -3555,13 +3724,13 @@ const AdminDashboard: React.FC = () => {
             {/* Footer Summary Bar */}
             <div className="bg-[#E6F2EF] rounded-2xl p-5 flex justify-between items-center mb-10 border border-[#D1E7E0]">
               <p className="text-lg font-black text-slate-700">Total Transactions: {filteredMonthlyTxs.length}</p>
-              <p className="text-lg font-black text-slate-700">Total Amount: BDT {monthlyTotalAmount.toLocaleString()}</p>
+              <p className="text-lg font-black text-slate-700">Total Amount: BDT {monthlyTotalAmount.toLocaleString('en-US')}</p>
             </div>
 
             {/* Meta Footer */}
             <div className="flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-auto">
               <p>Page 1 of 1</p>
-              <p>Report Generated: {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              <p>Report Generated: {new Date().toLocaleDateString('en-GB')} - {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
 
             {/* Bottom Decorative Pattern */}

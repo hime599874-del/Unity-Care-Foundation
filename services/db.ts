@@ -83,16 +83,24 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 let firestore: any;
 try {
+  const dbId = (firebaseConfig as any).firestoreDatabaseId;
+  // If dbId is "(default)", we should pass undefined to use the default database
+  const actualDbId = dbId && dbId !== '(default)' ? dbId : undefined;
+  
   firestore = initializeFirestore(app, {
     localCache: persistentLocalCache({
       tabManager: persistentMultipleTabManager()
     })
-  }, (firebaseConfig as any).firestoreDatabaseId);
+  }, actualDbId);
 } catch (e: any) {
   if (e.message && e.message.includes('already been called')) {
-    firestore = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+    const dbId = (firebaseConfig as any).firestoreDatabaseId;
+    const actualDbId = dbId && dbId !== '(default)' ? dbId : undefined;
+    firestore = getFirestore(app, actualDbId);
   } else {
-    throw e;
+    console.error("🔥 Firestore Initialization Error:", e);
+    // Fallback to basic getFirestore
+    firestore = getFirestore(app);
   }
 }
 
@@ -578,39 +586,51 @@ class FirebaseDB {
     
     const url = `https://panel2.smsbangladesh.com/api?user=jahid599874@gmail.com&password=${encodeURIComponent('Jahidul599874@')}&to=${formattedPhone}&text=${encodedMessage}`;
     
-    // Use proxy to read real-time response from API
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    // Try multiple proxies to bypass CORS and network issues
+    const proxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(url)}`
+    ];
     
-    try {
-      const response = await fetch(proxyUrl);
-      const text = await response.text();
-      console.log('SMS API Real-time Response:', text);
-      
-      // Check for success indicators from SMS Bangladesh API (1701 is success)
-      if (text.toLowerCase().includes('success') || text.includes('1701') || text.includes('sent')) {
-        try {
-          await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
-        } catch (e) {
-          console.error("Failed to update SMS stats (possibly quota exceeded):", e);
-        }
-        return { success: true, response: text };
-      } else {
-        throw new Error(text || 'API Error');
-      }
-    } catch (error) {
-      console.error('Error sending SMS via proxy:', error);
-      // Fallback to no-cors if proxy fails, but we won't get the response text
+    let lastError = null;
+    for (const proxyUrl of proxies) {
       try {
-        await fetch(url, { method: 'GET', mode: 'no-cors' });
-        try {
-          await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
-        } catch (e) {
-          console.error("Failed to update SMS stats (possibly quota exceeded):", e);
+        console.log(`Attempting SMS via proxy: ${proxyUrl.split('?')[0]}`);
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const text = await response.text();
+        console.log('SMS API Response:', text);
+        
+        // Check for success indicators from SMS Bangladesh API (1701 is success)
+        if (text.toLowerCase().includes('success') || text.includes('1701') || text.includes('sent')) {
+          try {
+            await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+          } catch (e) {
+            console.error("Failed to update SMS stats:", e);
+          }
+          return { success: true, response: text };
+        } else {
+          lastError = new Error(text || 'API Error');
         }
-        return { success: true, response: 'Sent (Opaque)' };
-      } catch (e) {
-        throw new Error('এসএমএস পাঠানো সম্ভব হয়নি।');
+      } catch (error) {
+        console.warn(`SMS Proxy failed (${proxyUrl.split('?')[0]}):`, error);
+        lastError = error;
       }
+    }
+    
+    // Fallback to no-cors if all proxies fail
+    try {
+      console.log('All SMS proxies failed, attempting direct no-cors fetch...');
+      await fetch(url, { method: 'GET', mode: 'no-cors' });
+      try {
+        await updateDoc(doc(firestore, "metadata", "stats"), { totalSmsSent: increment(1) });
+      } catch (e) {}
+      return { success: true, response: 'Sent (Opaque Fallback)' };
+    } catch (e) {
+      console.error('Final SMS fallback failed:', e);
+      throw lastError || new Error('এসএমএস পাঠানো সম্ভব হয়নি।');
     }
   }
 

@@ -395,7 +395,7 @@ const RecipientManagementPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-slate-50 p-3 rounded-2xl">
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">পরিমাণ</p>
-                    <p className="text-xs font-black text-rose-600">৳{toBengaliNumber(r.amount.toLocaleString())}</p>
+                    <p className="text-xs font-black text-rose-600">৳{toBengaliNumber(r.amount.toLocaleString('en-US'))}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-2xl">
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">তারিখ</p>

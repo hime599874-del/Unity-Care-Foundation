@@ -14,30 +14,31 @@ import { useTheme } from '../services/ThemeContext';
 import { toPng } from 'html-to-image';
 import { Moon, Sun } from 'lucide-react';
 
-const compressImage = (base64Str: string, maxWidth = 400, maxHeight = 400): Promise<string> => {
+const compressImage = (base64Str: string, size = 400): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      if (width > height) {
-        if (width > maxWidth) {
-          height *= maxWidth / width;
-          width = maxWidth;
-        }
-      } else {
-        if (height > maxHeight) {
-          width *= maxHeight / height;
-          width = maxHeight;
-        }
-      }
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = size;
+      canvas.height = size;
       const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
+      
+      let sourceX = 0;
+      let sourceY = 0;
+      let sourceWidth = img.width;
+      let sourceHeight = img.height;
+      
+      if (img.width > img.height) {
+        sourceWidth = img.height;
+        sourceX = (img.width - img.height) / 2;
+      } else {
+        sourceHeight = img.width;
+        sourceY = (img.height - img.width) / 2;
+      }
+      
+      ctx?.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, size, size);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
   });
 };
@@ -168,14 +169,16 @@ const ProfilePage: React.FC = () => {
 
       <div className="p-6 flex flex-col items-center">
         <div className="relative mb-6 mt-4">
-          <div className="w-36 h-36 rounded-3xl glass-card overflow-hidden flex items-center justify-center relative border-4 border-white/50 dark:border-slate-800/50">
+          <div className="w-36 h-36 rounded-3xl glass-card overflow-hidden relative border-4 border-white/50 dark:border-slate-800/50 shadow-2xl">
             {currentUser?.profilePic ? (
-              <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
+              <img src={currentUser.profilePic} className="w-full h-full object-cover block aspect-square" alt="Profile" />
             ) : (
-              <User className="w-16 h-16 text-gray-200 dark:text-slate-700" />
+              <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                <User className="w-16 h-16 text-gray-300 dark:text-slate-700" />
+              </div>
             )}
             {isUploading && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-10">
                 <Loader2 className="w-8 h-8 text-white animate-spin" />
               </div>
             )}
@@ -427,7 +430,7 @@ const ProfilePage: React.FC = () => {
                   <div className="w-36 h-36 bg-white rounded-3xl p-1 shadow-2xl border border-slate-200 rotate-2">
                     <div className="w-full h-full bg-slate-100 rounded-2xl overflow-hidden border-2 border-white -rotate-2">
                       {currentUser.profilePic ? (
-                        <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Profile" />
+                        <img src={currentUser.profilePic} className="w-full h-full object-cover aspect-square" alt="Profile" />
                       ) : (
                         <User className="w-16 h-16 m-10 text-slate-200" />
                       )}
@@ -467,12 +470,23 @@ const ProfilePage: React.FC = () => {
                    </div>
                 </div>
 
-                {/* QR Code Area - Removed per user request */}
-                <div className="mt-auto mb-10 relative w-full flex justify-center">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {language === 'bn' ? 'ইউনিটি কেয়ার ফাউন্ডেশন' : 'Unity Care Foundation'}
-                  </div>
-                </div>
+                 {/* QR Code Area - Restored per user request */}
+                 <div className="mt-auto mb-6 relative w-full flex flex-col items-center">
+                   {currentUser.isQrEnabled && (
+                     <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100 mb-3">
+                       <QRCodeSVG 
+                         value={currentUser.id} 
+                         size={60} 
+                         level="H"
+                         includeMargin={false}
+                         fgColor="#0D9488"
+                       />
+                     </div>
+                   )}
+                   <div className="text-[10px] font-black text-teal-600 uppercase tracking-[0.3em] italic">
+                     {language === 'bn' ? 'ইউনিটি কেয়ার ফাউন্ডেশন' : 'Unity Care Foundation'}
+                   </div>
+                 </div>
               </div>
 
               {/* Bottom Brand Bar */}

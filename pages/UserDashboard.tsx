@@ -149,9 +149,9 @@ const UserDashboard: React.FC = () => {
       {/* Top Profile Header */}
       <div className="px-6 pt-8 pb-4 flex justify-between items-center glass-nav sticky top-0 z-50">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 relative">
+          <div className="w-14 h-14 rounded-2xl border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 relative aspect-square">
             <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
-            {currentUser?.profilePic ? <img src={currentUser.profilePic} className="w-full h-full object-cover relative z-10" alt="Profile" /> : <UserIcon className="w-6 h-6 text-white relative z-10" />}
+            {currentUser?.profilePic ? <img src={currentUser.profilePic} className="w-full h-full object-cover relative z-10 aspect-square" alt="Profile" /> : <UserIcon className="w-6 h-6 text-white relative z-10" />}
             {!db.getIsOnline() && (
               <div className="absolute top-0 right-0 bg-rose-500 p-1 rounded-bl-lg z-20 animate-pulse">
                 <WifiOff className="w-2.5 h-2.5 text-white" />
@@ -317,7 +317,7 @@ const UserDashboard: React.FC = () => {
             { icon: <img src="https://img.icons8.com/fluency/96/idea.png" className="w-9 h-9 object-contain" alt="Suggestion" />, label: t('suggestion'), color: 'from-lime-400 via-emerald-500 to-teal-600', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },
             { icon: <img src="https://img.icons8.com/fluency/96/scales.png" className="w-9 h-9 object-contain" alt="Policy" />, label: t('policy'), color: 'from-slate-600 via-slate-700 to-slate-900', glowColor: '#475569', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
             { icon: <img src="https://img.icons8.com/fluency/96/megaphone.png" className="w-9 h-9 object-contain" alt="Complaint" />, label: t('complaint'), color: 'from-rose-500 via-pink-600 to-purple-700', glowColor: '#F43F5E', action: () => setShowComplaintModal(true) },
-            { icon: <img src="https://i.ibb.co/Pz0PsqC6/bdace8892d77d0557f2b620e89484dc2-1.jpg" className="w-10 h-10 object-cover rounded-full" alt="Payment" />, label: t('payment'), color: 'from-blue-500 via-indigo-600 to-violet-700', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
+            { icon: <img src="https://i.ibb.co/Pz0PsqC6/bdace8892d77d0557f2b620e89484dc2-1.jpg" className="w-10 h-10 object-cover rounded-full aspect-square" alt="Payment" />, label: t('payment'), color: 'from-blue-500 via-indigo-600 to-violet-700', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
             { icon: <img src="https://img.icons8.com/fluency/96/receipt.png" className="w-10 h-10 object-contain" alt="Expenses" />, label: t('expenses'), color: 'from-rose-500 via-rose-700 to-purple-900', glowColor: '#E11D48', path: '/expenses' },
             { icon: <img src="https://img.icons8.com/fluency/96/customer-support.png" className="w-9 h-9 object-contain" alt="Contact" />, label: t('contact'), color: 'from-pink-500 via-rose-600 to-orange-600', glowColor: '#EC4899', action: () => setShowContactModal(true) },
             { icon: <img src="https://img.icons8.com/fluency/96/bill.png" className="w-10 h-10 object-contain" alt="Vouchers" />, label: t('vouchers'), color: 'from-blue-500 via-indigo-700 to-purple-800', glowColor: '#2563EB', path: '/vouchers' },
@@ -412,31 +412,65 @@ const UserDashboard: React.FC = () => {
 
       {/* Notification Modal */}
       {showNotifs && (
-        <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 animate-in slide-in-from-bottom duration-300">
-           <div className="bg-[#0D9488] dark:bg-[#065F46] pt-10 pb-16 px-6 rounded-b-[4rem] relative overflow-hidden flex items-center gap-4">
+        <div className="fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 animate-in slide-in-from-bottom duration-300 flex flex-col">
+           {/* Compact Header */}
+           <div className="bg-teal-600 dark:bg-teal-900 pt-10 pb-6 px-5 relative overflow-hidden shrink-0">
               <div className="absolute top-[-20px] left-[-20px] w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shadow-xl border border-white/30 relative overflow-hidden shrink-0">
-                 <div className="absolute inset-0 bg-white/10"></div>
-                 <img src="https://img.icons8.com/fluency/96/appointment-reminders.png" className="w-12 h-12 relative z-10 object-contain" alt="Notification" />
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-white shadow-lg border border-white/30 relative overflow-hidden">
+                     <Bell className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white tracking-tight leading-none">{t('notifications')}</h3>
+                    <p className="text-[9px] font-bold text-white/60 uppercase tracking-[0.2em] mt-1">{toBengaliNumber(notifications.length)} {t('total_messages')}</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowNotifs(false)} className="w-9 h-9 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center text-white active:scale-90 transition-all">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <h3 className="text-2xl font-black text-white tracking-tight">{t('notifications')}</h3>
-              <button onClick={() => setShowNotifs(false)} className="ml-auto w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:scale-90 transition-all">
-                <X className="w-7 h-7" />
-              </button>
            </div>
-           <div className="px-6 -mt-8 space-y-4 h-[calc(100vh-140px)] overflow-y-auto no-scrollbar pb-10">
+
+           {/* Content Area */}
+           <div className="flex-grow overflow-y-auto no-scrollbar px-4 py-5 space-y-3">
               {notifications.length > 0 ? (
-                notifications.map((n) => (
-                  <div key={n.id} className={`bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border flex flex-col gap-3 transition-all ${!n.isRead ? 'border-teal-100 ring-2 ring-teal-500/5' : 'border-slate-50 opacity-80'}`}>
-                     <div className="flex justify-between items-center">
-                        <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">{t('admin_message')}</p>
-                        <div className="flex items-center gap-1.5 opacity-30"><Clock className="w-3 h-3" /><p className="text-[9px] font-black">{formatTime(n.timestamp)}</p></div>
+                notifications.sort((a, b) => b.timestamp - a.timestamp).map((n) => (
+                  <div 
+                    key={n.id} 
+                    className={`bg-white dark:bg-slate-900 p-3.5 rounded-2xl border transition-all duration-300 relative overflow-hidden ${
+                      !n.isRead 
+                        ? 'border-teal-500/30 shadow-md shadow-teal-500/5 ring-1 ring-teal-500/5' 
+                        : 'border-slate-100 dark:border-slate-800 shadow-sm opacity-90'
+                    }`}
+                  >
+                     {!n.isRead && (
+                       <div className="absolute top-0 left-0 w-1 h-full bg-teal-500"></div>
+                     )}
+                     
+                     <div className="flex justify-between items-start mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-1 h-1 rounded-full ${!n.isRead ? 'bg-teal-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                          <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t('admin_message')}</p>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
+                          <Clock className="w-2.5 h-2.5" />
+                          <p className="text-[8px] font-bold">{formatTime(n.timestamp)}</p>
+                        </div>
                      </div>
-                     <p className="text-[15px] font-bold text-slate-800 leading-relaxed">{n.message}</p>
+                     
+                     <p className="text-[12px] font-bold text-slate-800 dark:text-slate-200 leading-relaxed pl-3">
+                       {n.message}
+                     </p>
                   </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center py-32 opacity-20"><img src="https://img.icons8.com/fluency/96/appointment-reminders.png" className="w-20 h-20 mb-4 object-contain" alt="No Notifications" /><p className="text-sm font-black uppercase tracking-widest">{t('no_notifications')}</p></div>
+                <div className="flex flex-col items-center justify-center py-32">
+                  <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mb-4 opacity-40">
+                    <Bell className="w-10 h-10 text-slate-400" />
+                  </div>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('no_notifications')}</p>
+                </div>
               )}
            </div>
         </div>
@@ -844,9 +878,9 @@ const UserDashboard: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {db.getUsers().filter(u => u.isPermanentMember).map((member) => (
                     <div key={member.id} className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center group hover:shadow-md transition-all">
-                      <div className="w-20 h-20 rounded-2xl bg-slate-100 p-1 mb-3 shadow-inner relative overflow-hidden border-2 border-slate-50 group-hover:scale-105 transition-transform">
+                      <div className="w-20 h-20 rounded-2xl bg-slate-100 p-1 mb-3 shadow-inner relative overflow-hidden border-2 border-slate-50 group-hover:scale-105 transition-transform aspect-square">
                         {member.profilePic ? (
-                          <img src={member.profilePic} className="w-full h-full object-cover rounded-xl" alt={member.name} />
+                          <img src={member.profilePic} className="w-full h-full object-cover rounded-xl aspect-square" alt={member.name} />
                         ) : (
                           <UserIcon className="w-8 h-8 m-5 text-slate-300" />
                         )}

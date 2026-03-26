@@ -80,6 +80,7 @@ export const translations: Translations = {
   notifications: { bn: 'নোটিফিকেশন', en: 'Notifications' },
   unread: { bn: 'অপঠিত', en: 'Unread' },
   all_marked_read: { bn: 'সবগুলো পড়া হয়েছে হিসেবে চিহ্নিত করা হয়েছে', en: 'All marked as read' },
+  total_messages: { bn: 'টি বার্তা', en: 'Messages' },
   admin_message: { bn: 'অ্যাডমিন বার্তা', en: 'Admin Message' },
   send_suggestion: { bn: 'পরামর্শ পাঠান', en: 'Send Suggestion' },
   suggestion_placeholder: { bn: 'আপনার পরামর্শ লিখুন...', en: 'Write your suggestion here...' },

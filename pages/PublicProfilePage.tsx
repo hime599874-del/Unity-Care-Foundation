@@ -109,12 +109,12 @@ const PublicProfilePage: React.FC = () => {
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/20 rounded-full -ml-24 -mb-24 blur-2xl"></div>
         
         <div className="relative z-10 flex flex-col items-center">
-          <div className="w-32 h-32 bg-white rounded-3xl p-1 shadow-2xl mb-4 relative group">
+          <div className="w-32 h-32 bg-white rounded-3xl p-1 shadow-2xl mb-4 relative group aspect-square">
             {user.profilePic ? (
               <img 
                 src={user.profilePic} 
                 alt={user.name} 
-                className="w-full h-full object-cover rounded-2xl"
+                className="w-full h-full object-cover rounded-2xl aspect-square"
                 referrerPolicy="no-referrer"
               />
             ) : (

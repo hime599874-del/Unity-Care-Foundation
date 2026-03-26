@@ -66,6 +66,7 @@ export interface User {
   showOnLeaderboard?: boolean;
   whatsapp?: string;
   facebook?: string;
+  isQrEnabled?: boolean;
 }
 
 export interface Transaction {
