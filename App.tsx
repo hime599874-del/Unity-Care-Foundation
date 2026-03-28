@@ -3,7 +3,7 @@ import React, { useState, useEffect, createContext, useContext, lazy, Suspense }
 import { HashRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { User, UserStatus, ActivityType } from './types';
 import { db } from './services/db';
-import { Heart, Home, CreditCard, User as UserIcon, Loader2 } from 'lucide-react';
+import { Heart, Home, CreditCard, User as UserIcon, Loader2, Settings } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './services/LanguageContext';
 import { ThemeProvider } from './services/ThemeContext';
 import { AuthProvider, useAuth } from './services/AuthContext';
@@ -83,12 +83,66 @@ const ActivityTracker: React.FC = () => {
   return null;
 };
 
+const MaintenancePage = () => {
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-teal-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-teal-500/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl p-8 space-y-6 relative z-10 border border-slate-100 dark:border-slate-700"
+      >
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          className="w-24 h-24 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"
+        >
+          <Settings className="w-12 h-12" strokeWidth={1.5} />
+        </motion.div>
+        
+        <h1 className="text-2xl font-black text-slate-800 dark:text-white font-['Baloo_Da_2'] tracking-wide">
+          সিস্টেম আপডেট চলছে
+        </h1>
+        
+        <div className="space-y-4">
+          <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+            আপনাকে আরও ভালো সেবা দেওয়ার লক্ষ্যে আমাদের অ্যাপ্লিকেশনের রক্ষণাবেক্ষণ ও আপডেটের কাজ চলছে।
+          </p>
+          <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 p-4 rounded-2xl text-sm font-medium border border-amber-100 dark:border-amber-900/50">
+            সাময়িক এই অসুবিধার জন্য আমরা আন্তরিকভাবে দুঃখিত। খুব শীঘ্রই আমরা ফিরে আসব ইনশাআল্লাহ।
+          </div>
+        </div>
+        
+        <div className="pt-8 mt-4 border-t border-slate-100 dark:border-slate-700">
+          <Link to="/admin-auth" className="flex items-center justify-center gap-2 text-teal-600 dark:text-teal-500 hover:opacity-80 transition-opacity">
+            <Heart className="w-5 h-5 fill-current" />
+            <p className="text-sm font-bold tracking-widest uppercase">
+              Unity Care Foundation
+            </p>
+          </Link>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const AppContent: React.FC = () => {
-  const { currentUser, adminUser, isAdmin, isOnline } = useAuth();
+  const { currentUser, adminUser, isAdmin, isOnline, maintenanceMode } = useAuth();
   const location = useLocation();
   const isDashboard = location.pathname === '/dashboard';
   const showNav = currentUser && isDashboard;
   const effectiveUser = adminUser || currentUser;
+
+  const isMaintenanceActive = maintenanceMode && !isAdmin && !location.pathname.startsWith('/admin');
+
+  if (isMaintenanceActive) {
+    return <MaintenancePage />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

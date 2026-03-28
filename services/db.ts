@@ -524,23 +524,27 @@ class FirebaseDB {
         const txData = txSnap.data();
         if (txData.status === TransactionStatus.APPROVED) return;
         
-        amount = txData.amount;
+        amount = Number(txData.amount) || 0;
         
         const statsRef = doc(firestore, "metadata", "stats");
-        transaction.update(txDocRef, { status: TransactionStatus.APPROVED });
-        transaction.set(statsRef, { totalCollection: increment(txData.amount) }, { merge: true });
-
+        
+        let userSnap = null;
+        let userRef = null;
         if (txData.userId) {
-          const userRef = doc(firestore, "users", txData.userId);
-          const userSnap = await transaction.get(userRef);
-          if (userSnap.exists()) {
-            userPhone = userSnap.data().phone;
-            userName = userSnap.data().name || 'Member';
-            transaction.update(userRef, { 
-              totalDonation: increment(txData.amount), 
-              transactionCount: increment(1) 
-            });
-          }
+          userRef = doc(firestore, "users", txData.userId);
+          userSnap = await transaction.get(userRef);
+        }
+
+        transaction.update(txDocRef, { status: TransactionStatus.APPROVED });
+        transaction.set(statsRef, { totalCollection: increment(amount) }, { merge: true });
+
+        if (userSnap && userSnap.exists() && userRef) {
+          userPhone = userSnap.data().phone;
+          userName = userSnap.data().name || 'Member';
+          transaction.update(userRef, { 
+            totalDonation: increment(amount), 
+            transactionCount: increment(1) 
+          });
         }
       });
 

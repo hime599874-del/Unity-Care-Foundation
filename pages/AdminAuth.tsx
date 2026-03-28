@@ -55,7 +55,7 @@ const AdminAuth: React.FC = () => {
         <div className="bg-teal-600 p-4 rounded-3xl w-fit mx-auto mb-6 shadow-lg shadow-teal-100">
           <Lock className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-slate-800 text-xl font-bold mb-1">এডমিন প্রবেশ</h2>
+        <h2 className="text-slate-800 text-xl font-bold mb-1">IT System</h2>
         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-8">Secure Access Only</p>
         
         <form onSubmit={handleLogin} className="space-y-6">

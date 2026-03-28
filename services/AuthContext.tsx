@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   loadingStep: string;
   isOnline: boolean;
+  maintenanceMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +22,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [loadingStep, setLoadingStep] = useState('Initializing...');
   const [isOnline, setIsOnline] = useState(db.getIsOnline());
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
 
   const setCurrentUserPersisted = (user: User | null) => {
     setCurrentUser(user);
@@ -46,6 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoadingStep('Connecting to database...');
         // Wait for database to sync initial data
         await db.whenReady();
+        setMaintenanceMode(db.getContactConfig()?.maintenanceMode || false);
         
         setLoadingStep('Verifying session...');
         const userId = localStorage.getItem('current_user_id');
@@ -96,6 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const unsubscribe = db.subscribe(() => {
       setIsOnline(db.getIsOnline());
+      setMaintenanceMode(db.getContactConfig()?.maintenanceMode || false);
     });
     return unsubscribe;
   }, []);
@@ -123,6 +127,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   currentUser?.designation === 'Admin' || 
                   currentUser?.canManageRecipients === true;
 
+  // Auto logout if maintenance mode is enabled and user is not admin
+  useEffect(() => {
+    if (maintenanceMode && currentUser && !isAdmin) {
+      setCurrentUserPersisted(null);
+    }
+  }, [maintenanceMode, currentUser, isAdmin]);
+
   return (
     <AuthContext.Provider value={{ 
       currentUser, 
@@ -132,7 +143,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAdmin, 
       isLoading,
       loadingStep,
-      isOnline
+      isOnline,
+      maintenanceMode
     }}>
       {children}
     </AuthContext.Provider>
