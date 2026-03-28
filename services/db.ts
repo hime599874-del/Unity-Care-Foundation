@@ -298,143 +298,127 @@ class FirebaseDB {
       });
     }
     
-    this.initRealtimeSync(); 
+    this.loadData(); 
   }
 
   getIsOnline(): boolean { return this.isOnline; }
 
-  private initRealtimeSync() {
+  private async loadData(collectionsToRefresh?: string[]) {
     try {
-      let usersInitialized = false;
-      let statsInitialized = false;
-      let transactionsInitialized = false;
-      let expensesInitialized = false;
-
-      const checkReady = () => {
-        if (usersInitialized && statsInitialized && transactionsInitialized && expensesInitialized && !this.isReady) {
-          this.isReady = true;
-          this.resolveReady();
-        }
-      };
-
-      onSnapshot(collection(firestore, "users"), (snapshot) => {
-        this.users = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as User[];
-        this.updateLocalStats();
-        this.notify();
-        if (!usersInitialized) {
-          usersInitialized = true;
-          checkReady();
-        }
-      }, (error) => {
-        safeError("Firestore: Users sync error:", error);
-        if (!usersInitialized) {
-          usersInitialized = true;
-          checkReady();
-        }
-      });
-
-      // Limit initial transactions to 500 for performance, can be adjusted if needed
-      onSnapshot(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(500)), (snapshot) => {
-        this.transactions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Transaction[];
-        this.updateLocalStats();
-        this.notify();
-        if (!transactionsInitialized) {
-          transactionsInitialized = true;
-          checkReady();
-        }
-      }, (error) => {
-        safeError("Firestore: Transactions sync error:", error);
-        if (!transactionsInitialized) {
-          transactionsInitialized = true;
-          checkReady();
-        }
-      });
-
-      onSnapshot(query(collection(firestore, "assistance_requests"), orderBy("timestamp", "desc")), (snapshot) => {
-        this.assistanceRequests = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as AssistanceRequest[];
-        this.notify();
-      }, (error) => safeError("Firestore: Assistance sync error:", error));
-
-      onSnapshot(collection(firestore, "expenses"), (snapshot) => {
-        this.expenses = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Expense[];
-        this.notify();
-        if (!expensesInitialized) {
-          expensesInitialized = true;
-          checkReady();
-        }
-      }, (error) => {
-        safeError("Firestore: Expenses sync error:", error);
-        if (!expensesInitialized) {
-          expensesInitialized = true;
-          checkReady();
-        }
-      });
-
-      onSnapshot(collection(firestore, "projects"), (snapshot) => {
-        this.projects = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as ProjectProgress[];
-        this.notify();
-      }, (error) => safeError("Firestore: Projects sync error:", error));
-
-      onSnapshot(query(collection(firestore, "suggestions"), orderBy("timestamp", "desc")), (snapshot) => {
-        this.suggestions = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Suggestion[];
-        this.notify();
-      }, (error) => safeError("Firestore: Suggestions sync error:", error));
-
-      onSnapshot(query(collection(firestore, "complaints"), orderBy("timestamp", "desc")), (snapshot) => {
-        this.complaints = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Complaint[];
-        this.notify();
-      }, (error) => safeError("Firestore: Complaints sync error:", error));
-
-      onSnapshot(query(collection(firestore, "activities"), orderBy("timestamp", "desc")), (snapshot) => {
-        this.activities = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as MemberActivity[];
-        this.notify();
-      }, (error) => safeError("Firestore: Activities sync error:", error));
-
-      onSnapshot(query(collection(firestore, "recipients"), orderBy("timestamp", "desc")), (snapshot) => {
-        this.recipients = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as RecipientInfo[];
-        this.notify();
-      }, (error) => safeError("Firestore: Recipients sync error:", error));
-
-      onSnapshot(query(collection(firestore, "sms_history"), orderBy("timestamp", "desc"), limit(50)), (snapshot) => {
-        this.smsHistory = snapshot.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as SmsRecord[];
-        this.notify();
-      }, (error) => safeError("Firestore: SMS History sync error:", error));
-
-      onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
-        if (snapshot.exists()) {
-          const data = toPlainObject(snapshot.data());
-          if (data) {
-            this.contactConfig = data as ContactConfig;
-            this.notify();
+      const refreshAll = !collectionsToRefresh || collectionsToRefresh.length === 0;
+      
+      if (refreshAll) {
+        // Keep real-time listeners for single metadata documents (very low cost: 1 read per change)
+        onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
+          if (snapshot.exists()) {
+            const data = toPlainObject(snapshot.data());
+            if (data) {
+              this.contactConfig = data as ContactConfig;
+              this.notify();
+            }
           }
-        }
-      });
+        });
 
-      onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
-        if (snapshot.exists()) {
-          const data = toPlainObject(snapshot.data());
-          if (data) {
-            this.stats = { 
-              ...this.stats, 
-              totalCollection: data.totalCollection || 0, 
-              totalExpense: data.totalExpense || 0,
-              totalSmsSent: data.totalSmsSent || 0
-            };
-            this.notify();
+        onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
+          if (snapshot.exists()) {
+            const data = toPlainObject(snapshot.data());
+            if (data) {
+              this.stats = { 
+                ...this.stats, 
+                totalCollection: data.totalCollection || 0, 
+                totalExpense: data.totalExpense || 0,
+                totalSmsSent: data.totalSmsSent || 0
+              };
+              this.notify();
+            }
           }
-        }
-        if (!statsInitialized) {
-          statsInitialized = true;
-          checkReady();
-        }
-      }, (error) => {
-        safeError("Firestore: Stats sync error:", error);
-        if (!statsInitialized) {
-          statsInitialized = true;
-          checkReady();
-        }
-      });
-    } catch (e) { safeError("Firestore: Initialization catch block:", e); }
+        });
+      }
+
+      const promises: Promise<void>[] = [];
+
+      if (refreshAll || collectionsToRefresh.includes('users')) {
+        promises.push(getDocs(collection(firestore, "users")).then(snap => {
+          this.users = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as User[];
+        }));
+      }
+      
+      if (refreshAll || collectionsToRefresh.includes('transactions')) {
+        promises.push(getDocs(query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(500))).then(snap => {
+          this.transactions = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Transaction[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('assistance_requests')) {
+        promises.push(getDocs(query(collection(firestore, "assistance_requests"), orderBy("timestamp", "desc"))).then(snap => {
+          this.assistanceRequests = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as AssistanceRequest[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('expenses')) {
+        promises.push(getDocs(collection(firestore, "expenses")).then(snap => {
+          this.expenses = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Expense[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('projects')) {
+        promises.push(getDocs(collection(firestore, "projects")).then(snap => {
+          this.projects = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as ProjectProgress[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('suggestions')) {
+        promises.push(getDocs(query(collection(firestore, "suggestions"), orderBy("timestamp", "desc"))).then(snap => {
+          this.suggestions = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Suggestion[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('complaints')) {
+        promises.push(getDocs(query(collection(firestore, "complaints"), orderBy("timestamp", "desc"))).then(snap => {
+          this.complaints = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as Complaint[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('activities')) {
+        promises.push(getDocs(query(collection(firestore, "activities"), orderBy("timestamp", "desc"))).then(snap => {
+          this.activities = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as MemberActivity[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('recipients')) {
+        promises.push(getDocs(query(collection(firestore, "recipients"), orderBy("timestamp", "desc"))).then(snap => {
+          this.recipients = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as RecipientInfo[];
+        }));
+      }
+
+      if (refreshAll || collectionsToRefresh.includes('sms_history')) {
+        promises.push(getDocs(query(collection(firestore, "sms_history"), orderBy("timestamp", "desc"), limit(50))).then(snap => {
+          this.smsHistory = snap.docs.map(d => ({ id: d.id, ...toPlainObject(d.data()) })) as SmsRecord[];
+        }));
+      }
+
+      await Promise.all(promises);
+
+      this.updateLocalStats();
+      this.notify();
+      
+      if (!this.isReady) {
+        this.isReady = true;
+        this.resolveReady();
+      }
+    } catch (e) { 
+      safeError("Firestore: Data loading error:", e); 
+      // Resolve anyway so the app doesn't hang forever
+      if (!this.isReady) {
+        this.isReady = true;
+        this.resolveReady();
+      }
+    }
+  }
+
+  // Allow manual refresh of data
+  async refreshData(collectionsToRefresh?: string[]) {
+    await this.loadData(collectionsToRefresh);
   }
 
   private updateLocalStats() {
@@ -493,21 +477,25 @@ class FirebaseDB {
       lastActive: Date.now() 
     });
     await setDoc(doc(firestore, "users", `u_${phoneId}`), cleanData);
+    await this.refreshData(['users']);
   }
 
   async submitTransaction(txData: any) {
     const cleanTx = sanitizeForUpload({ ...txData, status: TransactionStatus.PENDING, timestamp: Date.now() });
     await addDoc(collection(firestore, "transactions"), cleanTx);
+    await this.refreshData(['transactions']);
   }
 
   async submitSuggestion(userId: string, userName: string, message: string) {
     const cleanData = sanitizeForUpload({ userId, userName, message, timestamp: Date.now() });
     await addDoc(collection(firestore, "suggestions"), cleanData);
+    await this.refreshData(['suggestions']);
   }
 
   async submitComplaint(userId: string, userName: string, message: string) {
     const cleanData = sanitizeForUpload({ userId, userName, message, timestamp: Date.now() });
     await addDoc(collection(firestore, "complaints"), cleanData);
+    await this.refreshData(['complaints']);
   }
 
   async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Manual', customDate?: string, fundType: FundType = 'General') {
@@ -520,6 +508,7 @@ class FirebaseDB {
       transaction.update(userRef, { totalDonation: increment(amount), transactionCount: increment(1) });
       transaction.set(statsRef, { totalCollection: increment(amount) }, { merge: true });
     });
+    await this.refreshData(['transactions', 'users']);
   }
 
   async approveTransaction(txId: string) {
@@ -577,6 +566,7 @@ class FirebaseDB {
       console.error("Transaction approval failed:", error);
       throw error;
     }
+    await this.refreshData(['transactions', 'users']);
   }
 
   async sendGenericSms(phone: string, message: string) {
@@ -641,6 +631,7 @@ class FirebaseDB {
   async updateSmsRecord(id: string, data: Partial<SmsRecord>): Promise<void> {
     const docRef = doc(firestore, 'sms_history', id);
     await updateDoc(docRef, data);
+    await this.refreshData(['sms_history']);
   }
 
   async sendManualSms(txId: string) {
@@ -657,6 +648,7 @@ class FirebaseDB {
     
     await this.sendGenericSms(userData.phone, message);
     await updateDoc(doc(firestore, "transactions", txId), { smsSent: true });
+    await this.refreshData(['transactions']);
     return message;
   }
 
@@ -679,6 +671,7 @@ class FirebaseDB {
       }
     }
     await updateDoc(doc(firestore, "transactions", txId), { status: TransactionStatus.REJECTED });
+    await this.refreshData(['transactions']);
   }
   
   async deleteTransaction(txId: string) {
@@ -720,6 +713,7 @@ class FirebaseDB {
         transaction.delete(txDocRef);
       });
       console.log("Transaction deletion successful");
+      await this.refreshData(['transactions', 'users']);
     } catch (error) {
       console.error("Error in deleteTransaction transaction:", error);
       throw error;
@@ -737,6 +731,7 @@ class FirebaseDB {
       transaction.set(expRef, sanitizeForUpload({ amount, reason, date: new Date().toISOString().split('T')[0], timestamp: Date.now(), proofImage }));
       transaction.set(statsRef, { totalExpense: increment(amount) }, { merge: true });
     });
+    await this.refreshData(['expenses']);
   }
 
   async deleteExpense(id: string, amount: number) {
@@ -746,20 +741,24 @@ class FirebaseDB {
       transaction.delete(expRef);
       transaction.set(statsRef, { totalExpense: increment(-amount) }, { merge: true });
     });
+    await this.refreshData(['expenses']);
   }
 
   async addProject(projectData: any) {
     const cleanData = sanitizeForUpload({ ...projectData, timestamp: Date.now() });
     await addDoc(collection(firestore, "projects"), cleanData);
+    await this.refreshData(['projects']);
   }
 
   async updateProject(id: string, projectData: any) {
     const cleanData = sanitizeForUpload(projectData);
     await updateDoc(doc(firestore, "projects", id), cleanData);
+    await this.refreshData(['projects']);
   }
 
   async deleteProject(id: string) {
     await deleteDoc(doc(firestore, "projects", id));
+    await this.refreshData(['projects']);
   }
 
   async logActivity(userId: string, userName: string, type: ActivityType, description: string, path?: string) {
@@ -773,13 +772,17 @@ class FirebaseDB {
         timestamp: Date.now()
       });
       await addDoc(collection(firestore, "activities"), activity);
+      await this.refreshData(['activities']);
     } catch (e) {
       safeError("Firestore: Activity logging error:", e);
     }
   }
 
   async updateLastActive(userId: string) { try { await updateDoc(doc(firestore, "users", userId), { lastActive: Date.now() }); } catch (e) {} }
-  async deleteUser(id: string) { await deleteDoc(doc(firestore, "users", id)); }
+  async deleteUser(id: string) { 
+    await deleteDoc(doc(firestore, "users", id)); 
+    await this.refreshData(['users']);
+  }
   async updateUser(id: string, updates: any) {
     if (updates.status === UserStatus.APPROVED) {
       try {
@@ -810,6 +813,7 @@ class FirebaseDB {
       }
     }
     await updateDoc(doc(firestore, "users", id), sanitizeForUpload(updates)); 
+    await this.refreshData(['users']);
   }
   async sendNotification(userId: string, message: string) { await addDoc(collection(firestore, "notifications"), sanitizeForUpload({ userId, message, timestamp: Date.now(), isRead: false })); }
   async updateAssistanceStatus(reqId: string, status: AssistanceStatus, adminNote?: string) {
@@ -848,6 +852,7 @@ class FirebaseDB {
         isRead: false 
       }));
     });
+    await this.refreshData(['assistance_requests']);
   }
 
   subscribeToNotifications(userId: string, callback: (notifs: Notification[]) => void) {
@@ -936,20 +941,24 @@ class FirebaseDB {
       timestamp,
       timeline: [initialEvent]
     })); 
+    await this.refreshData(['assistance_requests']);
   }
 
   async addRecipient(data: any) {
     const cleanData = sanitizeForUpload({ ...data, timestamp: Date.now() });
     await addDoc(collection(firestore, "recipients"), cleanData);
+    await this.refreshData(['recipients']);
   }
 
   async updateRecipient(id: string, data: any) {
     const cleanData = sanitizeForUpload(data);
     await updateDoc(doc(firestore, "recipients", id), cleanData);
+    await this.refreshData(['recipients']);
   }
 
   async deleteRecipient(id: string) {
     await deleteDoc(doc(firestore, "recipients", id));
+    await this.refreshData(['recipients']);
   }
 
   async adminSignIn() {
