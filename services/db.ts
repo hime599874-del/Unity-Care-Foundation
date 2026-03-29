@@ -263,7 +263,7 @@ class FirebaseDB {
     email: 'unitycarefoundation07@gmail.com',
     phone: '01777599874',
     policyUrl: 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk',
-    maintenanceMode: false,
+    maintenanceMode: typeof localStorage !== 'undefined' ? localStorage.getItem('maintenance_mode') === 'true' : false,
     disableRegistration: false
   };
   private listeners: (() => void)[] = [];
@@ -271,6 +271,7 @@ class FirebaseDB {
   private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
   private readyPromise: Promise<void>;
   private resolveReady!: () => void;
+  private metadataListenersAttached: boolean = false;
 
   constructor() { 
     this.readyPromise = new Promise((resolve) => {
@@ -307,13 +308,18 @@ class FirebaseDB {
     try {
       const refreshAll = !collectionsToRefresh || collectionsToRefresh.length === 0;
       
-      if (refreshAll) {
+      if (refreshAll && !this.metadataListenersAttached) {
+        this.metadataListenersAttached = true;
         // Keep real-time listeners for single metadata documents (very low cost: 1 read per change)
         onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
           if (snapshot.exists()) {
             const data = toPlainObject(snapshot.data());
             if (data) {
               this.contactConfig = data as ContactConfig;
+              // Cache maintenance mode
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('maintenance_mode', String(this.contactConfig.maintenanceMode));
+              }
               this.notify();
             }
           }

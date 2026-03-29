@@ -22,7 +22,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [loadingStep, setLoadingStep] = useState('Initializing...');
   const [isOnline, setIsOnline] = useState(db.getIsOnline());
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem('maintenance_mode') === 'true';
+    }
+    return false;
+  });
 
   const setCurrentUserPersisted = (user: User | null) => {
     setCurrentUser(user);
@@ -129,10 +134,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Auto logout if maintenance mode is enabled and user is not admin
   useEffect(() => {
-    if (maintenanceMode && currentUser && !isAdmin) {
+    if (!isLoading && maintenanceMode && currentUser && !isAdmin) {
       setCurrentUserPersisted(null);
     }
-  }, [maintenanceMode, currentUser, isAdmin]);
+  }, [maintenanceMode, currentUser, isAdmin, isLoading]);
 
   return (
     <AuthContext.Provider value={{ 
