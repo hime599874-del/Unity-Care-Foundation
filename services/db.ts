@@ -272,6 +272,8 @@ class FirebaseDB {
   private readyPromise: Promise<void>;
   private resolveReady!: () => void;
   private metadataListenersAttached: boolean = false;
+  private unsubscribeContact: (() => void) | null = null;
+  private unsubscribeStats: (() => void) | null = null;
 
   constructor() { 
     this.readyPromise = new Promise((resolve) => {
@@ -310,35 +312,50 @@ class FirebaseDB {
       
       if (refreshAll && !this.metadataListenersAttached) {
         this.metadataListenersAttached = true;
-        // Keep real-time listeners for single metadata documents (very low cost: 1 read per change)
-        onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
-          if (snapshot.exists()) {
-            const data = toPlainObject(snapshot.data());
-            if (data) {
-              this.contactConfig = data as ContactConfig;
-              // Cache maintenance mode
-              if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('maintenance_mode', String(this.contactConfig.maintenanceMode));
+        
+        const attachContactListener = () => {
+          if (this.unsubscribeContact) this.unsubscribeContact();
+          this.unsubscribeContact = onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
+            if (snapshot.exists()) {
+              const data = toPlainObject(snapshot.data());
+              if (data) {
+                this.contactConfig = data as ContactConfig;
+                // Cache maintenance mode
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem('maintenance_mode', String(this.contactConfig.maintenanceMode));
+                }
+                this.notify();
               }
-              this.notify();
             }
-          }
-        });
+          }, (error) => {
+            console.error("Contact listener error:", error);
+            // Re-attach after delay if it fails (e.g., quota exceeded)
+            setTimeout(attachContactListener, 10000);
+          });
+        };
+        attachContactListener();
 
-        onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
-          if (snapshot.exists()) {
-            const data = toPlainObject(snapshot.data());
-            if (data) {
-              this.stats = { 
-                ...this.stats, 
-                totalCollection: data.totalCollection || 0, 
-                totalExpense: data.totalExpense || 0,
-                totalSmsSent: data.totalSmsSent || 0
-              };
-              this.notify();
+        const attachStatsListener = () => {
+          if (this.unsubscribeStats) this.unsubscribeStats();
+          this.unsubscribeStats = onSnapshot(doc(firestore, "metadata", "stats"), (snapshot) => {
+            if (snapshot.exists()) {
+              const data = toPlainObject(snapshot.data());
+              if (data) {
+                this.stats = { 
+                  ...this.stats, 
+                  totalCollection: data.totalCollection || 0, 
+                  totalExpense: data.totalExpense || 0,
+                  totalSmsSent: data.totalSmsSent || 0
+                };
+                this.notify();
+              }
             }
-          }
-        });
+          }, (error) => {
+            console.error("Stats listener error:", error);
+            setTimeout(attachStatsListener, 10000);
+          });
+        };
+        attachStatsListener();
       }
 
       const promises: Promise<void>[] = [];
@@ -455,6 +472,27 @@ class FirebaseDB {
   getSmsHistory(): SmsRecord[] { return this.smsHistory; }
   getStats(): AppStats { return this.stats; }
   getContactConfig(): ContactConfig { return this.contactConfig; }
+  
+  async forceCheckMaintenanceMode(): Promise<boolean> {
+    try {
+      const docSnap = await getDocFromServer(doc(firestore, "metadata", "contact"));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data && typeof data.maintenanceMode === 'boolean') {
+          this.contactConfig.maintenanceMode = data.maintenanceMode;
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('maintenance_mode', String(data.maintenanceMode));
+          }
+          this.notify();
+          return data.maintenanceMode;
+        }
+      }
+    } catch (e) {
+      console.error("Force check maintenance mode failed:", e);
+    }
+    return this.contactConfig.maintenanceMode;
+  }
+
   whenReady(): Promise<void> { return this.readyPromise; }
   isDbReady(): boolean { return this.isReady; }
 

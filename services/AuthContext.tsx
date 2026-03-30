@@ -106,7 +106,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsOnline(db.getIsOnline());
       setMaintenanceMode(db.getContactConfig()?.maintenanceMode || false);
     });
-    return unsubscribe;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        db.forceCheckMaintenanceMode().then(mode => {
+          setMaintenanceMode(mode);
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
