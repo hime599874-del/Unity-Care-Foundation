@@ -657,6 +657,16 @@ const AdminDashboard: React.FC = () => {
     } catch (e: any) { alert(e.message); } finally { setIsSubmitting(false); }
   };
 
+  const handleDeleteExpense = async (id: string, amount: number) => {
+    if (!confirm('আপনি কি নিশ্চিত যে এই ব্যয়টি মুছে ফেলতে চান? মুছে ফেললে এই টাকা আবার তহবিলে যোগ হবে।')) return;
+    try {
+      await db.deleteExpense(id, amount);
+      alert('ব্যয় সফলভাবে মুছে ফেলা হয়েছে এবং টাকা তহবিলে যোগ হয়েছে।');
+    } catch (e: any) {
+      alert('ব্যয় মুছতে সমস্যা হয়েছে: ' + e.message);
+    }
+  };
+
   const handleExpenseImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1546,7 +1556,18 @@ const AdminDashboard: React.FC = () => {
                                  {e.proofImage && <LucideImageIcon className="w-3.5 h-3.5 text-teal-500" />}
                               </div>
                            </td>
-                           <td className="px-6 py-4 text-rose-600 text-right font-black">৳{toBengaliNumber(e.amount)}</td>
+                           <td className="px-6 py-4 text-rose-600 text-right font-black">
+                              <div className="flex items-center justify-end gap-3">
+                                <span>৳{toBengaliNumber(e.amount)}</span>
+                                <button 
+                                  onClick={() => handleDeleteExpense(e.id, e.amount)}
+                                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
+                                  title="মুছে ফেলুন"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                           </td>
                         </tr>
                       ))}
                    </tbody>
