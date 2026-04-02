@@ -1,6 +1,6 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { 
   initializeFirestore,
   getFirestore,
@@ -30,6 +30,7 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 export enum OperationType {
   CREATE = 'create',
@@ -370,8 +371,8 @@ class FirebaseDB {
           }
         };
 
-        promises.push(fetchCollection('users', query(collection(firestore, "users"), limit(20)), (data) => this.users = data as User[]));
-        promises.push(fetchCollection('transactions', query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(20)), (data) => this.transactions = data as Transaction[]));
+        promises.push(fetchCollection('users', query(collection(firestore, "users"), limit(50)), (data) => this.users = data as User[]));
+        promises.push(fetchCollection('transactions', query(collection(firestore, "transactions"), orderBy("timestamp", "desc"), limit(50)), (data) => this.transactions = data as Transaction[]));
         promises.push(fetchCollection('assistance_requests', query(collection(firestore, "assistance_requests"), orderBy("timestamp", "desc"), limit(20)), (data) => this.assistanceRequests = data as AssistanceRequest[]));
         promises.push(fetchCollection('expenses', query(collection(firestore, "expenses"), orderBy("timestamp", "desc"), limit(20)), (data) => this.expenses = data as Expense[]));
         promises.push(fetchCollection('projects', query(collection(firestore, "projects"), orderBy("timestamp", "desc"), limit(20)), (data) => this.projects = data as ProjectProgress[]));
@@ -1090,6 +1091,29 @@ class FirebaseDB {
   async markNotificationAsRead(notifId: string) { await updateDoc(doc(firestore, "notifications", notifId), { isRead: true }); }
   getUser(id: string): User | undefined { return this.users.find(u => u.id === id); }
   
+  async getUserAsync(id: string): Promise<User | undefined> {
+    // 1. Check local cache
+    const cached = this.getUser(id);
+    if (cached) return cached;
+
+    // 2. Fetch from server
+    try {
+      const userDoc = await getDoc(doc(firestore, "users", id));
+      if (userDoc.exists()) {
+        const userData = { id: userDoc.id, ...toPlainObject(userDoc.data()) } as User;
+        // Add to local cache if not present
+        if (!this.users.find(u => u.id === userData.id)) {
+          this.users.push(userData);
+          this.notify();
+        }
+        return userData;
+      }
+    } catch (e) {
+      console.error("Firestore: getUserAsync error:", e);
+    }
+    return undefined;
+  }
+  
   async getUserByPhone(phone: string): Promise<User | undefined> {
     const normalize = (p: string) => p.replace(/\D/g, '').slice(-10);
     const searchDigits = normalize(phone);
@@ -1197,7 +1221,7 @@ class FirebaseDB {
     if (!auth.currentUser) return;
     
     const fiveDaysAgo = Date.now() - (5 * 24 * 60 * 60 * 1000);
-    const collectionsToCleanup = ['activities', 'notifications', 'suggestions', 'complaints', 'sms_history'];
+    const collectionsToCleanup = ['activities', 'sms_history'];
     
     console.log("🧹 Firebase: Starting cleanup of data older than 5 days...");
     

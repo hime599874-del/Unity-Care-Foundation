@@ -357,7 +357,6 @@ const UserDashboard: React.FC = () => {
                   if (m.includes('bkash')) return { img: 'https://i.ibb.co/93SJDFLT/image-161466-1701693779.jpg', scale: 'scale-110' };
                   if (m.includes('nagad')) return { img: 'https://i.ibb.co/kd64m5t/images-1.png', scale: 'scale-110' };
                   if (m.includes('rocket')) return { img: 'https://i.ibb.co/WWqk4189/images-4.jpg', scale: 'scale-[1.35]' };
-                  if (m.includes('dbbl')) return { img: 'https://i.ibb.co/0RtgBg2k/o-Se-SYq-X9crpm-R6n-T9jn-I-24-049b42353edf981f0f6fc7e21ce90af0-jvectors.webp', scale: 'scale-110' };
                   if (m.includes('islami')) return { img: 'https://i.ibb.co/PZKKtNN8/images-7.jpg', scale: 'scale-110' };
                   if (m.includes('midland')) return { img: 'https://i.ibb.co/nq6nb223/images-22.jpg', scale: 'scale-110' };
                   return null;
@@ -683,7 +682,6 @@ const UserDashboard: React.FC = () => {
                  {selectedBank ? (
                     <div className={`w-full p-6 rounded-[2.5rem] relative overflow-hidden group shadow-sm animate-in zoom-in-95 duration-300 ${
                        selectedBank === 'alrajhi' ? 'bg-[#F1F8FF] border-blue-100' : 
-                       selectedBank === 'dbbl' ? 'bg-[#F0FFF4] border-green-100' : 
                        selectedBank === 'midland' ? 'bg-[#FFF1F1] border-red-100' :
                        selectedBank === 'bkash' ? 'bg-[#FFF0F3] border-pink-100' :
                        selectedBank === 'nagad' ? 'bg-[#FFF9F0] border-orange-100' :
@@ -693,7 +691,6 @@ const UserDashboard: React.FC = () => {
                        <div className="flex items-center gap-3 mb-6">
                           <div className={`w-10 h-10 bg-gradient-to-br text-white rounded-xl flex items-center justify-center shadow-md relative overflow-hidden ${
                              selectedBank === 'alrajhi' ? 'from-[#2563EB] to-[#1E40AF]' : 
-                             selectedBank === 'dbbl' ? 'from-[#007A33] to-[#004B1C]' : 
                              selectedBank === 'midland' ? 'from-[#E31E24] to-[#A31519]' :
                              selectedBank === 'bkash' ? 'from-[#D12053] to-[#A01840]' :
                              selectedBank === 'nagad' ? 'from-[#F7941D] to-[#C67617]' :
@@ -705,7 +702,6 @@ const UserDashboard: React.FC = () => {
                           </div>
                           <h4 className={`text-[10px] font-black uppercase tracking-widest ${
                              selectedBank === 'alrajhi' ? 'text-[#2563EB]' : 
-                             selectedBank === 'dbbl' ? 'text-[#007A33]' : 
                              selectedBank === 'midland' ? 'text-[#E31E24]' :
                              selectedBank === 'bkash' ? 'text-[#D12053]' :
                              selectedBank === 'nagad' ? 'text-[#F7941D]' :
@@ -776,7 +772,6 @@ const UserDashboard: React.FC = () => {
                              <button 
                                onClick={() => copyToClipboard(
                                   selectedBank === 'alrajhi' ? '077040010006087859970' : 
-                                  selectedBank === 'dbbl' ? '2647348821808' : 
                                   selectedBank === 'midland' ? '0010-1680000249' :
                                   (selectedBank === 'bkash' || selectedBank === 'nagad' || selectedBank === 'rocket') ? '01777599874' :
                                   '20504436700011315', 
@@ -816,7 +811,6 @@ const UserDashboard: React.FC = () => {
                           { id: 'bkash', name: 'bKash', color: 'bg-[#D12053]', img: 'https://i.ibb.co/93SJDFLT/image-161466-1701693779.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
                           { id: 'nagad', name: 'Nagad', color: 'bg-[#F7941D]', img: 'https://i.ibb.co/kd64m5t/images-1.png', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
                           { id: 'rocket', name: 'Rocket', color: 'bg-[#8C3494]', img: 'https://i.ibb.co/WWqk4189/images-4.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-[1.35]' },
-                          { id: 'dbbl', name: 'DBBL', color: 'bg-[#007A33]', img: 'https://i.ibb.co/0RtgBg2k/o-Se-SYq-X9crpm-R6n-T9jn-I-24-049b42353edf981f0f6fc7e21ce90af0-jvectors.webp', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
                           { id: 'islami', name: 'Islami', color: 'bg-[#008000]', img: 'https://i.ibb.co/PZKKtNN8/images-7.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
                           { id: 'midland', name: 'Midland', color: 'bg-[#E31E24]', img: 'https://i.ibb.co/nq6nb223/images-22.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' }
                        ].map(bank => (

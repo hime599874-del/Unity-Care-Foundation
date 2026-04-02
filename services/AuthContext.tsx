@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoadingStep('Verifying session...');
         const userId = localStorage.getItem('current_user_id');
         if (userId) {
-          const user = db.getUser(userId);
+          const user = await db.getUserAsync(userId);
           if (user) {
             setCurrentUser(user);
           }
@@ -153,7 +153,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [maintenanceMode, currentUser, isAdmin, isLoading]);
 
-  return (
+  useEffect(() => {
+    if (isAdmin && !isLoading) {
+      db.cleanupOldData();
+    }
+  }, [isAdmin, isLoading]);
+
+  return ( (AuthContext.Provider as any) ? (
     <AuthContext.Provider value={{ 
       currentUser, 
       setCurrentUser: setCurrentUserPersisted, 
@@ -167,7 +173,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }}>
       {children}
     </AuthContext.Provider>
-  );
+  ) : null );
 };
 
 export const useAuth = () => {
