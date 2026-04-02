@@ -78,6 +78,7 @@ const AdminDashboard: React.FC = () => {
   const [expenseImage, setExpenseImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState<Record<string, boolean>>({});
   const [selectedUserForQr, setSelectedUserForQr] = useState<User | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
   
@@ -176,6 +177,8 @@ const AdminDashboard: React.FC = () => {
     const init = async () => {
       await db.whenReady();
       refreshData();
+      // Cleanup old data (older than 5 days) to save Firestore limits
+      db.cleanupOldData();
     };
     
     init();
@@ -197,6 +200,17 @@ const AdminDashboard: React.FC = () => {
       fetchSmsBalance();
     }
   }, [activeTab]);
+
+  const handleLoadMore = async (collection: string) => {
+    setIsLoadingMore(prev => ({ ...prev, [collection]: true }));
+    try {
+      await db.loadMore(collection as any);
+    } catch (e: any) {
+      alert('তথ্য লোড করতে সমস্যা হয়েছে: ' + e.message);
+    } finally {
+      setIsLoadingMore(prev => ({ ...prev, [collection]: false }));
+    }
+  };
 
   const fetchSmsBalance = async () => {
     setIsSmsLoading(true);
@@ -1305,6 +1319,16 @@ const AdminDashboard: React.FC = () => {
                       </tbody>
                    </table>
                 </div>
+                <div className="p-4 bg-slate-50 border-t flex justify-center">
+                   <button 
+                     onClick={() => handleLoadMore('users')}
+                     disabled={isLoadingMore['users']}
+                     className="px-6 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                   >
+                     {isLoadingMore['users'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                     আরো লোড করুন
+                   </button>
+                </div>
              </div>
           </div>
         )}
@@ -1349,6 +1373,18 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ))}
                 {assistance.length === 0 && <div className="text-center py-20 opacity-20"><CircleAlert className="w-16 h-16 mx-auto mb-4" /><p className="font-black uppercase tracking-widest">কোন আবেদন নেই</p></div>}
+                {assistance.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    <button 
+                      onClick={() => handleLoadMore('assistance')}
+                      disabled={isLoadingMore['assistance']}
+                      className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {isLoadingMore['assistance'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                      আরো লোড করুন
+                    </button>
+                  </div>
+                )}
              </div>
           </div>
         )}
@@ -1497,6 +1533,16 @@ const AdminDashboard: React.FC = () => {
                         </tbody>
                       </table>
                     </div>
+                    <div className="p-4 bg-slate-50 border-t flex justify-center">
+                      <button 
+                        onClick={() => handleLoadMore('transactions')}
+                        disabled={isLoadingMore['transactions']}
+                        className="px-6 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {isLoadingMore['transactions'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        আরো লোড করুন
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1572,6 +1618,16 @@ const AdminDashboard: React.FC = () => {
                       ))}
                    </tbody>
                 </table>
+                <div className="p-4 bg-slate-50 border-t flex justify-center">
+                   <button 
+                     onClick={() => handleLoadMore('expenses')}
+                     disabled={isLoadingMore['expenses']}
+                     className="px-6 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                   >
+                     {isLoadingMore['expenses'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                     আরো লোড করুন
+                   </button>
+                </div>
              </div>
           </div>
         )}
@@ -1630,6 +1686,18 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ))
               )}
+              {suggestions.length > 0 && (
+                <div className="flex justify-center pt-4">
+                   <button 
+                     onClick={() => handleLoadMore('suggestions')}
+                     disabled={isLoadingMore['suggestions']}
+                     className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                   >
+                     {isLoadingMore['suggestions'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                     আরো লোড করুন
+                   </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1687,6 +1755,18 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 ))
+              )}
+              {complaints.length > 0 && (
+                <div className="flex justify-center pt-4">
+                   <button 
+                     onClick={() => handleLoadMore('complaints')}
+                     disabled={isLoadingMore['complaints']}
+                     className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                   >
+                     {isLoadingMore['complaints'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                     আরো লোড করুন
+                   </button>
+                </div>
               )}
             </div>
           </div>
@@ -1802,6 +1882,18 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 ))
+              )}
+              {activities.length > 0 && (
+                <div className="flex justify-center pt-4">
+                   <button 
+                     onClick={() => handleLoadMore('activities')}
+                     disabled={isLoadingMore['activities']}
+                     className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                   >
+                     {isLoadingMore['activities'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                     আরো লোড করুন
+                   </button>
+                </div>
               )}
             </div>
           </div>
@@ -2287,6 +2379,18 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 ))
+              )}
+              {recipients.length > 0 && (
+                <div className="flex justify-center pt-4">
+                   <button 
+                     onClick={() => handleLoadMore('recipients')}
+                     disabled={isLoadingMore['recipients']}
+                     className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
+                   >
+                     {isLoadingMore['recipients'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                     আরো লোড করুন
+                   </button>
+                </div>
               )}
             </div>
           </div>

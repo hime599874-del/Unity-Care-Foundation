@@ -79,10 +79,9 @@ const UserDashboard: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      const unsubscribeNotifs = db.subscribeToNotifications(currentUser.id, (notifs) => {
+      db.subscribeToNotifications(currentUser.id, (notifs) => {
         setNotifications(notifs);
       });
-      return unsubscribeNotifs;
     }
   }, [currentUser]);
 
