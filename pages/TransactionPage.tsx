@@ -20,7 +20,7 @@ const TransactionPage: React.FC = () => {
   const { currentUser } = useAuth();
   const { showToast } = useToast();
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'Bkash' | 'Nagad' | 'Rocket' | 'Bank'>('Bkash');
+  const [method, setMethod] = useState<'Bkash' | 'Nagad' | 'Bank'>('Bkash');
   const [selectedBank, setSelectedBank] = useState('');
   const [fundType, setFundType] = useState<FundType>('General');
   const [txId, setTxId] = useState('');
@@ -135,7 +135,6 @@ const TransactionPage: React.FC = () => {
                 {[
                   { id: 'Bkash', label: 'বিকাশ' },
                   { id: 'Nagad', label: 'নগদ' },
-                  { id: 'Rocket', label: 'রকেট' },
                   { id: 'Bank', label: 'ব্যাংক' }
                 ].map(m => (
                   <button 
@@ -143,14 +142,12 @@ const TransactionPage: React.FC = () => {
                     type="button" 
                     disabled={isSubmitting} 
                     onClick={() => setMethod(m.id as any)} 
-                    className={`rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all min-h-[76px] overflow-hidden ${['Nagad', 'Bkash', 'Rocket', 'Bank'].includes(m.id) ? 'p-1' : 'p-3'} ${method === m.id ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}
+                    className={`rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all min-h-[76px] overflow-hidden ${['Nagad', 'Bkash', 'Bank'].includes(m.id) ? 'p-1' : 'p-3'} ${method === m.id ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}
                   >
                     {m.id === 'Nagad' ? (
                       <img src="https://i.ibb.co/kd64m5t/images-1.png" alt="Nagad" className="h-[64px] w-auto object-contain mix-blend-multiply dark:mix-blend-normal scale-110" />
                     ) : m.id === 'Bkash' ? (
                       <img src="https://i.ibb.co/93SJDFLT/image-161466-1701693779.jpg" alt="Bkash" className="h-[56px] w-auto object-contain mix-blend-multiply dark:mix-blend-normal scale-110" />
-                    ) : m.id === 'Rocket' ? (
-                      <img src="https://i.ibb.co/WWqk4189/images-4.jpg" alt="Rocket" className="h-[64px] w-auto object-contain mix-blend-multiply dark:mix-blend-normal scale-[1.35]" />
                     ) : m.id === 'Bank' ? (
                       <img src="https://i.ibb.co/PZKKtNN8/images-7.jpg" alt="Bank" className="h-[60px] w-auto object-contain mix-blend-multiply dark:mix-blend-normal scale-110" />
                     ) : (

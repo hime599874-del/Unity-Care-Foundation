@@ -108,7 +108,6 @@ export const translations: Translations = {
   midland_bank: { bn: 'মিডল্যান্ড ব্যাংক', en: 'Midland Bank' },
   bkash: { bn: 'বিকাশ', en: 'bKash' },
   nagad: { bn: 'নগদ', en: 'Nagad' },
-  rocket: { bn: 'রকেট', en: 'Rocket' },
   select_bank: { bn: 'ব্যাংক নির্বাচন করুন', en: 'Select Bank' },
   account_name: { bn: 'ACCOUNT NAME', en: 'ACCOUNT NAME' },
   beneficiary_name: { bn: 'BENEFICIARY NAME', en: 'BENEFICIARY NAME' },

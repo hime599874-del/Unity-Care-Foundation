@@ -999,7 +999,6 @@ const AdminDashboard: React.FC = () => {
   const getMethodIcon = (method: string) => {
     const m = method.toLowerCase();
     if (m.includes('bkash')) return <Smartphone className="w-3 h-3 text-rose-500" />;
-    if (m.includes('rocket')) return <Rocket className="w-3 h-3 text-violet-500" />;
     if (m.includes('bank')) return <Building2 className="w-3 h-3 text-blue-500" />;
     return <CreditCard className="w-3 h-3 text-slate-400" />;
   };

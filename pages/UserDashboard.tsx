@@ -356,7 +356,6 @@ const UserDashboard: React.FC = () => {
                   const m = method.toLowerCase();
                   if (m.includes('bkash')) return { img: 'https://i.ibb.co/93SJDFLT/image-161466-1701693779.jpg', scale: 'scale-110' };
                   if (m.includes('nagad')) return { img: 'https://i.ibb.co/kd64m5t/images-1.png', scale: 'scale-110' };
-                  if (m.includes('rocket')) return { img: 'https://i.ibb.co/WWqk4189/images-4.jpg', scale: 'scale-[1.35]' };
                   if (m.includes('islami')) return { img: 'https://i.ibb.co/PZKKtNN8/images-7.jpg', scale: 'scale-110' };
                   if (m.includes('midland')) return { img: 'https://i.ibb.co/nq6nb223/images-22.jpg', scale: 'scale-110' };
                   return null;
@@ -685,7 +684,6 @@ const UserDashboard: React.FC = () => {
                        selectedBank === 'midland' ? 'bg-[#FFF1F1] border-red-100' :
                        selectedBank === 'bkash' ? 'bg-[#FFF0F3] border-pink-100' :
                        selectedBank === 'nagad' ? 'bg-[#FFF9F0] border-orange-100' :
-                       selectedBank === 'rocket' ? 'bg-[#F9F0FF] border-purple-100' :
                        'bg-[#F0FFF0] border-green-50'
                     } border`}>
                        <div className="flex items-center gap-3 mb-6">
@@ -694,7 +692,6 @@ const UserDashboard: React.FC = () => {
                              selectedBank === 'midland' ? 'from-[#E31E24] to-[#A31519]' :
                              selectedBank === 'bkash' ? 'from-[#D12053] to-[#A01840]' :
                              selectedBank === 'nagad' ? 'from-[#F7941D] to-[#C67617]' :
-                             selectedBank === 'rocket' ? 'from-[#8C3494] to-[#6A2770]' :
                              'from-[#008000] to-[#004d00]'
                           }`}>
                              <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
@@ -705,7 +702,6 @@ const UserDashboard: React.FC = () => {
                              selectedBank === 'midland' ? 'text-[#E31E24]' :
                              selectedBank === 'bkash' ? 'text-[#D12053]' :
                              selectedBank === 'nagad' ? 'text-[#F7941D]' :
-                             selectedBank === 'rocket' ? 'text-[#8C3494]' :
                              'text-[#008000]'
                           }`}>
                              {selectedBank === 'alrajhi' ? t('alrajhi_bank_info') : 
@@ -713,7 +709,7 @@ const UserDashboard: React.FC = () => {
                               selectedBank === 'midland' ? t('midland_bank') :
                               selectedBank === 'bkash' ? 'bKash' :
                               selectedBank === 'nagad' ? 'Nagad' :
-                              selectedBank === 'rocket' ? 'Rocket' :
+                              
                               t('islami_bank')}
                           </h4>
                        </div>
@@ -765,7 +761,7 @@ const UserDashboard: React.FC = () => {
                                    {selectedBank === 'alrajhi' ? '077040010006087859970' : 
                                     selectedBank === 'dbbl' ? '2647348821808' : 
                                     selectedBank === 'midland' ? '0010-1680000249' :
-                                    (selectedBank === 'bkash' || selectedBank === 'nagad' || selectedBank === 'rocket') ? '01777599874' :
+                                    (selectedBank === 'bkash' || selectedBank === 'nagad') ? '01777599874' :
                                     '20504436700011315'}
                                 </p>
                              </div>
@@ -773,7 +769,7 @@ const UserDashboard: React.FC = () => {
                                onClick={() => copyToClipboard(
                                   selectedBank === 'alrajhi' ? '077040010006087859970' : 
                                   selectedBank === 'midland' ? '0010-1680000249' :
-                                  (selectedBank === 'bkash' || selectedBank === 'nagad' || selectedBank === 'rocket') ? '01777599874' :
+                                  (selectedBank === 'bkash' || selectedBank === 'nagad') ? '01777599874' :
                                   '20504436700011315', 
                                   'acc'
                                )} 
@@ -810,7 +806,7 @@ const UserDashboard: React.FC = () => {
                           { id: 'alrajhi', name: 'Al Rajhi', color: 'bg-blue-600' },
                           { id: 'bkash', name: 'bKash', color: 'bg-[#D12053]', img: 'https://i.ibb.co/93SJDFLT/image-161466-1701693779.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
                           { id: 'nagad', name: 'Nagad', color: 'bg-[#F7941D]', img: 'https://i.ibb.co/kd64m5t/images-1.png', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
-                          { id: 'rocket', name: 'Rocket', color: 'bg-[#8C3494]', img: 'https://i.ibb.co/WWqk4189/images-4.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-[1.35]' },
+                          
                           { id: 'islami', name: 'Islami', color: 'bg-[#008000]', img: 'https://i.ibb.co/PZKKtNN8/images-7.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' },
                           { id: 'midland', name: 'Midland', color: 'bg-[#E31E24]', img: 'https://i.ibb.co/nq6nb223/images-22.jpg', imgClass: 'h-6 w-auto object-contain mix-blend-multiply scale-110' }
                        ].map(bank => (
