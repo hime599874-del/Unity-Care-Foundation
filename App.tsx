@@ -349,11 +349,12 @@ const AppWrapper: React.FC = () => {
           {/* Bottom Branding */}
           <motion.div 
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
+            animate={{ opacity: 0.8 }}
             transition={{ delay: 1 }}
-            className="absolute bottom-10 text-white text-[11px] font-bold tracking-[0.4em] uppercase"
+            className="absolute bottom-10 text-white text-[11px] font-black tracking-[0.3em] uppercase flex flex-col items-center gap-2"
           >
-            Powered by Unity Team
+            <p className="drop-shadow-sm">Powered by Unity Team</p>
+            <p className="text-[10px] opacity-90 tracking-[0.2em] font-bold drop-shadow-sm">Development by Jahid Talukder</p>
           </motion.div>
         </motion.div>
       ) : (
