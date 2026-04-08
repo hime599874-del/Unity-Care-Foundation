@@ -16,7 +16,7 @@ import ImageCropper from '../src/components/ImageCropper';
 
 const compressImage = (base64Str: string, size = 400): Promise<string> => {
   return new Promise((resolve) => {
-    const img = new Image();
+    const img = new window.Image();
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');

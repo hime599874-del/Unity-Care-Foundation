@@ -268,6 +268,7 @@ class FirebaseDB {
     maintenanceMode: typeof localStorage !== 'undefined' ? localStorage.getItem('maintenance_mode') === 'true' : false,
     disableRegistration: false
   };
+  private adminPin: string = '0000';
   private listeners: (() => void)[] = [];
   private isReady: boolean = false;
   private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
@@ -306,6 +307,13 @@ class FirebaseDB {
     this.loadData(); 
   }
 
+  getAdminPin(): string { return this.adminPin; }
+  async updateAdminPin(oldPin: string, newPin: string) {
+    if (oldPin !== this.adminPin) throw new Error('পূর্বের পাসওয়ার্ড সঠিক নয়।');
+    await setDoc(doc(firestore, "metadata", "admin"), { pin: newPin });
+    this.adminPin = newPin;
+    this.notify();
+  }
   getIsOnline(): boolean { return this.isOnline; }
 
   private async loadData(collectionsToRefresh?: string[]) {
@@ -315,6 +323,22 @@ class FirebaseDB {
       if (refreshAll && !this.metadataListenersAttached) {
         this.metadataListenersAttached = true;
         
+        const attachAdminListener = () => {
+          onSnapshot(doc(firestore, "metadata", "admin"), (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              if (data && data.pin) {
+                this.adminPin = data.pin;
+                this.notify();
+              }
+            }
+          }, (error) => {
+            console.error("Admin listener error:", error);
+            setTimeout(attachAdminListener, 10000);
+          });
+        };
+        attachAdminListener();
+
         const attachContactListener = () => {
           if (this.unsubscribeContact) this.unsubscribeContact();
           this.unsubscribeContact = onSnapshot(doc(firestore, "metadata", "contact"), (snapshot) => {
@@ -378,9 +402,9 @@ class FirebaseDB {
         promises.push(fetchCollection('projects', query(collection(firestore, "projects"), orderBy("timestamp", "desc"), limit(20)), (data) => this.projects = data as ProjectProgress[]));
         promises.push(fetchCollection('suggestions', query(collection(firestore, "suggestions"), orderBy("timestamp", "desc"), limit(20)), (data) => this.suggestions = data as Suggestion[]));
         promises.push(fetchCollection('complaints', query(collection(firestore, "complaints"), orderBy("timestamp", "desc"), limit(20)), (data) => this.complaints = data as Complaint[]));
-        promises.push(fetchCollection('activities', query(collection(firestore, "activities"), orderBy("timestamp", "desc"), limit(20)), (data) => this.activities = data as MemberActivity[]));
+        // promises.push(fetchCollection('activities', query(collection(firestore, "activities"), orderBy("timestamp", "desc"), limit(20)), (data) => this.activities = data as MemberActivity[]));
         promises.push(fetchCollection('recipients', query(collection(firestore, "recipients"), orderBy("timestamp", "desc"), limit(20)), (data) => this.recipients = data as RecipientInfo[]));
-        promises.push(fetchCollection('sms_history', query(collection(firestore, "sms_history"), orderBy("timestamp", "desc"), limit(20)), (data) => this.smsHistory = data as SmsRecord[]));
+        // promises.push(fetchCollection('sms_history', query(collection(firestore, "sms_history"), orderBy("timestamp", "desc"), limit(20)), (data) => this.smsHistory = data as SmsRecord[]));
 
         await Promise.all(promises);
 
@@ -439,15 +463,19 @@ class FirebaseDB {
     if (collectionsToRefresh.includes('complaints')) {
       promises.push(fetchCollection('complaints', query(collection(firestore, "complaints"), orderBy("timestamp", "desc"), limit(20)), (data) => this.complaints = data as Complaint[]));
     }
+    /*
     if (collectionsToRefresh.includes('activities')) {
       promises.push(fetchCollection('activities', query(collection(firestore, "activities"), orderBy("timestamp", "desc"), limit(20)), (data) => this.activities = data as MemberActivity[]));
     }
+    */
     if (collectionsToRefresh.includes('recipients')) {
       promises.push(fetchCollection('recipients', query(collection(firestore, "recipients"), orderBy("timestamp", "desc"), limit(20)), (data) => this.recipients = data as RecipientInfo[]));
     }
+    /*
     if (collectionsToRefresh.includes('sms_history')) {
       promises.push(fetchCollection('sms_history', query(collection(firestore, "sms_history"), orderBy("timestamp", "desc"), limit(20)), (data) => this.smsHistory = data as SmsRecord[]));
     }
+    */
 
     await Promise.all(promises);
     this.updateLocalStats();
@@ -792,7 +820,8 @@ class FirebaseDB {
   }
 
   async logSmsHistory(record: Omit<SmsRecord, 'id'>) {
-    await addDoc(collection(firestore, "sms_history"), sanitizeForUpload(record));
+    // History logging disabled as per user request to save on read/write costs
+    // await addDoc(collection(firestore, "sms_history"), sanitizeForUpload(record));
   }
 
   async updateSmsRecord(id: string, data: Partial<SmsRecord>): Promise<void> {
@@ -960,6 +989,8 @@ class FirebaseDB {
   }
 
   async logActivity(userId: string, userName: string, type: ActivityType, description: string, path?: string) {
+    // Activity logging disabled as per user request to save on read/write costs
+    /*
     try {
       const activity = sanitizeForUpload({
         userId,
@@ -977,6 +1008,7 @@ class FirebaseDB {
     } catch (e) {
       safeError("Firestore: Activity logging error:", e);
     }
+    */
   }
 
   async updateLastActive(userId: string) { 
@@ -1220,33 +1252,39 @@ class FirebaseDB {
   async cleanupOldData() {
     if (!auth.currentUser) return;
     
-    const fiveDaysAgo = Date.now() - (5 * 24 * 60 * 60 * 1000);
     const collectionsToCleanup = ['activities', 'sms_history'];
-    
-    console.log("🧹 Firebase: Starting cleanup of data older than 5 days...");
+    console.log("🧹 Firebase: Starting full cleanup of history data...");
     
     for (const coll of collectionsToCleanup) {
       try {
-        // Limit to 450 to stay within the 500-operation batch limit
-        const q = query(collection(firestore, coll), where("timestamp", "<", fiveDaysAgo), limit(450));
-        const snapshot = await getDocs(q);
+        let deletedCount = 0;
+        let hasMore = true;
         
-        if (!snapshot.empty) {
-          const batch = writeBatch(firestore);
-          snapshot.docs.forEach((d) => {
-            batch.delete(d.ref);
-          });
-          await batch.commit();
-          console.log(`✅ Firebase: Cleaned up ${snapshot.size} documents from ${coll}`);
+        while (hasMore && deletedCount < 2000) { // Safety limit to prevent infinite loops or excessive usage
+          const q = query(collection(firestore, coll), limit(450));
+          const snapshot = await getDocs(q);
           
-          // Update local state if necessary
-          if (coll === 'activities') this.activities = this.activities.filter(a => a.timestamp >= fiveDaysAgo);
-          if (coll === 'suggestions') this.suggestions = this.suggestions.filter(s => s.timestamp >= fiveDaysAgo);
-          if (coll === 'complaints') this.complaints = this.complaints.filter(c => c.timestamp >= fiveDaysAgo);
-          if (coll === 'sms_history') this.smsHistory = this.smsHistory.filter(s => s.timestamp >= fiveDaysAgo);
-          
-          this.notify();
+          if (snapshot.empty) {
+            hasMore = false;
+          } else {
+            const batch = writeBatch(firestore);
+            snapshot.docs.forEach((d) => {
+              batch.delete(d.ref);
+            });
+            await batch.commit();
+            deletedCount += snapshot.size;
+            console.log(`✅ Firebase: Cleaned up ${snapshot.size} documents from ${coll} (Total: ${deletedCount})`);
+            
+            // If we got fewer than 450, it means we've reached the end
+            if (snapshot.size < 450) hasMore = false;
+          }
         }
+        
+        // Update local state
+        if (coll === 'activities') this.activities = [];
+        if (coll === 'sms_history') this.smsHistory = [];
+        
+        this.notify();
       } catch (e) {
         console.error(`❌ Firebase: Cleanup error for ${coll}:`, e);
       }

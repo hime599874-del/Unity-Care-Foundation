@@ -104,8 +104,6 @@ export const translations: Translations = {
   payment_info: { bn: 'পেমেন্ট তথ্য', en: 'Payment Information' },
   alrajhi_bank_info: { bn: 'ALRAJHI BANK INFORMATION', en: 'ALRAJHI BANK INFORMATION' },
   dutch_bangla_bank: { bn: 'ডাচ বাংলা ব্যাংক', en: 'Dutch Bangla Bank' },
-  islami_bank: { bn: 'ইসলামী ব্যাংক', en: 'Islami Bank' },
-  midland_bank: { bn: 'মিডল্যান্ড ব্যাংক', en: 'Midland Bank' },
   bkash: { bn: 'বিকাশ', en: 'bKash' },
   nagad: { bn: 'নগদ', en: 'Nagad' },
   select_bank: { bn: 'ব্যাংক নির্বাচন করুন', en: 'Select Bank' },

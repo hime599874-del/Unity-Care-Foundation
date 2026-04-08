@@ -9,14 +9,14 @@ import {
   LogOut, Plus, Home,
   MessageCircle, Send, Wallet, QrCode,
   Loader2, Phone, User as UserIcon, ShieldCheck,
-  MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings,
-  Lightbulb, FileSpreadsheet, Image as LucideImageIcon, Clock, CircleAlert,
+  MapPin, Calendar, Briefcase, Droplets, Info, RefreshCw, HandHelping, Settings, Lock,
+  Lightbulb, FileSpreadsheet, Image as LucideImage, Clock, CircleAlert,
   Download, Smartphone, Landmark, Award, Activity, Edit, Trophy,
   FileText, Printer, Heart, CreditCard, Mail, Building2, Globe, Rocket,
   MessageSquare, ChevronDown, Zap, Facebook, Bell
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 import { QRCodeSVG } from 'qrcode.react';
@@ -135,6 +135,13 @@ const AdminDashboard: React.FC = () => {
   const [bulkSmsProgress, setBulkSmsProgress] = useState({ current: 0, total: 0 });
   const [fundFilter, setFundFilter] = useState<FundType | 'All'>('Monthly');
   const [viewingSmsRecipients, setViewingSmsRecipients] = useState<SmsRecord | null>(null);
+  
+  // Security settings states
+  const [oldPin, setOldPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [isChangingPin, setIsChangingPin] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -472,6 +479,34 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleUpdatePin = async () => {
+    if (!oldPin || !newPin || !confirmPin) {
+      alert('সবগুলো ঘর পূরণ করুন।');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      alert('নতুন পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড মিলছে না।');
+      return;
+    }
+    if (newPin.length < 4) {
+      alert('পাসওয়ার্ড কমপক্ষে ৪ ডিজিটের হতে হবে।');
+      return;
+    }
+
+    setIsChangingPin(true);
+    try {
+      await db.updateAdminPin(oldPin, newPin);
+      alert('পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে।');
+      setOldPin('');
+      setNewPin('');
+      setConfirmPin('');
+    } catch (e: any) {
+      alert(e.message || 'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে।');
+    } finally {
+      setIsChangingPin(false);
+    }
+  };
+
   const handleToggleIdCard = async (userId: string, currentStatus: boolean) => {
     try {
       await db.updateUser(userId, { isIdCardEnabled: !currentStatus });
@@ -686,7 +721,7 @@ const AdminDashboard: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
           let width = img.width;
@@ -1156,7 +1191,6 @@ const AdminDashboard: React.FC = () => {
           { id: 'suggestions', label: 'পরামর্শ', icon: <Lightbulb className="w-4 h-4" />, adminOnly: true },
           { id: 'complaints', label: 'অভিযোগ', icon: <CircleAlert className="w-4 h-4" />, adminOnly: true },
           { id: 'progress', label: 'অগ্রগতি', icon: <Activity className="w-4 h-4" />, adminOnly: true },
-          { id: 'activities', label: 'মেম্বার অ্যাক্টিভিটি', icon: <Clock className="w-4 h-4" />, adminOnly: true },
           { id: 'insights', label: 'মাসিক ইনসাইট', icon: <TrendingUp className="w-4 h-4" />, adminOnly: true },
           { id: 'recipients', label: 'গৃহীতার তথ্য', icon: <Heart className="w-4 h-4" />, adminOnly: false },
           { id: 'txManagement', label: 'লেনদেন ম্যানেজমেন্ট', icon: <Wallet className="w-4 h-4" />, adminOnly: true },
@@ -1422,7 +1456,7 @@ const AdminDashboard: React.FC = () => {
               <div className="bg-white p-3 rounded-2xl shadow-sm border flex gap-2 justify-end items-center">
                  <button onClick={downloadAsExcel} className="p-2 bg-slate-100 text-slate-600 rounded-lg" title="Excel"><FileSpreadsheet className="w-4 h-4" /></button>
                  <button onClick={downloadTransactionsAsImage} disabled={isCapturing} className="flex items-center gap-2 px-4 py-2 bg-[#0D9488] text-white rounded-xl text-[9px] font-black uppercase shadow-md active:scale-95 transition-all">
-                   <LucideImageIcon className="w-3.5 h-3.5" /> ছবি ডাউনলোড
+                   <LucideImage className="w-3.5 h-3.5" /> ছবি ডাউনলোড
                  </button>
               </div>
 
@@ -1580,7 +1614,7 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         ) : (
                           <>
-                            <LucideImageIcon className="w-8 h-8 text-slate-300" />
+                            <LucideImage className="w-8 h-8 text-slate-300" />
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ব্যয়ের প্রমাণপত্র / ছবি যোগ করুন</p>
                           </>
                         )}
@@ -1598,7 +1632,7 @@ const AdminDashboard: React.FC = () => {
                            <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                  {e.reason}
-                                 {e.proofImage && <LucideImageIcon className="w-3.5 h-3.5 text-teal-500" />}
+                                 {e.proofImage && <LucideImage className="w-3.5 h-3.5 text-teal-500" />}
                               </div>
                            </td>
                            <td className="px-6 py-4 text-rose-600 text-right font-black">
@@ -1827,76 +1861,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'activities' && (
-          <div className="space-y-6 animate-in slide-in-from-bottom-4 max-w-lg mx-auto">
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-              <div className="flex items-center gap-5 relative z-10">
-                <div className="p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-inner">
-                  <Clock className="w-10 h-10 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black tracking-tight">মেম্বার অ্যাক্টিভিটি</h2>
-                  <p className="text-xs font-bold text-slate-300 uppercase tracking-widest mt-1">সদস্যদের সাম্প্রতিক কার্যক্রম</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {activities.length === 0 ? (
-                <div className="bg-white p-12 rounded-[3rem] text-center border border-dashed border-slate-300">
-                  <p className="text-slate-400 font-bold">কোন অ্যাক্টিভিটি পাওয়া যায়নি</p>
-                </div>
-              ) : (
-                activities.map(act => (
-                  <div key={act.id} className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                      act.type === 'LOGIN' ? 'bg-emerald-50 text-emerald-600' : 
-                      act.type === 'PAGE_VIEW' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
-                    }`}>
-                      {act.type === 'LOGIN' ? <LogOut className="w-5 h-5 rotate-180" /> : 
-                       act.type === 'PAGE_VIEW' ? <Search className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
-                    </div>
-                    <div className="flex-grow overflow-hidden">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                            {userMap[act.userId]?.profilePic ? (
-                              <img src={userMap[act.userId].profilePic} className="w-full h-full object-cover aspect-square" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">
-                                {act.userName.charAt(0)}
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-sm font-black text-slate-800 truncate">{act.userName}</p>
-                        </div>
-                        <p className="text-[9px] font-bold text-slate-400 whitespace-nowrap ml-2 text-right">
-                          {new Date(act.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}<br/>
-                          {new Date(act.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                      <p className="text-[11px] font-bold text-slate-500 truncate">{act.description}</p>
-                      {act.path && <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mt-0.5">{act.path}</p>}
-                    </div>
-                  </div>
-                ))
-              )}
-              {activities.length > 0 && (
-                <div className="flex justify-center pt-4">
-                   <button 
-                     onClick={() => handleLoadMore('activities')}
-                     disabled={isLoadingMore['activities']}
-                     className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase shadow-sm active:scale-95 transition-all flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50"
-                   >
-                     {isLoadingMore['activities'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                     আরো লোড করুন
-                   </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {activeTab === 'insights' && (
           <div className="space-y-6 animate-in fade-in max-w-lg mx-auto">
@@ -2514,52 +2478,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-             {/* SMS History Section */}
-             <div className="bg-white p-8 rounded-[3rem] border shadow-sm space-y-6">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-slate-400" />
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">এসএমএস হিস্ট্রি (সাম্প্রতিক)</p>
-                </div>
-
-                <div className="space-y-4">
-                  {smsHistory.length === 0 ? (
-                    <div className="text-center py-10 bg-slate-50 rounded-3xl border border-dashed">
-                      <p className="text-xs font-bold text-slate-400">এখনো কোনো এসএমএস পাঠানো হয়নি।</p>
-                    </div>
-                  ) : (
-                    smsHistory.map((record) => (
-                      <div key={record.id} className="p-5 bg-slate-50 rounded-3xl border border-slate-100 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <p className="text-[11px] font-bold text-slate-800 line-clamp-2 italic">"{record.message}"</p>
-                            <p className="text-[9px] text-slate-400 font-bold">{new Date(record.timestamp).toLocaleString('en-GB')}</p>
-                          </div>
-                          <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${
-                            record.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 
-                            record.status === 'Partial' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
-                          }`}>
-                            {record.status === 'Success' ? 'সফল' : record.status === 'Partial' ? 'আংশিক' : 'ব্যর্থ'}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-[9px] font-bold text-slate-500">
-                          <button 
-                            onClick={() => setViewingSmsRecipients(record)}
-                            className="flex items-center gap-1 hover:text-indigo-600 transition-colors cursor-pointer"
-                          >
-                            <Users className="w-3 h-3" /> {toBengaliNumber(record.recipientCount)} জন
-                          </button>
-                          {record.successCount !== undefined && (
-                            <span className="flex items-center gap-1 text-emerald-600"><Check className="w-3 h-3" /> {toBengaliNumber(record.successCount)} সফল</span>
-                          )}
-                          {record.failCount !== undefined && (
-                            <span className="flex items-center gap-1 text-rose-600"><X className="w-3 h-3" /> {toBengaliNumber(record.failCount)} ব্যর্থ</span>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+              {/* SMS History Section Removed as per user request */}
             </div>
           )}
 
@@ -2679,23 +2598,23 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-3">
                   <div className="relative">
-                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="WhatsApp Group Link" value={settingsForm.whatsapp} onChange={e => setSettingsForm({...settingsForm, whatsapp: e.target.value})} />
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="WhatsApp Group Link" value={settingsForm.whatsapp || ''} onChange={e => setSettingsForm({...settingsForm, whatsapp: e.target.value})} />
                     <Phone className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
                   </div>
                   <div className="relative">
-                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Facebook Page Link" value={settingsForm.facebook} onChange={e => setSettingsForm({...settingsForm, facebook: e.target.value})} />
-                    <LucideImageIcon className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Facebook Page Link" value={settingsForm.facebook || ''} onChange={e => setSettingsForm({...settingsForm, facebook: e.target.value})} />
+                    <LucideImage className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
                   </div>
                   <div className="relative">
-                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Messenger Link" value={settingsForm.messenger} onChange={e => setSettingsForm({...settingsForm, messenger: e.target.value})} />
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Messenger Link" value={settingsForm.messenger || ''} onChange={e => setSettingsForm({...settingsForm, messenger: e.target.value})} />
                     <MessageCircle className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
                   </div>
                   <div className="relative">
-                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Official Email" value={settingsForm.email} onChange={e => setSettingsForm({...settingsForm, email: e.target.value})} />
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Official Email" value={settingsForm.email || ''} onChange={e => setSettingsForm({...settingsForm, email: e.target.value})} />
                     <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
                   </div>
                   <div className="relative">
-                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Phone Number" value={settingsForm.phone} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})} />
+                    <input type="text" className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" placeholder="Phone Number" value={settingsForm.phone || ''} onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})} />
                     <Smartphone className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
                   </div>
                   <div className="relative">
@@ -2746,6 +2665,76 @@ const AdminDashboard: React.FC = () => {
                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-4 h-4" /> সেটিংস সেভ করুন</>}
               </button>
               <button onClick={() => db.recalculateStats()} className="w-full py-5 bg-indigo-50 text-indigo-600 rounded-3xl font-black uppercase text-[10px] flex items-center justify-center gap-3 active:scale-95 border border-indigo-100"><RefreshCw className="w-5 h-5" /> ডাটা হিসাব রিসেট করুন</button>
+              <button 
+                onClick={async () => {
+                  if (window.confirm('আপনি কি নিশ্চিত যে আপনি সব এসএমএস এবং অ্যাক্টিভিটি হিস্ট্রি মুছে ফেলতে চান? এটি আর ফিরে পাওয়া যাবে না।')) {
+                    await db.cleanupOldData();
+                    alert('সব হিস্টরি সফলভাবে মুছে ফেলা হয়েছে।');
+                  }
+                }} 
+                className="w-full py-5 bg-rose-50 text-rose-600 rounded-3xl font-black uppercase text-[10px] flex items-center justify-center gap-3 active:scale-95 border border-rose-100"
+              >
+                <Trash2 className="w-5 h-5" /> সব হিস্টরি মুছে ফেলুন
+              </button>
+
+              <div className="pt-8 border-t border-slate-100 space-y-4">
+                <div className="flex items-center gap-2 ml-1">
+                  <ShieldCheck className="w-4 h-4 text-slate-400" />
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">সিকিউরিটি সেটিংস</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input 
+                      type={showPin ? "text" : "password"} 
+                      className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" 
+                      placeholder="পূর্বের পাসওয়ার্ড" 
+                      value={oldPin} 
+                      onChange={e => setOldPin(e.target.value)} 
+                    />
+                    <Lock className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+                  
+                  <div className="relative">
+                    <input 
+                      type={showPin ? "text" : "password"} 
+                      className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" 
+                      placeholder="নতুন পাসওয়ার্ড" 
+                      value={newPin} 
+                      onChange={e => setNewPin(e.target.value)} 
+                    />
+                    <Zap className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+                  
+                  <div className="relative">
+                    <input 
+                      type={showPin ? "text" : "password"} 
+                      className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none text-xs font-bold focus:ring-2 focus:ring-teal-500/20" 
+                      placeholder="রিটাইপ পাসওয়ার্ড" 
+                      value={confirmPin} 
+                      onChange={e => setConfirmPin(e.target.value)} 
+                    />
+                    <Check className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                  </div>
+
+                  <div className="flex items-center gap-2 px-2">
+                    <button 
+                      onClick={() => setShowPin(!showPin)}
+                      className="text-[10px] font-bold text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1.5"
+                    >
+                      {showPin ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />} পাসওয়ার্ড {showPin ? 'লুকান' : 'দেখুন'}
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={handleUpdatePin} 
+                    disabled={isChangingPin}
+                    className="w-full py-5 bg-slate-900 text-white rounded-3xl font-black uppercase text-xs shadow-lg active:scale-95 border-b-4 border-slate-700 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+                  >
+                    {isChangingPin ? <Loader2 className="w-5 h-5 animate-spin" /> : <><RefreshCw className="w-4 h-4" /> পাসওয়ার্ড পরিবর্তন করুন</>}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
       </main>

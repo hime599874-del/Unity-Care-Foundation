@@ -14,7 +14,7 @@ const AdminAuth: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === '0000') {
+    if (pin.trim() === db.getAdminPin()) {
       const adminUser: User = {
         id: 'admin',
         name: 'Admin',
