@@ -714,10 +714,22 @@ const UserDashboard: React.FC = () => {
                                 {selectedBank === 'dbbl' ? t('beneficiary_name') : t('account_name')}
                              </p>
                              <p className="text-sm font-black text-slate-800">
-                                {selectedBank === 'dbbl' ? 'SHAPIA BEGUM' : 
+                                {selectedBank === 'alrajhi' ? 'Al-Amin Mazi' :
+                                 selectedBank === 'dbbl' ? 'SHAPIA BEGUM' : 
                                  'MD JAHIDUL ISLAM'}
                              </p>
                           </div>
+                          {selectedBank === 'alrajhi' && (
+                             <div className="border-b border-black/5 pb-3 flex items-center justify-between">
+                                <div>
+                                   <p className="text-[9px] font-bold opacity-40 uppercase mb-1">{t('swift_code')}</p>
+                                   <p className="text-sm font-black text-slate-800 tracking-wider">RJHISARI</p>
+                                </div>
+                                <button onClick={() => copyToClipboard('RJHISARI', 'swift')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+                                   {copiedField === 'swift' ? <CircleCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                             </div>
+                          )}
                           {selectedBank === 'dbbl' && (
                              <>
                                 <div className="border-b border-black/5 pb-3 flex items-center justify-between">
@@ -744,7 +756,7 @@ const UserDashboard: React.FC = () => {
                              <div>
                                 <p className="text-[9px] font-bold opacity-40 uppercase mb-1">{t('account_number')}</p>
                                 <p className="text-sm font-black text-slate-800 tracking-wider">
-                                   {selectedBank === 'alrajhi' ? '077040010006087859970' : 
+                                   {selectedBank === 'alrajhi' ? '077080010006082476677' : 
                                     selectedBank === 'dbbl' ? '2647348821808' : 
                                     (selectedBank === 'bkash' || selectedBank === 'nagad') ? '01777599874' :
                                     '20504436700011315'}
@@ -752,7 +764,7 @@ const UserDashboard: React.FC = () => {
                              </div>
                              <button 
                                onClick={() => copyToClipboard(
-                                  selectedBank === 'alrajhi' ? '077040010006087859970' : 
+                                  selectedBank === 'alrajhi' ? '077080010006082476677' : 
                                   (selectedBank === 'bkash' || selectedBank === 'nagad') ? '01777599874' :
                                   '20504436700011315', 
                                   'acc'
@@ -766,9 +778,9 @@ const UserDashboard: React.FC = () => {
                              <div className="flex items-center justify-between">
                                 <div>
                                    <p className="text-[9px] font-bold opacity-40 uppercase mb-1">IBAN</p>
-                                   <p className="text-[11px] font-black text-slate-800 tracking-tight">SA17 8000 0859 6080 1785 9970</p>
+                                   <p className="text-[11px] font-black text-slate-800 tracking-tight">SA21 8000 0867 6080 1247 6677</p>
                                 </div>
-                                <button onClick={() => copyToClipboard('SA1780000859608017859970', 'iban')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+                                <button onClick={() => copyToClipboard('SA2180000867608012476677', 'iban')} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
                                    {copiedField === 'iban' ? <CircleCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                                 </button>
                              </div>
