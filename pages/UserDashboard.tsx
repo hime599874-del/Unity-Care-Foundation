@@ -715,7 +715,8 @@ const UserDashboard: React.FC = () => {
                              </p>
                              <p className="text-sm font-black text-slate-800">
                                 {selectedBank === 'alrajhi' ? 'Al-Amin Mazi' :
-                                 (selectedBank === 'bkash' || selectedBank === 'nagad') ? 'MD. AL AMIN' :
+                                 selectedBank === 'bkash' ? 'MD. AL AMIN' :
+                                 selectedBank === 'nagad' ? '---' :
                                  selectedBank === 'dbbl' ? 'SHAPIA BEGUM' : 
                                  'MD JAHIDUL ISLAM'}
                              </p>
@@ -759,14 +760,16 @@ const UserDashboard: React.FC = () => {
                                 <p className="text-sm font-black text-slate-800 tracking-wider">
                                    {selectedBank === 'alrajhi' ? '077080010006082476677' : 
                                     selectedBank === 'dbbl' ? '2647348821808' : 
-                                    (selectedBank === 'bkash' || selectedBank === 'nagad') ? '01709806276' :
+                                    selectedBank === 'bkash' ? '01709806276' :
+                                    selectedBank === 'nagad' ? '---' :
                                     '20504436700011315'}
                                 </p>
                              </div>
                              <button 
                                onClick={() => copyToClipboard(
                                   selectedBank === 'alrajhi' ? '077080010006082476677' : 
-                                  (selectedBank === 'bkash' || selectedBank === 'nagad') ? '01709806276' :
+                                  selectedBank === 'bkash' ? '01709806276' :
+                                  selectedBank === 'nagad' ? '' :
                                   '20504436700011315', 
                                   'acc'
                                )} 
