@@ -134,11 +134,18 @@ const MaintenancePage = () => {
 const AppContent: React.FC = () => {
   const { currentUser, adminUser, isAdmin, isOnline, maintenanceMode } = useAuth();
   const location = useLocation();
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
   const isDashboard = location.pathname === '/dashboard';
   const showNav = currentUser && isDashboard;
   const effectiveUser = adminUser || currentUser;
 
   const isMaintenanceActive = maintenanceMode && !isAdmin && !location.pathname.startsWith('/admin');
+
+  useEffect(() => {
+    setIsRouteLoading(true);
+    const timer = setTimeout(() => setIsRouteLoading(false), 2500); // Artificial delay of 2.5 seconds
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   if (isMaintenanceActive) {
     return <MaintenancePage />;
@@ -146,6 +153,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {isRouteLoading && <PageLoader />}
       {!isOnline && (
         <div className="bg-red-500 text-white text-[10px] py-1 text-center font-bold uppercase tracking-widest animate-pulse z-[200]">
           অফলাইন - ইন্টারনেট কানেকশন চেক করুন
@@ -213,9 +221,9 @@ const AppWrapper: React.FC = () => {
       const interval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 99) return prev;
-          return prev + Math.random() * 25; // Even larger increment
+          return prev + Math.random() * 25; // Original increment
         });
-      }, 40); // Even faster interval
+      }, 40); // Original interval
       return () => clearInterval(interval);
     } else {
       setProgress(100);
@@ -228,8 +236,8 @@ const AppWrapper: React.FC = () => {
         <motion.div 
           key="splash"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.02, filter: 'blur(5px)' }}
-          transition={{ duration: 0.25, ease: "easeOut" }} // Ultra fast exit
+          exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+          transition={{ duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] }}
           className="fixed inset-0 bg-[#009688] flex flex-col items-center justify-center z-[9999] overflow-hidden"
         >
           {/* Animated Background Elements */}
@@ -311,10 +319,10 @@ const AppWrapper: React.FC = () => {
               <h1 className="text-white text-3xl font-black tracking-[0.2em] mb-2 drop-shadow-md font-['Baloo_Da_2']">
                 UNITY CARE
               </h1>
-              <div className="flex items-center gap-2 justify-center">
+              <div className="flex items-center justify-center gap-3">
                 <div className="h-[1px] w-8 bg-white/30" />
-                <p className="text-white/80 text-xs font-bold uppercase tracking-[0.3em]">
-                  Humanitarian
+                <p className="text-white/60 text-[9px] font-black uppercase tracking-[0.4em]">
+                  Humanitarian Services
                 </p>
                 <div className="h-[1px] w-8 bg-white/30" />
               </div>

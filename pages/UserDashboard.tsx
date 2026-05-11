@@ -138,9 +138,18 @@ const UserDashboard: React.FC = () => {
   };
 
   const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
+    setTimeout(() => {
+      navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    }, 800); // 0.8s delay for copying
+  };
+
+  const handleDelayedModal = (setter: (v: boolean) => void) => {
+    // Show a small processing indicator or just wait
+    setTimeout(() => {
+      setter(true);
+    }, 1200); // 1.2s delay for modals
   };
 
   return (
@@ -303,7 +312,7 @@ const UserDashboard: React.FC = () => {
             { icon: <img src="https://img.icons8.com/fluency/96/charity.png" className="w-9 h-9 object-contain" alt="Donate" />, label: t('donate_now'), color: 'from-indigo-500 via-blue-500 to-cyan-400', glowColor: '#6366F1', path: '/transaction' },
             { icon: <img src="https://img.icons8.com/fluency/96/handshake.png" className="w-9 h-9 object-contain" alt="Apply" />, label: t('apply'), color: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: '#10B981', path: '/assistance' },
             { icon: <img src="https://img.icons8.com/fluency/96/trophy.png" className="w-9 h-9 object-contain" alt="Top Donors" />, label: t('top_donors'), color: 'from-amber-400 via-orange-500 to-rose-500', glowColor: '#F59E0B', path: '/leaderboard' },
-            { icon: <img src="https://img.icons8.com/fluency/96/groups.png" className="w-9 h-9 object-contain" alt="Members" />, label: t('permanent_members'), color: 'from-blue-400 via-indigo-500 to-purple-600', glowColor: '#3B82F6', action: () => setShowPermanentMembersModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/groups.png" className="w-9 h-9 object-contain" alt="Members" />, label: t('permanent_members'), color: 'from-blue-400 via-indigo-500 to-purple-600', glowColor: '#3B82F6', action: () => handleDelayedModal(setShowPermanentMembersModal) },
             { icon: <img src="https://img.icons8.com/fluency/96/heart-with-pulse.png" className="w-9 h-9 object-contain" alt="Recipients" />, label: 'গৃহীতার তথ্য', color: 'from-rose-400 via-pink-500 to-purple-500', glowColor: '#F43F5E', path: '/recipients' },
             ...(currentUser?.canManageRecipients ? [{ 
               icon: <img src="https://img.icons8.com/fluency/96/edit-user-female.png" className="w-9 h-9 object-contain" alt="Manage Recipients" />, 
@@ -313,12 +322,12 @@ const UserDashboard: React.FC = () => {
               path: '/manage-recipients' 
             }] : []),
             { icon: <img src="https://img.icons8.com/fluency/96/clipboard.png" className="w-9 h-9 object-contain" alt="History" />, label: t('history'), color: 'from-violet-500 via-purple-600 to-fuchsia-600', glowColor: '#8B5CF6', path: '/history' },
-            { icon: <img src="https://img.icons8.com/fluency/96/idea.png" className="w-9 h-9 object-contain" alt="Suggestion" />, label: t('suggestion'), color: 'from-lime-400 via-emerald-500 to-teal-600', glowColor: '#10B981', action: () => setShowSuggestionModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/idea.png" className="w-9 h-9 object-contain" alt="Suggestion" />, label: t('suggestion'), color: 'from-lime-400 via-emerald-500 to-teal-600', glowColor: '#10B981', action: () => handleDelayedModal(setShowSuggestionModal) },
             { icon: <img src="https://img.icons8.com/fluency/96/scales.png" className="w-9 h-9 object-contain" alt="Policy" />, label: t('policy'), color: 'from-slate-600 via-slate-700 to-slate-900', glowColor: '#475569', action: () => window.open(contactConfig.policyUrl || 'https://drive.google.com/file/d/13v3j9HdOhmpU3UZ60W9xbGy4C4_lM9S-/view?usp=drivesdk', '_blank') },
-            { icon: <img src="https://img.icons8.com/fluency/96/megaphone.png" className="w-9 h-9 object-contain" alt="Complaint" />, label: t('complaint'), color: 'from-rose-500 via-pink-600 to-purple-700', glowColor: '#F43F5E', action: () => setShowComplaintModal(true) },
-            { icon: <img src="https://i.ibb.co/Pz0PsqC6/bdace8892d77d0557f2b620e89484dc2-1.jpg" className="w-10 h-10 object-cover rounded-full aspect-square" alt="Payment" />, label: t('payment'), color: 'from-blue-500 via-indigo-600 to-violet-700', glowColor: '#3B82F6', action: () => setShowPaymentModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/megaphone.png" className="w-9 h-9 object-contain" alt="Complaint" />, label: t('complaint'), color: 'from-rose-500 via-pink-600 to-purple-700', glowColor: '#F43F5E', action: () => handleDelayedModal(setShowComplaintModal) },
+            { icon: <img src="https://i.ibb.co/Pz0PsqC6/bdace8892d77d0557f2b620e89484dc2-1.jpg" className="w-10 h-10 object-cover rounded-full aspect-square" alt="Payment" />, label: t('payment'), color: 'from-blue-500 via-indigo-600 to-violet-700', glowColor: '#3B82F6', action: () => handleDelayedModal(setShowPaymentModal) },
             { icon: <img src="https://img.icons8.com/fluency/96/receipt.png" className="w-10 h-10 object-contain" alt="Expenses" />, label: t('expenses'), color: 'from-rose-500 via-rose-700 to-purple-900', glowColor: '#E11D48', path: '/expenses' },
-            { icon: <img src="https://img.icons8.com/fluency/96/customer-support.png" className="w-9 h-9 object-contain" alt="Contact" />, label: t('contact'), color: 'from-pink-500 via-rose-600 to-orange-600', glowColor: '#EC4899', action: () => setShowContactModal(true) },
+            { icon: <img src="https://img.icons8.com/fluency/96/customer-support.png" className="w-9 h-9 object-contain" alt="Contact" />, color: 'from-pink-500 via-rose-600 to-orange-600', glowColor: '#EC4899', action: () => handleDelayedModal(setShowContactModal), label: t('contact') },
             { icon: <img src="https://img.icons8.com/fluency/96/bill.png" className="w-10 h-10 object-contain" alt="Vouchers" />, label: t('vouchers'), color: 'from-blue-500 via-indigo-700 to-purple-800', glowColor: '#2563EB', path: '/vouchers' },
             { icon: <img src="https://img.icons8.com/fluency/96/combo-chart.png" className="w-9 h-9 object-contain" alt="Progress" />, label: t('progress'), color: 'from-indigo-400 via-violet-600 to-purple-700', glowColor: '#6366F1', path: '/progress' },
           ].map((item, idx) => (
@@ -490,7 +499,7 @@ const UserDashboard: React.FC = () => {
               <div className="p-8 space-y-6">
                  <textarea className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none font-bold text-xs min-h-[150px]" placeholder={t('suggestion_placeholder')} value={suggestionText} onChange={e => setSuggestionText(e.target.value)} />
                  <button onClick={handleSendSuggestion} disabled={!suggestionText.trim() || isSendingSuggestion} className="w-full py-5 bg-emerald-600 text-white rounded-3xl font-black uppercase text-xs">
-                  {isSendingSuggestion ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('submit')}
+                  {isSendingSuggestion ? t('submit') : t('submit')}
                  </button>
               </div>
            </div>
@@ -644,7 +653,7 @@ const UserDashboard: React.FC = () => {
                    disabled={!complaintText.trim() || isSendingComplaint} 
                    className="w-full py-5 bg-rose-600 text-white rounded-3xl font-black uppercase text-xs shadow-lg shadow-rose-100 active:scale-95 transition-all disabled:opacity-50"
                  >
-                  {isSendingComplaint ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('submit')}
+                  {isSendingComplaint ? t('submit') : t('submit')}
                  </button>
               </div>
            </div>
@@ -690,7 +699,7 @@ const UserDashboard: React.FC = () => {
                              selectedBank === 'alrajhi' ? 'from-[#2563EB] to-[#1E40AF]' : 
                              selectedBank === 'bkash' ? 'from-[#D12053] to-[#A01840]' :
                              selectedBank === 'nagad' ? 'from-[#F7941D] to-[#C67617]' :
-                             'from-[#008000] to-[#004d00]'
+                                 'from-[#008000] to-[#004d00]'
                           }`}>
                              <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
                              <Building2 className="w-5 h-5 relative z-10" />

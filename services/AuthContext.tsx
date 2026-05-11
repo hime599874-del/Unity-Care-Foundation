@@ -48,14 +48,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    
     const initAuth = async () => {
       try {
-        setLoadingStep('Connecting to database...');
+        setLoadingStep('Establishing secure connection...');
+        
         // Wait for database to sync initial data
         await db.whenReady();
+        
+        setLoadingStep('Synchronizing encrypted data...');
         setMaintenanceMode(db.getContactConfig()?.maintenanceMode || false);
         
-        setLoadingStep('Verifying session...');
+        setLoadingStep('Verifying user session...');
         const userId = localStorage.getItem('current_user_id');
         if (userId) {
           const user = await db.getUserAsync(userId);
@@ -89,7 +94,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           };
           setAdminUser(mockAdmin);
         }
-        setLoadingStep('Ready!');
+        setLoadingStep('Finalizing setup...');
       } catch (error) {
         console.error("Auth initialization error:", error);
         setLoadingStep('Error initializing app');

@@ -160,7 +160,7 @@ const AssistancePage: React.FC = () => {
                 disabled={!reason.trim() || isSubmitting}
                 className="w-full py-5 bg-teal-600 dark:bg-teal-700 text-white rounded-3xl font-black text-lg shadow-xl shadow-teal-100 dark:shadow-teal-900/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all border-b-4 border-teal-800 dark:border-teal-900"
               >
-                {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Send className="w-5 h-5" /> আবেদন জমা দিন</>}
+                {isSubmitting ? <><Send className="w-5 h-5" /> আবেদন জমা দিন</> : <><Send className="w-5 h-5" /> আবেদন জমা দিন</>}
               </button>
            </form>
         </div>

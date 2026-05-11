@@ -174,7 +174,7 @@ const TransactionPage: React.FC = () => {
           </div>
 
           <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-teal-600 text-white rounded-2xl font-bold text-lg shadow-xl active:scale-95 transition-all border-b-[6px] border-teal-800">
-            {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'জমা দিন'}
+            {isSubmitting ? 'জমা দিন' : 'জমা দিন'}
           </button>
         </form>
       </div>

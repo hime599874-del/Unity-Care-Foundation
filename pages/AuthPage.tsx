@@ -296,7 +296,7 @@ const AuthPage: React.FC = () => {
                 </div>
               </div>
               <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-teal-700 active:scale-95 transition-all border-b-4 border-teal-800">
-                {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('login_title')}
+                {isSubmitting ? t('login_title') : t('login_title')}
               </button>
               
               <div className="text-center mt-2">

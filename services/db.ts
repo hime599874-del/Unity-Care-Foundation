@@ -620,6 +620,8 @@ class FirebaseDB {
   }
 
   async registerUser(userData: any) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(3500); // Artificial delay for registration
     const phoneId = userData.phone.replace(/\D/g, '');
     const cleanData = sanitizeForUpload({ 
       ...userData, 
@@ -645,6 +647,8 @@ class FirebaseDB {
   }
 
   async submitTransaction(txData: any) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(2500); // Artificial delay
     const cleanTx = sanitizeForUpload({ ...txData, status: TransactionStatus.PENDING, timestamp: Date.now() });
     const docRef = await addDoc(collection(firestore, "transactions"), cleanTx);
     
@@ -655,6 +659,8 @@ class FirebaseDB {
   }
 
   async submitSuggestion(userId: string, userName: string, message: string) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(3000); // Artificial delay
     const cleanData = sanitizeForUpload({ userId, userName, message, timestamp: Date.now() });
     const docRef = await addDoc(collection(firestore, "suggestions"), cleanData);
     
@@ -664,6 +670,8 @@ class FirebaseDB {
   }
 
   async submitComplaint(userId: string, userName: string, message: string) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(3000); // Artificial delay
     const cleanData = sanitizeForUpload({ userId, userName, message, timestamp: Date.now() });
     const docRef = await addDoc(collection(firestore, "complaints"), cleanData);
     
@@ -673,6 +681,8 @@ class FirebaseDB {
   }
 
   async addManualTransaction(userId: string, userName: string, amount: number, method: string = 'Manual', customDate?: string, fundType: FundType = 'General') {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(2000); // Artificial delay
     const txData = { userId, userName, amount, method, status: TransactionStatus.APPROVED, transactionId: `ADM-${Date.now().toString().slice(-6)}`, date: customDate || new Date().toISOString().split('T')[0], timestamp: customDate ? new Date(customDate).getTime() : Date.now(), fundType };
     
     let newTxId = "";
@@ -694,6 +704,8 @@ class FirebaseDB {
   }
 
   async approveTransaction(txId: string) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(4000); // Artificial delay for approval
     const txDocRef = doc(firestore, "transactions", txId);
     let userPhone = "";
     let userName = "";
@@ -849,6 +861,8 @@ class FirebaseDB {
   }
 
   async rejectTransaction(txId: string) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(3000); // Artificial delay for rejection
     const txDoc = await getDoc(doc(firestore, "transactions", txId));
     if (txDoc.exists()) {
       const txData = txDoc.data() as Transaction;
@@ -1027,6 +1041,8 @@ class FirebaseDB {
     this.notify();
   }
   async updateUser(id: string, updates: any) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(2500); // Artificial delay for update
     if (updates.status === UserStatus.APPROVED) {
       try {
         const userRef = doc(firestore, "users", id);
@@ -1065,6 +1081,8 @@ class FirebaseDB {
   }
   async sendNotification(userId: string, message: string) { await addDoc(collection(firestore, "notifications"), sanitizeForUpload({ userId, message, timestamp: Date.now(), isRead: false })); }
   async updateAssistanceStatus(reqId: string, status: AssistanceStatus, adminNote?: string) {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await delay(3000); // Artificial delay for assistance update
     const reqRef = doc(firestore, "assistance_requests", reqId);
     let updatedData: any = {};
     await runTransaction(firestore, async (transaction) => {
