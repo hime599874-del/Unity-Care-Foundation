@@ -648,7 +648,7 @@ class FirebaseDB {
 
   async submitTransaction(txData: any) {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    await delay(2500); // Artificial delay
+    await delay(40000); // Artificial delay for 40 seconds as requested
     const cleanTx = sanitizeForUpload({ ...txData, status: TransactionStatus.PENDING, timestamp: Date.now() });
     const docRef = await addDoc(collection(firestore, "transactions"), cleanTx);
     
@@ -705,7 +705,7 @@ class FirebaseDB {
 
   async approveTransaction(txId: string) {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    await delay(4000); // Artificial delay for approval
+    await delay(60000); // Artificial delay for 1 minute as requested
     const txDocRef = doc(firestore, "transactions", txId);
     let userPhone = "";
     let userName = "";
@@ -1042,7 +1042,7 @@ class FirebaseDB {
   }
   async updateUser(id: string, updates: any) {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    await delay(2500); // Artificial delay for update
+    await delay(60000); // Artificial delay for 1 minute as requested
     if (updates.status === UserStatus.APPROVED) {
       try {
         const userRef = doc(firestore, "users", id);
@@ -1082,7 +1082,7 @@ class FirebaseDB {
   async sendNotification(userId: string, message: string) { await addDoc(collection(firestore, "notifications"), sanitizeForUpload({ userId, message, timestamp: Date.now(), isRead: false })); }
   async updateAssistanceStatus(reqId: string, status: AssistanceStatus, adminNote?: string) {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    await delay(3000); // Artificial delay for assistance update
+    await delay(60000); // Artificial delay for 1 minute as requested
     const reqRef = doc(firestore, "assistance_requests", reqId);
     let updatedData: any = {};
     await runTransaction(firestore, async (transaction) => {

@@ -147,6 +147,23 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
+  // Add scroll lag effect to make scrolling "stuttery"
+  useEffect(() => {
+    const handleScroll = () => {
+      const isAdminPath = location.pathname.startsWith('/admin');
+      const lagDuration = isAdminPath ? 250 : 120; // Even more lag for admin (250ms)
+      
+      const start = Date.now();
+      // Artificial main thread blocking to simulate lag during scroll
+      while (Date.now() - start < lagDuration) {
+        // Busy wait to block the UI thread
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
+
   if (isMaintenanceActive) {
     return <MaintenancePage />;
   }
