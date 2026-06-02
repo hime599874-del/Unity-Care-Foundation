@@ -27,6 +27,7 @@ const RecipientManagementPage = lazy(() => import('./pages/RecipientManagementPa
 const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const VerifyInvoicePage = lazy(() => import('./pages/VerifyInvoicePage'));
+import UpdateNoticeModal from './src/components/UpdateNoticeModal';
 
 // Loading component for Suspense
 const PageLoader = () => (
@@ -140,6 +141,21 @@ const AppContent: React.FC = () => {
   const effectiveUser = adminUser || currentUser;
 
   const isMaintenanceActive = maintenanceMode && !isAdmin && !location.pathname.startsWith('/admin');
+  const [showUpdateNotice, setShowUpdateNotice] = useState(false);
+  const [hasShownNotice, setHasShownNotice] = useState(false);
+
+  useEffect(() => {
+    if (currentUser && !hasShownNotice) {
+      const timer = setTimeout(() => {
+        setShowUpdateNotice(true);
+        setHasShownNotice(true);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+    if (!currentUser) {
+      setHasShownNotice(false);
+    }
+  }, [currentUser, hasShownNotice]);
 
   useEffect(() => {
     setIsRouteLoading(true);
@@ -203,6 +219,8 @@ const AppContent: React.FC = () => {
       </main>
       
       <BottomNav />
+      
+      <UpdateNoticeModal isOpen={showUpdateNotice} onClose={() => setShowUpdateNotice(false)} />
 
       <footer className={`py-8 text-center bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-900 print:hidden transition-colors duration-300 ${showNav ? 'mb-20' : ''}`}>
         <Link to="/admin-auth" className="text-[11px] text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 transition-colors uppercase tracking-[0.2em] font-black">
