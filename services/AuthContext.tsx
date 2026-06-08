@@ -31,20 +31,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const setCurrentUserPersisted = (user: User | null) => {
     setCurrentUser(user);
-    if (user) {
-      localStorage.setItem('current_user_id', user.id);
-    } else {
-      localStorage.removeItem('current_user_id');
-    }
   };
 
   const setAdminUserPersisted = (user: User | null) => {
     setAdminUser(user);
-    if (user) {
-      localStorage.setItem('admin_user_id', user.id);
-    } else {
-      localStorage.removeItem('admin_user_id');
-    }
   };
 
   useEffect(() => {
@@ -60,40 +50,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoadingStep('Synchronizing encrypted data...');
         setMaintenanceMode(db.getContactConfig()?.maintenanceMode || false);
         
-        setLoadingStep('Verifying user session...');
-        const userId = localStorage.getItem('current_user_id');
-        if (userId) {
-          const user = await db.getUserAsync(userId);
-          if (user) {
-            setCurrentUser(user);
-          }
-        }
-
-        const adminId = localStorage.getItem('admin_user_id');
-        if (adminId === 'admin') {
-          setLoadingStep('Loading admin profile...');
-          const mockAdmin: User = {
-            id: 'admin',
-            name: 'Admin',
-            phone: '00000000000',
-            birthYear: 2000,
-            bloodGroup: 'O+',
-            location: 'Bangladesh',
-            address: { district: '', upazila: '', union: '', ward: '', village: '' },
-            profession: 'Admin',
-            interests: [],
-            isStudent: false,
-            isVolunteerInterested: false,
-            policyConsent: true,
-            status: UserStatus.APPROVED,
-            totalDonation: 0,
-            yearlyDonation: 0,
-            transactionCount: 0,
-            registeredAt: Date.now(),
-            designation: 'Admin'
-          };
-          setAdminUser(mockAdmin);
-        }
+        setLoadingStep('Verifying session...');
+        // Persistent login disabled: session will not be restored from localStorage
         setLoadingStep('Finalizing setup...');
       } catch (error) {
         console.error("Auth initialization error:", error);

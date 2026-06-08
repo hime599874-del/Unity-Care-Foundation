@@ -143,7 +143,7 @@ const AuthPage: React.FC = () => {
         return;
       }
 
-      localStorage.setItem('current_user_id', user.id);
+      // localStorage.setItem('current_user_id', user.id); // Persistent login disabled
       setCurrentUser(user);
       navigate('/dashboard');
     } catch (err) {
