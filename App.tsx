@@ -145,17 +145,13 @@ const AppContent: React.FC = () => {
   const [hasShownNotice, setHasShownNotice] = useState(false);
 
   useEffect(() => {
-    if (currentUser && !hasShownNotice) {
-      const timer = setTimeout(() => {
+    if (currentUser) {
+      const interval = setInterval(() => {
         setShowUpdateNotice(true);
-        setHasShownNotice(true);
-      }, 4000);
-      return () => clearTimeout(timer);
+      }, 5000); // Show every 5 seconds
+      return () => clearInterval(interval);
     }
-    if (!currentUser) {
-      setHasShownNotice(false);
-    }
-  }, [currentUser, hasShownNotice]);
+  }, [currentUser]);
 
   useEffect(() => {
     setIsRouteLoading(true);

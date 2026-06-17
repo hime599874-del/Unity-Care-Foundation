@@ -82,14 +82,11 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('current_user_id');
     sessionStorage.clear();
     setCurrentUser(null);
     navigate('/', { replace: true });
     setTimeout(() => {
-      if (localStorage.getItem('current_user_id') === null) {
-        window.location.hash = '#/';
-      }
+      window.location.hash = '#/';
     }, 100);
   };
 

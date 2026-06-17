@@ -34,13 +34,18 @@ const UpdateNoticeModal: React.FC<UpdateNoticeModalProps> = ({ isOpen, onClose }
                 />
               </div>
               
-              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-4 font-['Baloo_Da_2']">
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-6 font-['Baloo_Da_2'] tracking-tight">
                 Important Update
               </h3>
               
-              <p className="text-[13px] text-slate-600 dark:text-slate-400 font-bold leading-relaxed mb-8 px-2">
-                App version is outdated. Please update the app to the latest version and release it to production as per Google Play Policy requirements
-              </p>
+              <div className="space-y-2 mb-10 px-2">
+                <p className="text-xl font-black text-slate-900 dark:text-white leading-tight font-['Baloo_Da_2']">
+                  System will be expire Soon.
+                </p>
+                <p className="text-xl font-black text-slate-900 dark:text-white leading-tight font-['Baloo_Da_2']">
+                  Please upgrade new version
+                </p>
+              </div>
               
               <button
                 onClick={onClose}
