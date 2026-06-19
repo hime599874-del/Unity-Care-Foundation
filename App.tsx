@@ -146,9 +146,12 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
+      // Show immediately
+      setShowUpdateNotice(true);
+      
       const interval = setInterval(() => {
         setShowUpdateNotice(true);
-      }, 5000); // Show every 5 seconds
+      }, 20000); // Repeat every 20 seconds
       return () => clearInterval(interval);
     }
   }, [currentUser]);
