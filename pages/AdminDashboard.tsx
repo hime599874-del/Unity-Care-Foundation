@@ -783,30 +783,8 @@ const AdminDashboard: React.FC = () => {
     
     try {
       setIsDownloadingInvoice(true);
-      // Small delay to ensure rendering
-      await new Promise(r => setTimeout(r, 100));
-      
-      const dataUrl = await toPng(invoiceRef.current, {
-        cacheBust: true,
-        backgroundColor: '#ffffff',
-        pixelRatio: 3, // High quality
-        filter: (node) => {
-          const exclusionClasses = ['download-exclude'];
-          return !exclusionClasses.some(className => 
-            (node instanceof HTMLElement) && node.classList.contains(className)
-          );
-        },
-        style: {
-          borderRadius: '0px',
-          margin: '0',
-          padding: '0',
-        }
-      });
-      
-      const link = document.createElement('a');
-      link.download = `Invoice-${selectedTxForInvoice.transactionId.slice(-8).toUpperCase()}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Disable actual download as requested by user
+      await new Promise(r => setTimeout(r, 2000));
     } catch (err) {
       console.error('Download failed:', err);
       alert('ডাউনলোড ব্যর্থ হয়েছে।');
@@ -819,12 +797,8 @@ const AdminDashboard: React.FC = () => {
     if (!reportRef.current || isCapturing) return;
     setIsCapturing(true);
     try {
-      await new Promise(r => setTimeout(r, 400));
-      const dataUrl = await toPng(reportRef.current, { backgroundColor: '#F1F5F9', pixelRatio: 3 });
-      const link = document.createElement('a');
-      link.download = `Ledger_Report_${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Disable actual download as requested by user
+      await new Promise(r => setTimeout(r, 2000));
     } finally { setIsCapturing(false); }
   };
 
@@ -834,11 +808,8 @@ const AdminDashboard: React.FC = () => {
     setTimeout(async () => {
       if (!qrRef.current) return;
       try {
-        const dataUrl = await toPng(qrRef.current, { backgroundColor: '#ffffff', pixelRatio: 3 });
-        const link = document.createElement('a');
-        link.download = `QR_${user.name}_${user.phone.slice(-4)}.png`;
-        link.href = dataUrl;
-        link.click();
+        // Disable actual download as requested by user
+        await new Promise(r => setTimeout(r, 2000));
       } catch (e) {
         alert('ডাউনলোড ব্যর্থ হয়েছে।');
       } finally {
@@ -848,172 +819,15 @@ const AdminDashboard: React.FC = () => {
   };
 
   const downloadAsExcel = () => {
-    const approvedTxs = transactions.filter(t => t.status === TransactionStatus.APPROVED);
-    const headers = ['SL', 'Date', 'Name', 'Phone', 'Amount', 'Method', 'Transaction ID'];
-    const rows = approvedTxs.map((t, index) => [
-      index + 1,
-      t.date,
-      t.userName,
-      db.getUser(t.userId)?.phone || 'N/A',
-      t.amount,
-      t.method,
-      t.transactionId
-    ]);
-    
-    const csvRows = [headers, ...rows];
-    const csvString = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `Donation_Report_${new Date().toLocaleDateString('en-GB')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Disabled as requested
   };
 
   const downloadMonthlyExcelReport = () => {
-    const [year, month] = reportMonth.split('-').map(Number);
-    const monthName = new Date(year, month - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
-    
-    // Filter transactions for the selected month
-    const monthlyTxs = transactions.filter(t => {
-      const d = new Date(t.timestamp);
-      return d.getFullYear() === year && (d.getMonth() + 1) === month && t.status === TransactionStatus.APPROVED;
-    });
-
-    // Filter expenses for the selected month
-    const monthlyExpenses = expenses.filter(e => {
-      const d = new Date(e.timestamp);
-      return d.getFullYear() === year && (d.getMonth() + 1) === month;
-    });
-
-    const totalCollection = monthlyTxs.reduce((sum, t) => sum + t.amount, 0);
-    const totalExpense = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const donorIds = new Set(monthlyTxs.map(t => t.userId));
-    const donorCount = donorIds.size;
-    const netBalance = stats.totalCollection - stats.totalExpense;
-
-    // Find members who haven't paid this month
-    const approvedUsers = users.filter(u => u.status === UserStatus.APPROVED);
-    const unpaidMembers = approvedUsers.filter(u => !donorIds.has(u.id));
-
-    const csvRows = [
-      ['ইউনিটি কেয়ার ফাউন্ডেশন - মাসিক রিপোর্ট (Monthly Report)'],
-      ['মাসের নাম', monthName],
-      ['এই মাসে মোট আদায়', `৳${totalCollection}`],
-      ['মোট দাতা সংখ্যা', `${donorCount} জন`],
-      ['এই মাসে মোট ব্যয়', `৳${totalExpense}`],
-      ['বর্তমান মোট তহবিল (Total Balance)', `৳${netBalance}`],
-      [],
-      ['আদায়ের তালিকা (Donation List)'],
-      ['SL', 'তারিখ (Date)', 'সদস্যের নাম (Name)', 'পরিচয় (ID)', 'পরিমাণ (Amount)', 'মাধ্যম (Method)'],
-    ];
-
-    monthlyTxs.forEach((t, index) => {
-      const user = db.getUser(t.userId);
-      csvRows.push([
-        index + 1,
-        t.date,
-        t.userName,
-        user?.phone?.slice(-4) || '0000',
-        t.amount,
-        t.method
-      ]);
-    });
-
-    csvRows.push([], ['বকেয়া সদস্যদের তালিকা (Unpaid Members List)'], ['SL', 'নাম (Name)', 'পরিচয় (ID)', 'মোবাইল (Mobile)', 'ঠিকানা (Address)']);
-
-    unpaidMembers.forEach((m, index) => {
-      csvRows.push([
-        index + 1,
-        m.name,
-        m.phone.slice(-4),
-        m.phone,
-        `${m.address?.district || ''}, ${m.address?.upazila || ''}`
-      ]);
-    });
-
-    const csvString = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `Monthly_Report_${reportMonth}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Disabled as requested
   };
 
   const downloadPermanentMembersMonthlyReport = () => {
-    const [year, month] = reportMonth.split('-').map(Number);
-    const monthName = new Date(year, month - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
-    
-    const permanentUserIds = new Set(users.filter(u => u.isPermanentMember).map(u => u.id));
-    
-    // Filter transactions for the selected month and permanent members
-    const monthlyTxs = transactions.filter(t => {
-      const d = new Date(t.timestamp);
-      return d.getFullYear() === year && (d.getMonth() + 1) === month && t.status === TransactionStatus.APPROVED && permanentUserIds.has(t.userId);
-    });
-
-    const totalCollection = monthlyTxs.reduce((sum, t) => sum + t.amount, 0);
-    const donorIds = new Set(monthlyTxs.map(t => t.userId));
-    const donorCount = donorIds.size;
-
-    // Find permanent members who haven't paid this month
-    const permanentMembers = users.filter(u => u.isPermanentMember && u.status === UserStatus.APPROVED);
-    const unpaidPermanentMembers = permanentMembers.filter(u => !donorIds.has(u.id));
-
-    const csvRows = [
-      ['ইউনিটি কেয়ার ফাউন্ডেশন - স্থায়ী সদস্য মাসিক রিপোর্ট'],
-      ['মাসের নাম', monthName],
-      ['এই মাসে মোট আদায় (স্থায়ী সদস্য)', `৳${totalCollection}`],
-      ['মোট দাতা সংখ্যা (স্থায়ী সদস্য)', `${donorCount} জন`],
-      [],
-      ['স্থায়ী সদস্যদের আদায়ের তালিকা'],
-      ['SL', 'তারিখ (Date)', 'সদস্যের নাম (Name)', 'পরিচয় (ID)', 'পরিমাণ (Amount)', 'মাধ্যম (Method)'],
-    ];
-
-    monthlyTxs.forEach((t, index) => {
-      const user = db.getUser(t.userId);
-      csvRows.push([
-        index + 1,
-        t.date,
-        t.userName,
-        user?.phone?.slice(-4) || '0000',
-        t.amount,
-        t.method
-      ]);
-    });
-
-    csvRows.push([], ['বকেয়া স্থায়ী সদস্যদের তালিকা'], ['SL', 'নাম (Name)', 'পরিচয় (ID)', 'মোবাইল (Mobile)', 'ঠিকানা (Address)']);
-
-    unpaidPermanentMembers.forEach((m, index) => {
-      csvRows.push([
-        index + 1,
-        m.name,
-        m.phone.slice(-4),
-        m.phone,
-        `${m.address?.district || ''}, ${m.address?.upazila || ''}`
-      ]);
-    });
-
-    const csvString = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `Permanent_Members_Report_${reportMonth}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Disabled as requested
   };
 
   const filteredMonthlyTxs = useMemo(() => {
@@ -1047,84 +861,14 @@ const AdminDashboard: React.FC = () => {
   const downloadMonthlyPDFReport = async () => {
     setIsGeneratingMonthlyPDF(true);
     
-    // Small delay to ensure the hidden template is rendered with current data
-    setTimeout(async () => {
-      if (monthlyReportRef.current) {
-        try {
-          const dataUrl = await toPng(monthlyReportRef.current, { 
-            quality: 1.0, 
-            pixelRatio: 2,
-            cacheBust: true,
-          });
-          
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          
-          pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-          
-          pdf.save(`Transaction_Report_${reportMonth}_${fundFilter}.pdf`);
-        } catch (err) {
-          console.error('PDF generation failed', err);
-          alert('PDF generation failed. Please try again.');
-        } finally {
-          setIsGeneratingMonthlyPDF(false);
-        }
-      } else {
-        setIsGeneratingMonthlyPDF(false);
-      }
-    }, 500);
+    // Disable actual download as requested by user
+    setTimeout(() => {
+      setIsGeneratingMonthlyPDF(false);
+    }, 2000);
   };
 
   const downloadBeautifulExcelReport = () => {
-    try {
-      // Sort transactions by amount descending
-      const sortedTxs = [...filteredMonthlyTxs].sort((a, b) => b.amount - a.amount);
-
-      // Prepare data for Excel
-      const excelData = [
-        ['Unity Care Foundation - Transaction Report'],
-        [`Month: ${reportMonthEn} | Fund: ${fundFilter}`],
-        [],
-        ['Date', 'Name', 'Phone', 'Method', 'Amount (BDT)']
-      ];
-
-      sortedTxs.forEach((tx) => {
-        const user = db.getUser(tx.userId);
-        excelData.push([
-          new Date(tx.timestamp).toLocaleDateString('en-GB'),
-          user?.name || tx.userName || 'Unknown',
-          user?.phone || 'N/A',
-          tx.method,
-          tx.amount
-        ]);
-      });
-
-      // Add Total Row
-      excelData.push(['', '', '', 'Total:', monthlyTotalAmount]);
-
-      // Create Worksheet
-      const ws = XLSX.utils.aoa_to_sheet(excelData);
-
-      // Adjust column widths
-      ws['!cols'] = [
-        { wch: 15 }, // Date
-        { wch: 30 }, // Name
-        { wch: 15 }, // Phone
-        { wch: 15 }, // Method
-        { wch: 20 }  // Amount
-      ];
-
-      // Create Workbook
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Transaction Report');
-
-      // Generate Excel File and trigger download
-      XLSX.writeFile(wb, `Transaction_Report_${reportMonth}_${fundFilter}.xlsx`);
-    } catch (error) {
-      console.error('Excel generation failed', error);
-      alert('Excel generation failed. Please try again.');
-    }
+    // Disabled as requested
   };
 
   const monthlyInsights = useMemo(() => {

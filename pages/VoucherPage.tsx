@@ -60,34 +60,8 @@ const VoucherPage: React.FC = () => {
     
     try {
       setIsDownloading(true);
-      // Create a clone for high quality capture
-      const dataUrl = await toPng(invoiceRef.current, {
-        cacheBust: true,
-        backgroundColor: '#ffffff',
-        pixelRatio: 2, // Higher quality
-        filter: (node) => {
-          const exclusionClasses = ['download-exclude'];
-          return !exclusionClasses.some(className => 
-            (node instanceof HTMLElement) && node.classList.contains(className)
-          );
-        },
-        style: {
-          borderRadius: '0px',
-          margin: '0',
-          padding: '0',
-        }
-      });
-      
-      const link = document.createElement('a');
-      link.download = `Voucher-${selectedTx?.transactionId.slice(-8).toUpperCase()}.png`;
-      link.href = dataUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
+      // Disable actual download as requested by user
+      await new Promise(r => setTimeout(r, 2000));
     } catch (err) {
       console.error('Download failed:', err);
     } finally {

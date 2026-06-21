@@ -114,22 +114,8 @@ const ProfilePage: React.FC = () => {
     
     try {
       setIsDownloading(true);
-      const dataUrl = await toPng(idCardRef.current, {
-        cacheBust: true,
-        backgroundColor: '#ffffff',
-        pixelRatio: 3, // Higher quality for ID card
-      });
-      
-      const link = document.createElement('a');
-      link.download = `ID_Card_${currentUser?.name}.png`;
-      link.href = dataUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
+      // Disable actual download as requested by user
+      await new Promise(r => setTimeout(r, 2000));
     } catch (err) {
       console.error('Download failed:', err);
       showToast('ডাউনলোড ব্যর্থ হয়েছে।', 'error');

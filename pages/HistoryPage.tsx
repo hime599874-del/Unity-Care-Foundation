@@ -48,22 +48,8 @@ const HistoryPage: React.FC = () => {
     
     try {
       setIsDownloading(true);
-      const dataUrl = await toPng(reportRef.current, {
-        cacheBust: true,
-        backgroundColor: '#ffffff',
-        pixelRatio: 2,
-      });
-      
-      const link = document.createElement('a');
-      link.download = `Donation_Report_${currentUser?.name}_${selectedYear}.png`;
-      link.href = dataUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
+      // Disable actual download as requested by user
+      await new Promise(r => setTimeout(r, 2000));
     } catch (err) {
       console.error('Download failed:', err);
       showToast('ডাউনলোড ব্যর্থ হয়েছে।', 'error');

@@ -27,20 +27,8 @@ const ExpensePage: React.FC = () => {
   const handleDownloadImage = async (imageUrl: string) => {
     try {
       setIsDownloading(true);
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Expense_Proof_${Date.now()}.jpg`;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
+      // Disable actual download as requested by user
+      await new Promise(r => setTimeout(r, 2000));
     } catch (err) {
       console.error('Download failed:', err);
       showToast('ডাউনলোড ব্যর্থ হয়েছে।', 'error');
