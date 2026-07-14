@@ -1043,13 +1043,24 @@ class FirebaseDB {
   async updateUser(id: string, updates: any) {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
     await delay(60000); // Artificial delay for 1 minute as requested
+    
     if (updates.status === UserStatus.APPROVED) {
       try {
         const userRef = doc(firestore, "users", id);
         const userSnap = await getDoc(userRef);
+        
         if (userSnap.exists()) {
           const userData = userSnap.data();
+          // Only check limit if transitioning from NOT APPROVED to APPROVED
           if (userData.status !== UserStatus.APPROVED) {
+            const usersRef = collection(firestore, "users");
+            const q = query(usersRef, where("status", "==", UserStatus.APPROVED));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.size >= 50) {
+              throw new Error("limit excited");
+            }
+
             const userPhone = userData.phone;
             const userName = userData.name || 'Member';
             
@@ -1067,7 +1078,8 @@ class FirebaseDB {
             }
           }
         }
-      } catch (e) {
+      } catch (e: any) {
+        if (e.message === "limit excited") throw e;
         console.error('Failed to process user approval SMS:', e);
       }
     }

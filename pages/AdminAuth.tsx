@@ -9,12 +9,21 @@ import { User, UserStatus } from '../types';
 const AdminAuth: React.FC = () => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { setAdminUser } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (pin.trim() === db.getAdminPin()) {
+      setIsSubmitting(true);
+      setError('');
+      
+      // Artificial delay of 1 minute (60,000ms) as requested
+      await new Promise(resolve => setTimeout(resolve, 60000));
+      
       const adminUser: User = {
         id: 'admin',
         name: 'Admin',
@@ -81,9 +90,10 @@ const AdminAuth: React.FC = () => {
           
           <button
             type="submit"
-            className="w-full py-4 bg-teal-600 text-white rounded-2xl font-bold text-sm hover:bg-teal-700 shadow-xl shadow-teal-100 active:scale-95 transition-all"
+            disabled={isSubmitting}
+            className="w-full py-4 bg-teal-600 text-white rounded-2xl font-bold text-sm hover:bg-teal-700 shadow-xl shadow-teal-100 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            প্রবেশ করুন
+            {isSubmitting ? 'প্রসেসিং হচ্ছে...' : 'প্রবেশ করুন'}
           </button>
         </form>
 

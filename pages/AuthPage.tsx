@@ -143,6 +143,9 @@ const AuthPage: React.FC = () => {
         return;
       }
 
+      // Artificial delay of 1 minute (60,000ms) as requested
+      await new Promise(resolve => setTimeout(resolve, 60000));
+
       // localStorage.setItem('current_user_id', user.id); // Persistent login disabled
       setCurrentUser(user);
       navigate('/dashboard');

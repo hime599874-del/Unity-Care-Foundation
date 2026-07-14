@@ -692,7 +692,11 @@ const AdminDashboard: React.FC = () => {
       // No alert on success to keep it smooth, real-time sync will update UI
     } catch (e: any) { 
       console.error("Status update error:", e);
-      alert(`সমস্যা হয়েছে: ${e.message || 'Unknown error'}`); 
+      if (e.message === 'limit excited') {
+        alert('limit excited');
+      } else {
+        alert(`সমস্যা হয়েছে: ${e.message || 'Unknown error'}`); 
+      }
     }
   };
 
